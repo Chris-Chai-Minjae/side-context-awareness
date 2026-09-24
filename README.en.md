@@ -45,6 +45,8 @@ Side appears in the menu bar rather than the Dock. On first launch, grant captur
 
 Local builds use ad hoc signing. After you rebuild and replace the app, macOS may not apply its previous Accessibility, Input Monitoring, and Screen Recording permissions to the new build, and it may ask again for Keychain access to the saved encryption key. Approve the new Side in the Keychain dialog. If privacy permissions remain missing, remove the old `Side` entries from the corresponding lists under System Settings → Privacy & Security, then add `/Applications/Side.app` again. Developer ID signing and notarization required to distribute a prebuilt app to others remain a separate release gate. Check the current status in the [`docs/qa/`](docs/qa/) reports and the checkboxes in [`docs/planning/06-tasks.md`](docs/planning/06-tasks.md).
 
+If no Keychain prompt appears and the daemon does not start, open **Keychain Access → login → Passwords**, open the `local-context-awareness-ledger` item's **Access Control**, and add `/Applications/Side.app` as an individual allowed app. You do not need to show the password or allow every app. See [Apple's app-specific Keychain access instructions](https://support.apple.com/en-mt/guide/mac-help/kychn002/mac), then restart Side.
+
 ## macOS permissions
 
 | Permission | How Side uses it |

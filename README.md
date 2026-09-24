@@ -47,6 +47,8 @@ Side는 Dock 대신 메뉴바에 표시됩니다. 첫 실행 온보딩에서 캡
 
 로컬 빌드는 임시 서명(ad hoc signing)을 사용합니다. 다시 빌드해 앱을 교체하면 macOS가 기존 Accessibility·Input Monitoring·Screen Recording 권한을 새 빌드에 적용하지 않을 수 있고, 저장된 암호화 키의 Keychain 접근도 다시 물을 수 있습니다. 그때는 Keychain 창에서 새 Side를 허용하고, 시스템 설정 → 개인정보 보호 및 보안의 해당 권한 목록에서 이전 `Side` 항목을 제거한 뒤 `/Applications/Side.app`을 다시 추가합니다. 사전 빌드 앱을 제3자에게 배포할 때 필요한 Developer ID·공증은 별도 게이트로 남아 있습니다. 현재 상태는 [`docs/qa/`](docs/qa/) 보고서와 [`docs/planning/06-tasks.md`](docs/planning/06-tasks.md)의 체크박스에서 확인할 수 있습니다.
 
+Keychain 허용 창이 보이지 않고 데몬이 시작되지 않으면 **Keychain Access → login → Passwords**에서 `local-context-awareness-ledger` 항목의 **Access Control**을 열어 `/Applications/Side.app`을 개별 앱으로 추가한 뒤 저장합니다. 암호 표시나 모든 앱 허용은 필요하지 않습니다. [Apple의 앱별 Keychain 접근 안내](https://support.apple.com/en-mt/guide/mac-help/kychn002/mac)를 참고하세요. 저장 후 Side를 다시 시작합니다.
+
 ## macOS 권한
 
 | 권한 | Side에서 쓰는 용도 |
