@@ -4,8 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="Side는 Mac에서 활동을 로컬에 기록하고 출처와 함께 다시 찾는 오픈 소스 메뉴바 앱입니다.">
-  <title>Side — 기억을 다시 찾는 Mac 앱</title>
+  <link rel="icon" type="image/png" href="assets/side-logo.png">
+  <meta name="description" content="Side는 Mac의 활성 창에서 읽을 수 있는 내용을 기기에 기록하고, 기록과 출처를 검색할 수 있는 오픈 소스 메뉴바 앱입니다.">
+  <title>Side — Mac 활동 기록과 검색</title>
   <style>
     :root {
       color-scheme: light;
@@ -40,7 +41,8 @@
     .shell { width: min(100% - 48px, 1120px); margin-inline: auto; }
     .site-header { border-bottom: 1px solid var(--border); }
     .header-inner { min-height: 68px; display: flex; align-items: center; gap: 32px; }
-    .brand { color: var(--fg); font-size: 19px; font-weight: 750; letter-spacing: -.04em; text-decoration: none; }
+    .brand { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--fg); font-size: 19px; font-weight: 750; letter-spacing: -.04em; text-decoration: none; }
+    .brand img { display: block; width: 28px; height: 28px; }
     .nav { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; margin-left: auto; }
     .nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--muted); font-size: 13px; font-weight: 650; text-decoration: none; }
     .nav a:hover { color: var(--fg); }
@@ -72,6 +74,14 @@
     .section-head { max-width: 700px; margin-bottom: 32px; }
     .section h2 { margin-bottom: 12px; font-size: clamp(27px, 3vw, 38px); line-height: 1.2; letter-spacing: -.04em; word-break: keep-all; }
     .section-head p { margin-bottom: 0; color: var(--muted); font-size: 16px; word-break: keep-all; }
+    .flow { margin: 0 0 32px; padding: 20px; border: 1px solid var(--border); border-radius: var(--radius); }
+    .flow-image { aspect-ratio: 2103 / 430; overflow: hidden; }
+    .flow-image img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .flow-stages { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0 0; padding: 0; list-style: none; }
+    .flow-stages li { font-size: 13px; font-weight: 650; line-height: 1.4; text-align: center; word-break: keep-all; }
+    .flow-stages span { display: block; color: var(--accent); font: 700 11px/1.5 var(--mono); }
+    .flow-note { margin: 16px 0 0; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 14px; word-break: keep-all; }
+    .flow-note a { white-space: nowrap; }
     .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
     .step { padding: 22px; border: 1px solid var(--border); border-radius: var(--radius); }
     .step .number { display: block; margin-bottom: 26px; color: var(--accent); font: 700 12px/1 var(--mono); }
@@ -102,6 +112,9 @@
       .language { margin-left: auto; }
       .hero { padding-block: 56px; }
       .lead { font-size: 16px; }
+      .flow { padding: 12px; }
+      .flow-stages { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .flow-stages li { text-align: left; }
       .steps, .facts { grid-template-columns: 1fr; }
       section.section { padding-block: 52px; }
       .preview-body { padding: 20px; }
@@ -113,7 +126,7 @@
 <body>
   <header class="site-header">
     <div class="shell header-inner">
-      <a class="brand" href="#top" aria-label="Side home">Side<span aria-hidden="true">.</span></a>
+      <a class="brand" href="#top" aria-label="Side home"><img src="assets/side-logo.png" width="28" height="28" alt="" aria-hidden="true"><span>Side<span aria-hidden="true">.</span></span></a>
       <nav class="nav" aria-label="Main navigation">
         <a href="#how" data-ko="작동 방식" data-en="How it works">작동 방식</a>
         <a href="#start" data-ko="시작하기" data-en="Get started">시작하기</a>
@@ -131,57 +144,63 @@
       <div class="shell hero">
         <div>
           <p class="eyebrow">macOS 메뉴바 앱 · 오픈 소스</p>
-          <h1>오늘의 맥락을,<br>내일 다시 찾다.</h1>
-          <p class="lead">Side는 브라우저와 Mac 앱의 활동을 내 기기에 기록하고, 하루의 요약과 출처를 다시 찾게 해줍니다. 검색은 에이전트에서도 이어집니다.</p>
-          <div class="actions"><a class="button primary" href="#start">내 Mac에서 빌드하기</a><a class="button" href="https://github.com/Chris-Chai-Minjae/side-context-awareness">소스 보기 ↗</a></div>
-          <p class="hero-note">개발 중 · macOS 14+ · 사전 빌드 앱 대신 소스 빌드</p>
+          <h1>Mac에서 읽은 내용을<br>출처와 함께 다시 찾으세요.</h1>
+          <p class="lead">Side는 브라우저와 Mac 앱의 활성 창에서 읽을 수 있는 내용을 기기에 기록합니다. 기록을 검색하고, 요약 제공자를 설정해 전송에 동의하면 날짜별 요약도 확인할 수 있습니다. 연결한 에이전트에서도 기록을 검색할 수 있습니다.</p>
+          <div class="actions"><a class="button primary" href="#start">Mac에서 빌드하기</a><a class="button" href="side-for-beginners.html">처음 사용하기 전체 안내 ↗</a><a class="button" href="https://github.com/Chris-Chai-Minjae/side-context-awareness">GitHub에서 소스 보기 ↗</a></div>
+          <p class="hero-note">개발 중 · macOS 14+ · 사전 빌드 앱 미제공</p>
         </div>
-        <figure class="preview" aria-label="Side 기록 화면을 설명하는 예시">
+        <figure class="preview" aria-label="Side 기록 화면의 합성 예시">
           <div class="preview-head"><span>Side / History</span><span>화면 예시</span></div>
           <div class="preview-body">
             <span class="preview-label">TODAY · 14:00–14:10</span>
-            <h2>오후에 읽던 문서를<br>출처와 함께 찾기</h2>
-            <p>요약에서 원본 기록까지 이어지는 흐름을 보여주는 합성 예시입니다.</p>
+            <h2>오후에 읽은 문서를<br>출처와 함께 찾아보세요.</h2>
+            <p>요약에서 원본 기록을 여는 과정을 보여주는 합성 예시입니다.</p>
             <div class="source-row"><span>14:03</span><strong>브라우저에서 기술 문서 읽기</strong></div>
             <div class="source-row"><span>14:08</span><strong>메모 앱에서 관련 내용 정리</strong></div>
           </div>
         </figure>
       </div>
       <section class="section" id="how"><div class="shell">
-        <div class="section-head"><p class="kicker">어떻게 작동하나요</p><h2>기록하고, 요약하고, 출처로 돌아갑니다.</h2><p>Side는 읽을 수 있는 활성 창의 맥락을 모으고, 허용한 요약 제공자로 하루를 정리합니다.</p></div>
+        <div class="section-head"><p class="kicker">활동 기록 방식</p><h2>활성 창의 내용을 기록하고 출처를 검색하세요.</h2><p>Side는 활성 창에서 읽을 수 있는 내용을 기기에 기록합니다. 요약 제공자를 설정하고 전송에 동의하면 날짜별 요약을 생성합니다.</p></div>
+        <figure class="flow">
+          <div class="flow-image"><img src="assets/side-flow.png" width="2103" height="748" loading="lazy" decoding="async" alt="Mac의 활성 창에서 Side가 활동을 기록해 기기에 보관하고, 날짜별 검색을 거쳐 에이전트에서 찾는 네 단계 그림"></div>
+          <figcaption>
+            <ol class="flow-stages"><li><span>01</span>활성 창의 내용 읽기</li><li><span>02</span>Mac에 기록 보관</li><li><span>03</span>기록과 요약 검색</li><li><span>04</span>Aside 에이전트에서 찾기</li></ol>
+            <p class="flow-note">Side.app이 실행 중일 때 Side를 Aside의 MCP 서버로 등록하면, Aside 에이전트가 Side에 기록된 활동을 검색할 수 있습니다. <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.md">연결 방법 보기 ↗</a></p>
+          </figcaption>
+        </figure>
         <div class="steps">
-          <div class="step"><span class="number">01 / CAPTURE</span><h3>내 Mac에서 관찰</h3><p>허용한 권한으로 활성 앱과 브라우저의 텍스트를 읽습니다. 특정 앱·웹사이트는 제외하고 언제든 일시정지할 수 있습니다.</p></div>
-          <div class="step"><span class="number">02 / REMEMBER</span><h3>시간과 주제로 정리</h3><p>로컬 기록을 검색하고, 요약 제공자를 설정해 날짜별 기억을 만듭니다. 요약은 제공자 설정과 전송 동의가 있어야 생성됩니다.</p></div>
-          <div class="step"><span class="number">03 / RECALL</span><h3>에이전트에서 다시 찾기</h3><p>MCP를 연결하면 <code>history_search</code>, <code>history_read</code>, <code>memory_search</code>로 질문하고 출처를 확인할 수 있습니다.</p></div>
+          <div class="step"><span class="number">01 / CAPTURE</span><h3>Mac에서 내용 기록</h3><p>macOS 권한을 허용하면 활성 앱과 브라우저의 텍스트를 읽습니다. 특정 앱·웹사이트를 제외하거나 언제든 기록을 일시정지할 수 있습니다.</p></div>
+          <div class="step"><span class="number">02 / REMEMBER</span><h3>기록 검색과 날짜별 요약</h3><p>기기에 저장된 기록을 검색할 수 있습니다. 날짜별 요약을 생성하려면 요약 제공자를 설정하고 활동 브리핑 전송에 동의해야 합니다.</p></div>
+          <div class="step"><span class="number">03 / RECALL</span><h3>연결한 에이전트에서 검색</h3><p>MCP를 연결하면 <code>history_search</code>, <code>history_read</code>, <code>memory_search</code>로 기록과 요약을 검색하고 출처를 확인할 수 있습니다.</p></div>
         </div>
       </div></section>
       <section class="section" id="start"><div class="shell split">
-        <div><p class="kicker">시작하기</p><h2>소스에서 직접 빌드하세요.</h2><p>macOS 14+, Bun, Xcode Command Line Tools, FTS5와 확장 로딩을 지원하는 SQLite dylib가 필요합니다. 빌드 과정에서 MiniLM 모델을 내려받습니다.</p><p><a href="side-for-beginners.html">처음 쓰는 사람을 위한 자세한 안내 ↗</a></p></div>
+        <div><p class="kicker">시작하기</p><h2>Mac에서 소스를 빌드해 설치하세요.</h2><p>macOS 14+, Bun, Xcode Command Line Tools, FTS5와 확장 로딩을 지원하는 SQLite dylib가 필요합니다. 빌드 과정에서 MiniLM 모델을 내려받습니다.</p><p><a href="side-for-beginners.html">처음 사용하는 분을 위한 안내 ↗</a></p></div>
         <div><pre class="code-block"><code>git clone https://github.com/Chris-Chai-Minjae/side-context-awareness.git
 cd side-context-awareness
 bun install --frozen-lockfile
 bun run build
-mkdir -p "$HOME/Applications"
-ditto apps/side-mac/.build/release/Side.app "$HOME/Applications/Side.app"
-open "$HOME/Applications/Side.app"</code></pre><p class="detail">앱을 종료한 뒤 새 빌드를 복사하세요. 이 로컬 빌드는 임시 서명되며, 교체 후 macOS 권한을 다시 부여해야 할 수 있습니다. 상세 조건은 <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness#설치와-시작">README</a>를 확인하세요.</p></div>
+ditto apps/side-mac/.build/release/Side.app /Applications/Side.app
+open /Applications/Side.app</code></pre><p class="detail">앱을 종료한 뒤 새 빌드를 복사하세요. 이 로컬 빌드는 임시 서명되며, 교체 후 macOS 권한을 다시 부여해야 할 수 있습니다. 상세 조건은 <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness#설치와-시작">README</a>를 확인하세요.</p></div>
       </div></section>
       <section class="section"><div class="shell split">
-        <div><p class="kicker">모델과 에이전트</p><h2>연결은 각자 선택합니다.</h2><p>MiMo, MiniMax, OpenAI API 키는 각 사용자가 Side 설정에 직접 입력하며 macOS Keychain에 보관됩니다. 이미 로그인한 Claude Code를 요약 제공자로 선택할 수도 있습니다.</p></div>
+        <div><p class="kicker">모델과 에이전트</p><h2>요약 제공자와 에이전트 연결은 선택 사항입니다.</h2><p>MiMo, MiniMax, OpenAI API 키는 Side 설정에 직접 입력하며 macOS Keychain에 보관됩니다. 이미 로그인한 Claude Code를 요약 제공자로 선택할 수도 있습니다.</p></div>
         <div><div class="facts">
-          <div class="fact"><strong>요약 제공자</strong><p>모델 설정은 선택 사항입니다. 설정하지 않아도 캡처할 수 있지만 요약은 대기합니다.</p></div>
-          <div class="fact"><strong>MCP 연결</strong><p>Claude Code, Codex, Cursor, Aside 등은 각 클라이언트에서 Side의 로컬 MCP 서버를 등록해야 합니다.</p></div>
-        </div><pre class="code-block"><code>claude mcp add --scope user side -- "$HOME/Applications/Side.app/Contents/Resources/side" mcp</code></pre><p class="detail">Side가 실행 중일 때 Claude Code 사용자 범위에 등록하는 예입니다. 다른 에이전트 명령은 <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.md">연결 문서 ↗</a>를 참고하세요.</p></div>
+          <div class="fact"><strong>요약 제공자</strong><p>요약 제공자를 설정하지 않아도 기록은 할 수 있습니다. 요약 생성에는 제공자 설정과 전송 동의가 필요합니다.</p></div>
+          <div class="fact"><strong>MCP 연결</strong><p>Claude Code, Codex, Cursor, Aside 등에서 검색하려면 각 클라이언트에 Side의 로컬 MCP 서버를 등록해야 합니다.</p></div>
+        </div><pre class="code-block"><code>claude mcp add --scope user side -- "/Applications/Side.app/Contents/Resources/side" mcp</code></pre><p class="detail">Side가 실행 중일 때 Claude Code의 사용자 범위에 등록하는 예입니다. 다른 에이전트의 등록 방법은 <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.md">연결 안내 ↗</a>를 참고하세요.</p></div>
       </div></section>
       <section class="section" id="privacy"><div class="shell split">
-        <div><p class="kicker">프라이버시와 동의</p><h2>기록과 전송 범위를 직접 정합니다.</h2><p>Side는 원본 캡처를 클라우드에 동기화하지 않습니다. 기록 보존 기간, 제외 목록, 일시정지, 삭제를 설정할 수 있습니다.</p></div>
+        <div><p class="kicker">프라이버시와 동의</p><h2>제외할 앱·웹사이트와 외부 전송 여부를 설정하세요.</h2><p>Side는 원본 기록을 클라우드에 동기화하지 않습니다. 기록 보존 기간과 제외 목록을 설정하고, 기록을 일시정지하거나 삭제할 수 있습니다.</p></div>
         <div><div class="facts">
-          <div class="fact"><strong>macOS 권한</strong><p>Accessibility와 Input Monitoring을 안내합니다. Screen Recording은 OCR용 선택 권한이며, 지원 브라우저 URL에는 Automation 권한이 쓰입니다.</p></div>
-          <div class="fact"><strong>저장 방식</strong><p>원본의 민감 컬럼은 마스킹 후 암호화하지만 모든 비밀을 탐지하지는 못합니다. 요약과 날짜별 페이지는 로컬에 평문으로 남습니다.</p></div>
-          <div class="fact"><strong>외부 전송</strong><p>“Send evidence to this provider”는 기본적으로 꺼져 있습니다. 켜면 마스킹한 활동 브리핑이 선택한 제공자로 전송됩니다.</p></div>
-          <div class="fact"><strong>에이전트 결과</strong><p>연결한 에이전트가 MCP 검색 결과를 자신의 모델에 전달할 수 있습니다. 사용 전 해당 서비스의 데이터 정책을 확인하세요.</p></div>
+          <div class="fact"><strong>macOS 권한</strong><p>Accessibility와 Input Monitoring 권한을 안내합니다. Screen Recording은 OCR을 위한 선택 권한이며, 지원하는 브라우저의 URL을 읽을 때는 Automation 권한을 사용합니다.</p></div>
+          <div class="fact"><strong>저장 방식</strong><p>원본 기록의 민감 정보가 담긴 컬럼은 마스킹 후 암호화하지만, 모든 비밀 정보를 찾아내지는 못합니다. 요약과 날짜별 페이지는 기기에 평문으로 저장됩니다.</p></div>
+          <div class="fact"><strong>외부 전송</strong><p>“Send evidence to this provider” 설정은 기본적으로 꺼져 있습니다. 켜면 마스킹한 활동 브리핑을 선택한 제공자에게 전송합니다.</p></div>
+          <div class="fact"><strong>에이전트 결과</strong><p>연결한 에이전트가 MCP 검색 결과를 자체 모델에 전달할 수 있습니다. 연결하기 전에 해당 서비스의 데이터 정책을 확인하세요.</p></div>
         </div></div>
       </div></section>
-      <section class="section"><div class="shell status"><p class="kicker">현재 상태</p><h2>공개 소스, 진행 중인 검증</h2><p>Side는 개발 중입니다. 현재 배포 방식은 각 사용자 Mac에서 소스를 빌드하는 방식이며, 사전 빌드 앱의 Developer ID 서명·공증과 장시간 실기기 검증은 완료되지 않았습니다. Grok Build 로그인으로 Side 요약을 만드는 경로는 검증되지 않았으며 요약 제공자로 연결되어 있지 않습니다. 기능별 근거와 남은 게이트는 저장소의 <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/tree/main/docs/qa">QA 보고서</a>에서 확인할 수 있습니다.</p></div></section>
+      <section class="section"><div class="shell status"><p class="kicker">현재 상태</p><h2>현재는 소스에서 직접 빌드해야 합니다.</h2><p>Side는 개발 중이며, 각자의 Mac에서 소스를 빌드해 사용해야 합니다. 사전 빌드 앱의 Developer ID 서명·공증과 장시간 실기기 검증은 완료되지 않았습니다. Grok Build 로그인으로 Side 요약을 만드는 경로는 검증되지 않았으며, 요약 제공자로 연결되어 있지 않습니다. 기능별 근거와 남은 검증 항목은 저장소의 <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/tree/main/docs/qa">QA 보고서</a>에서 확인할 수 있습니다.</p></div></section>
     </div>
 
     <div data-locale="en" hidden>
@@ -189,8 +208,8 @@ open "$HOME/Applications/Side.app"</code></pre><p class="detail">앱을 종료�
         <div>
           <p class="eyebrow">Open source macOS menu bar app</p>
           <h1>Find the context<br>behind your day.</h1>
-          <p class="lead">Side records browser and Mac app activity on your device, then helps you find daily summaries and their sources. Connected agents can search that history too.</p>
-          <div class="actions"><a class="button primary" href="#start-en">Build on your Mac</a><a class="button" href="https://github.com/Chris-Chai-Minjae/side-context-awareness">View source ↗</a></div>
+          <p class="lead">Side stores readable content from active browser and Mac app windows on your device. Search it with its sources, or create daily summaries after configuring a provider and consenting to send activity briefings. Connected agents can search that history too.</p>
+          <div class="actions"><a class="button primary" href="#start-en">Build on your Mac</a><a class="button" href="side-for-beginners.html">Complete beginner guide (Korean) ↗</a><a class="button" href="https://github.com/Chris-Chai-Minjae/side-context-awareness">View source ↗</a></div>
           <p class="hero-note">In development · macOS 14+ · source build only</p>
         </div>
         <figure class="preview" aria-label="Illustrative Side history view">
@@ -206,6 +225,13 @@ open "$HOME/Applications/Side.app"</code></pre><p class="detail">앱을 종료�
       </div>
       <section class="section" id="how-en"><div class="shell">
         <div class="section-head"><p class="kicker">How it works</p><h2>Capture, summarize, trace the source.</h2><p>Side gathers readable context from the active window and organizes your day through a summary provider you authorize.</p></div>
+        <figure class="flow">
+          <div class="flow-image"><img src="assets/side-flow.png" width="2103" height="748" loading="lazy" decoding="async" alt="Four linked stages: Side reads active Mac windows, stores activity locally, makes it searchable by date, and connects it to agents"></div>
+          <figcaption>
+            <ol class="flow-stages"><li><span>01</span>Read active windows</li><li><span>02</span>Store on your Mac</li><li><span>03</span>Search records and summaries</li><li><span>04</span>Find with Aside agents</li></ol>
+            <p class="flow-note">While Side.app is running, register Side as an MCP server in Aside so Aside agents can search activity recorded by Side. <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.md">See connection steps ↗</a></p>
+          </figcaption>
+        </figure>
         <div class="steps">
           <div class="step"><span class="number">01 / CAPTURE</span><h3>Observe on your Mac</h3><p>With your permission, Side reads text from active apps and browsers. Exclude apps or websites, or pause capture at any time.</p></div>
           <div class="step"><span class="number">02 / REMEMBER</span><h3>Organize by time and topic</h3><p>Search local records and configure a summary provider for daily memories. Summaries require provider setup and consent to send evidence.</p></div>
@@ -218,16 +244,15 @@ open "$HOME/Applications/Side.app"</code></pre><p class="detail">앱을 종료�
 cd side-context-awareness
 bun install --frozen-lockfile
 bun run build
-mkdir -p "$HOME/Applications"
-ditto apps/side-mac/.build/release/Side.app "$HOME/Applications/Side.app"
-open "$HOME/Applications/Side.app"</code></pre><p class="detail">Quit Side before copying a new build. Local builds use ad hoc signing, so macOS permissions may need to be granted again after replacement. See the <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness#설치와-시작">README</a> for details.</p></div>
+ditto apps/side-mac/.build/release/Side.app /Applications/Side.app
+open /Applications/Side.app</code></pre><p class="detail">Quit Side before copying a new build. Local builds use ad hoc signing, so macOS permissions may need to be granted again after replacement. See the <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness#설치와-시작">README</a> for details.</p></div>
       </div></section>
       <section class="section"><div class="shell split">
         <div><p class="kicker">Models and agents</p><h2>Your connections, your choice.</h2><p>Each user enters their own MiMo, MiniMax, or OpenAI API key in Side settings; the keys are stored in their macOS Keychain. An existing Claude Code login is an optional summary provider.</p></div>
         <div><div class="facts">
           <div class="fact"><strong>Summary provider</strong><p>Provider setup is optional. Capture can run without one, but summaries will wait.</p></div>
           <div class="fact"><strong>MCP connection</strong><p>Register Side's local MCP server separately in Claude Code, Codex, Cursor, Aside, or another client.</p></div>
-        </div><pre class="code-block"><code>claude mcp add --scope user side -- "$HOME/Applications/Side.app/Contents/Resources/side" mcp</code></pre><p class="detail">Example: register Side in Claude Code at user scope while Side is running. See <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.md">agent connection instructions ↗</a> for other clients.</p></div>
+        </div><pre class="code-block"><code>claude mcp add --scope user side -- "/Applications/Side.app/Contents/Resources/side" mcp</code></pre><p class="detail">Example: register Side in Claude Code at user scope while Side is running. See <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.md">agent connection instructions ↗</a> for other clients.</p></div>
       </div></section>
       <section class="section" id="privacy-en"><div class="shell split">
         <div><p class="kicker">Privacy and consent</p><h2>Choose what stays and what leaves.</h2><p>Side does not sync raw captures to the cloud. Set retention, exclusions, pause capture, or delete Side history.</p></div>
@@ -242,15 +267,15 @@ open "$HOME/Applications/Side.app"</code></pre><p class="detail">Quit Side befor
     </div>
   </main>
   <footer class="shell footer">
-    <span>Side · MIT License · <span id="footer-copy">소스에서 직접 빌드하는 macOS 앱</span></span>
-    <span><a href="https://github.com/Chris-Chai-Minjae/side-context-awareness">GitHub</a><a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/LICENSE">MIT</a><a href="side-for-beginners.html" id="guide-link">초보자 안내</a></span>
+    <span>Side · MIT License · <span id="footer-copy">소스에서 빌드해 사용하는 macOS 앱</span></span>
+    <span><a href="https://github.com/Chris-Chai-Minjae/side-context-awareness">GitHub</a><a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/LICENSE">MIT</a><a href="side-for-beginners.html" id="guide-link">처음 사용하기</a></span>
   </footer>
   <script>
     (() => {
       const sections = document.querySelectorAll('[data-locale]');
       const buttons = document.querySelectorAll('[data-switch]');
       const nav = document.querySelectorAll('[data-ko][data-en]');
-      const names = { ko: { title: 'Side — 기억을 다시 찾는 Mac 앱', description: 'Side는 Mac에서 활동을 로컬에 기록하고 출처와 함께 다시 찾는 오픈 소스 메뉴바 앱입니다.', footer: '소스에서 직접 빌드하는 macOS 앱', guide: '초보자 안내' }, en: { title: 'Side — Find the context behind your day', description: 'Side is an open source macOS menu bar app for local activity history, summaries, and source-aware recall.', footer: 'Build from source on macOS', guide: 'Beginner guide (KO)' } };
+      const names = { ko: { title: 'Side — Mac 활동 기록과 검색', description: 'Side는 Mac의 활성 창에서 읽을 수 있는 내용을 기기에 기록하고, 기록과 출처를 검색할 수 있는 오픈 소스 메뉴바 앱입니다.', footer: '소스에서 빌드해 사용하는 macOS 앱', guide: '처음 사용하기' }, en: { title: 'Side — Find the context behind your day', description: 'Side is an open source macOS menu bar app for local activity history, summaries, and source-aware recall.', footer: 'Build from source on macOS', guide: 'Beginner guide (KO)' } };
       function setLanguage(language) {
         if (!names[language]) return;
         document.documentElement.lang = language;
