@@ -93,7 +93,21 @@ final class LiveCommandRouterServices: CommandRouterServices {
     }
 
     func permissionStatus() -> PermissionStatus { permissions.preflight() }
-    func requestPermissions(_ kinds: Set<PermissionKind>) -> PermissionStatus { permissions.request(kinds) }
+    func requestPermissions(_ kinds: Set<PermissionKind>) -> PermissionStatus {
+        let status = permissions.request(kinds)
+        let step: OnboardingStep?
+        if kinds.contains(.accessibility) && !status.accessibility {
+            step = .accessibility
+        } else if kinds.contains(.inputMonitoring) && !status.inputMonitoring {
+            step = .inputMonitoring
+        } else if kinds.contains(.screenRecording) && !status.screenRecording {
+            step = .screenRecording
+        } else {
+            step = nil
+        }
+        if let url = step?.settingsURL { NSWorkspace.shared.open(url) }
+        return status
+    }
 
     func applications() -> [RouterApplication] {
         let roots = [

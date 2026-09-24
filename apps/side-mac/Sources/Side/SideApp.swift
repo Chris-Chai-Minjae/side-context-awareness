@@ -3,6 +3,13 @@ import SwiftUI
 
 @main
 struct SideApp: App {
+    private static let menuBarMark: NSImage? = {
+        guard let path = Bundle.main.path(forResource: "MenuBarTemplate@2x", ofType: "png"),
+              let image = NSImage(contentsOfFile: path) else { return nil }
+        image.isTemplate = true
+        return image
+    }()
+
     @NSApplicationDelegateAdaptor(SideApplicationDelegate.self) private var appDelegate
     @StateObject private var runtime = SideRuntime.shared
     @StateObject private var menuState = MenuBarState.shared
@@ -15,10 +22,11 @@ struct SideApp: App {
             }
         } label: {
             HStack(spacing: 2) {
-                Image("MenuBarTemplate")
-                    .renderingMode(.template)
-                    .resizable()
-                    .frame(width: 18, height: 18)
+                if let mark = Self.menuBarMark {
+                    Image(nsImage: mark)
+                        .resizable()
+                        .frame(width: 18, height: 18)
+                }
                 Image(systemName: menuState.display.systemImage)
                     .font(.system(size: 11, weight: .semibold))
             }
