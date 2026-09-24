@@ -14,6 +14,8 @@ import {
   McpUsageSchema,
   PauseResultSchema,
   PermissionsSchema,
+  ProviderKeyAuthorizationSchema,
+  ProviderKeyStatusSchema,
   ProviderModelListSchema,
   ProviderTestResultSchema,
   SettingsResourceSchema,
@@ -129,6 +131,10 @@ export const RpcMethods = {
     output: z.array(HistorySummarySchema),
   },
   historyStatus: { input: EmptyInput, output: HistoryStatusSchema },
+  "summaries.retryFailedToday": {
+    input: EmptyInput,
+    output: z.strictObject({ requeued: z.number().int().nonnegative() }),
+  },
   listApplications: { input: EmptyInput, output: z.array(ApplicationSchema) },
   appIcons: {
     input: z.strictObject({ bundleIds: z.array(z.string()) }),
@@ -152,6 +158,14 @@ export const RpcMethods = {
   "providers.setKey": {
     input: z.strictObject({ providerId: z.string(), apiKey: z.string() }),
     output: z.strictObject({ apiKeyRef: z.string() }),
+  },
+  "providers.keyStatus": {
+    input: z.strictObject({ providerId: z.string() }),
+    output: ProviderKeyStatusSchema,
+  },
+  "providers.authorizeKey": {
+    input: z.strictObject({ providerId: z.string() }),
+    output: ProviderKeyAuthorizationSchema,
   },
   "providers.listModels": {
     input: z.strictObject({ providerId: z.string() }),

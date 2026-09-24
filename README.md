@@ -45,7 +45,7 @@ open /Applications/Side.app
 
 Side는 Dock 대신 메뉴바에 표시됩니다. 첫 실행 온보딩에서 캡처 권한을 부여하고 상황 인식을 켭니다. 요약 provider 설정은 건너뛸 수 있으며, 이 경우 캡처는 가능하지만 요약은 대기합니다. 메뉴바의 설정에서 보존 기간, 제외 앱·웹사이트, 요약 모델과 에이전트 연결을 관리합니다. 화면 언어는 설정에서 한국어 또는 English로 선택할 수 있습니다.
 
-로컬 빌드는 임시 서명(ad hoc signing)을 사용합니다. 다시 빌드해 앱을 교체하면 macOS가 기존 Accessibility·Input Monitoring·Screen Recording 권한을 새 빌드에 적용하지 않을 수 있습니다. 그때는 시스템 설정 → 개인정보 보호 및 보안의 해당 권한 목록에서 이전 `Side` 항목을 제거하고 `/Applications/Side.app`을 다시 추가합니다. 사전 빌드 앱을 제3자에게 배포할 때 필요한 Developer ID·공증은 별도 게이트로 남아 있습니다. 현재 상태는 [`docs/qa/`](docs/qa/) 보고서와 [`docs/planning/06-tasks.md`](docs/planning/06-tasks.md)의 체크박스에서 확인할 수 있습니다.
+로컬 빌드는 임시 서명(ad hoc signing)을 사용합니다. 다시 빌드해 앱을 교체하면 macOS가 기존 Accessibility·Input Monitoring·Screen Recording 권한을 새 빌드에 적용하지 않을 수 있고, 저장된 암호화 키의 Keychain 접근도 다시 물을 수 있습니다. 그때는 Keychain 창에서 새 Side를 허용하고, 시스템 설정 → 개인정보 보호 및 보안의 해당 권한 목록에서 이전 `Side` 항목을 제거한 뒤 `/Applications/Side.app`을 다시 추가합니다. 사전 빌드 앱을 제3자에게 배포할 때 필요한 Developer ID·공증은 별도 게이트로 남아 있습니다. 현재 상태는 [`docs/qa/`](docs/qa/) 보고서와 [`docs/planning/06-tasks.md`](docs/planning/06-tasks.md)의 체크박스에서 확인할 수 있습니다.
 
 ## macOS 권한
 
@@ -56,11 +56,15 @@ Side는 Dock 대신 메뉴바에 표시됩니다. 첫 실행 온보딩에서 캡
 | Screen Recording | 읽을 수 있는 접근성 텍스트가 없을 때 화면 글자를 온디바이스 OCR로 읽기. 이미지는 저장하지 않음 |
 | Automation | 지원 브라우저의 현재 탭 URL 읽기 |
 
-Screen Recording은 선택 사항입니다. macOS의 권한 창에서 Side를 승인해야 해당 관찰 기능이 작동합니다. 권한 상태와 진단은 메뉴바 **Settings…** 및 아래 명령으로 확인합니다.
+Screen Recording은 선택 사항입니다. macOS의 권한 창에서 Side를 승인해야 해당 관찰 기능이 작동합니다. 메뉴바 **Settings… → Permissions**에서 각 권한의 현재 상태를 따로 확인하고, 권한 요청 또는 해당 macOS 시스템 설정 항목 열기를 선택할 수 있습니다. 같은 화면에서 요약 제공자의 Keychain 키 참조를 확인하고, 접근 확인이 필요하면 **Keychain 권한 허용**을 누릅니다. 접근 상태는 명시적 승인 전까지 미확인으로 표시됩니다. CLI 진단은 아래 명령으로 실행합니다.
 
 ```sh
 "/Applications/Side.app/Contents/Resources/side" doctor
 ```
+
+오늘의 요약이 비어 있다면 먼저 10분 창이 끝났는지 확인하세요. 기록 화면에 실패한 요약 작업이 표시되면 모델 연결과 Keychain 접근을 확인한 뒤 **실패한 요약 다시 시도**를 누를 수 있습니다. 완료를 기다린 뒤 **요약 새로고침**을 누르면 새 결과가 표시됩니다. 재시도 버튼을 누르기 전에는 실패 작업을 다시 모델에 보내지 않습니다.
+
+요약은 활동이 있는 10분 구간과 6시간 롤업에 모델을 사용합니다. 사용량은 활동량·입력 길이·재시도에 따라 크게 달라지며, 하루 종일 사용하면 수백만 입력 토큰에 이를 수 있습니다. 현재 일일 토큰 한도 기능은 없으므로 제공자 사용량을 확인하고, 비용을 제한하려면 캡처를 일시정지하거나 **이 제공자에게 증거 전송**을 끄세요. 전송을 끄면 새 요약은 만들어지지 않습니다.
 
 ## 데이터와 프라이버시
 

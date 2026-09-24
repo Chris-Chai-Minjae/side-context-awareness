@@ -8,8 +8,11 @@ import { createSettingsHandlers, createSettingsMutation } from "../../src/api/re
 import { handleRpcBody } from "../../src/api/rpc"
 import { callSummaryCompletion } from "../../src/comprehension/providers"
 import { loadSettings, saveSettings } from "../../src/config/index"
+import { HELPER_COMMAND_TIMEOUT_MS } from "../../src/constants"
 import { type Settings, SettingsSchema } from "../../src/contracts/settings"
 import type { HelperCommandRequest } from "../../src/helper/client"
+import { HelperCommandTimeoutError } from "../../src/helper/client"
+import { harness } from "../helper/fixture"
 
 function rpc(method: string, params: unknown): string {
   return JSON.stringify({ jsonrpc: "2.0", id: 1, method, params })
@@ -24,6 +27,8 @@ async function fixture(
   supportsToolChoice = true,
   beforeGet?: () => Promise<void>,
   initialRef?: string,
+  beforeStatus?: () => Promise<void>,
+  beforeAuthorize?: () => Promise<void>,
 ) {
   const directory = mkdtempSync(join(tmpdir(), "side-api-providers-"))
   let current = SettingsSchema.parse({
@@ -42,6 +47,8 @@ async function fixture(
   })
   await saveSettings(directory, current)
   const keys = new Map<string, string>()
+  const inaccessible = new Set<string>()
+  const denied = new Set<string>()
   const commands: HelperCommandRequest[] = []
   const applied: Settings[] = []
   const reconciler = {
@@ -69,12 +76,35 @@ async function fixture(
           await beforeGet?.()
           return keys.get(command.args.ref)
         }
+        if (command.name === "keychain.status") {
+          await beforeStatus?.()
+          return {
+            stored: keys.has(command.args.ref),
+            accessible: keys.has(command.args.ref) && !inaccessible.has(command.args.ref),
+          }
+        }
+        if (command.name === "keychain.authorize") {
+          await beforeAuthorize?.()
+          if (denied.has(command.args.ref)) return { authorized: false }
+          inaccessible.delete(command.args.ref)
+          return { authorized: keys.has(command.args.ref) }
+        }
         throw new TypeError("Unexpected helper command")
       },
     },
   })
   const settings = createSettingsHandlers({ directory, reconciler, mutateSettings })
-  return { directory, handlers, settings, keys, commands, applied, current: () => current }
+  return {
+    directory,
+    handlers,
+    settings,
+    keys,
+    inaccessible,
+    denied,
+    commands,
+    applied,
+    current: () => current,
+  }
 }
 
 function startServer(handler: (request: Request) => Response | Promise<Response>) {
@@ -116,6 +146,321 @@ function gate() {
   })
   return { wait, release: () => release() }
 }
+
+test("provider key status and explicit authorization disclose no key and make no model call", async () => {
+  const fixtureValue = await fixture("http://127.0.0.1:1/v1")
+  const secret = `synthetic-${randomUUID()}`
+  try {
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: false, accessible: false } })
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: secret }),
+      fixtureValue.handlers,
+    )
+    const provider = fixtureValue.current().providers[0]
+    const ref = apiKeyRefOf(provider)
+    if (!ref) throw new TypeError("Missing synthetic key ref")
+    fixtureValue.inaccessible.add(ref)
+    const status = await handleRpcBody(
+      rpc("providers.keyStatus", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    expect(status).toMatchObject({ result: { stored: null, accessible: null } })
+    const authorization = await handleRpcBody(
+      rpc("providers.authorizeKey", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    expect(authorization).toMatchObject({ result: { authorized: true } })
+    const afterAuthorization = await handleRpcBody(
+      rpc("providers.keyStatus", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    expect(afterAuthorization).toMatchObject({ result: { stored: true, accessible: true } })
+    expect(JSON.stringify([status, authorization, afterAuthorization])).not.toContain(secret)
+    expect(fixtureValue.commands.map((command) => command.name)).toEqual([
+      "keychain.set",
+      "keychain.authorize",
+    ])
+  } finally {
+    rmSync(fixtureValue.directory, { recursive: true, force: true })
+  }
+})
+
+test("failed Keychain read invalidates prior authorization until explicitly authorized again", async () => {
+  let failGet = false
+  const fixtureValue = await fixture("http://127.0.0.1:1/v1", true, async () => {
+    if (failGet) throw new HelperCommandTimeoutError("synthetic-command")
+  })
+  try {
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: "synthetic-secret" }),
+      fixtureValue.handlers,
+    )
+    expect(
+      await handleRpcBody(
+        rpc("providers.authorizeKey", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { authorized: true } })
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: true, accessible: true } })
+    failGet = true
+    const modelList = await handleRpcBody(
+      rpc("providers.listModels", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    expect(modelList).toMatchObject({
+      result: { status: "unavailable", reason: "key-unavailable" },
+    })
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: null, accessible: null } })
+    expect(JSON.stringify(modelList)).not.toContain("synthetic-secret")
+    failGet = false
+    expect(
+      await handleRpcBody(
+        rpc("providers.authorizeKey", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { authorized: true } })
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: true, accessible: true } })
+    const ref = apiKeyRefOf(fixtureValue.current().providers[0])
+    if (!ref) throw new TypeError("Missing synthetic key ref")
+    fixtureValue.keys.delete(ref)
+    expect(
+      await handleRpcBody(
+        rpc("providers.listModels", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { status: "unavailable", reason: "key-unavailable" } })
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: null, accessible: null } })
+  } finally {
+    rmSync(fixtureValue.directory, { recursive: true, force: true })
+  }
+})
+
+test("Given an authorized key, when provider test key read fails, then key status becomes unknown", async () => {
+  const fixtureValue = await fixture("http://127.0.0.1:1/v1", true, async () => {
+    throw new HelperCommandTimeoutError("synthetic-command")
+  })
+  try {
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: "synthetic-secret" }),
+      fixtureValue.handlers,
+    )
+    await handleRpcBody(
+      rpc("providers.authorizeKey", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: true, accessible: true } })
+
+    const response = await handleRpcBody(
+      rpc("providers.test", { providerId: "synthetic", modelId: "probe-model" }),
+      fixtureValue.handlers,
+    )
+
+    expect(response).toMatchObject({ result: { ok: false } })
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: null, accessible: null } })
+  } finally {
+    rmSync(fixtureValue.directory, { recursive: true, force: true })
+  }
+})
+
+test("Given an authorized key, when provider test key read is empty, then key status becomes unknown", async () => {
+  const fixtureValue = await fixture("http://127.0.0.1:1/v1")
+  try {
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: "synthetic-secret" }),
+      fixtureValue.handlers,
+    )
+    await handleRpcBody(
+      rpc("providers.authorizeKey", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    const ref = apiKeyRefOf(fixtureValue.current().providers[0])
+    if (!ref) throw new TypeError("Missing synthetic key ref")
+    fixtureValue.keys.delete(ref)
+
+    const response = await handleRpcBody(
+      rpc("providers.test", { providerId: "synthetic", modelId: "probe-model" }),
+      fixtureValue.handlers,
+    )
+
+    expect(response).toMatchObject({ result: { ok: false } })
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: null, accessible: null } })
+  } finally {
+    rmSync(fixtureValue.directory, { recursive: true, force: true })
+  }
+})
+
+test("key status rejects stale provider settings without exposing a previous key", async () => {
+  const fixtureValue = await fixture("http://127.0.0.1:1/v1")
+  try {
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: "synthetic-secret" }),
+      fixtureValue.handlers,
+    )
+    await handleRpcBody(
+      rpc("providers.authorizeKey", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: true, accessible: true } })
+    await handleRpcBody(
+      rpc("settings.patch", {
+        providers: [{ id: "synthetic", baseUrl: "http://127.0.0.1:2/v1", models: ["probe-model"] }],
+      }),
+      fixtureValue.settings,
+    )
+    const afterPatch = await handleRpcBody(
+      rpc("providers.keyStatus", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    expect(afterPatch).toMatchObject({ result: { stored: false, accessible: false } })
+    expect(fixtureValue.commands.map((command) => command.name)).toEqual([
+      "keychain.set",
+      "keychain.authorize",
+    ])
+  } finally {
+    rmSync(fixtureValue.directory, { recursive: true, force: true })
+  }
+})
+
+test("key status returns unknown promptly without touching a blocked Keychain helper", async () => {
+  const fixtureValue = await fixture(
+    "http://127.0.0.1:1/v1",
+    true,
+    undefined,
+    undefined,
+    async () => {
+      throw new HelperCommandTimeoutError("synthetic-command")
+    },
+  )
+  const secret = `synthetic-${randomUUID()}`
+  try {
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: secret }),
+      fixtureValue.handlers,
+    )
+    const response = await handleRpcBody(
+      rpc("providers.keyStatus", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    expect(response).toMatchObject({ result: { stored: null, accessible: null } })
+    expect(JSON.stringify(response)).not.toContain(secret)
+    expect(fixtureValue.commands.map((command) => command.name)).toEqual(["keychain.set"])
+  } finally {
+    rmSync(fixtureValue.directory, { recursive: true, force: true })
+  }
+})
+
+test("denied authorization leaves key access unknown without a status query", async () => {
+  const fixtureValue = await fixture("http://127.0.0.1:1/v1")
+  try {
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: "synthetic-secret" }),
+      fixtureValue.handlers,
+    )
+    const ref = apiKeyRefOf(fixtureValue.current().providers[0])
+    if (!ref) throw new TypeError("Missing synthetic key ref")
+    fixtureValue.denied.add(ref)
+    expect(
+      await handleRpcBody(
+        rpc("providers.authorizeKey", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { authorized: false } })
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: null, accessible: null } })
+    expect(fixtureValue.commands.map((command) => command.name)).toEqual([
+      "keychain.set",
+      "keychain.authorize",
+    ])
+  } finally {
+    rmSync(fixtureValue.directory, { recursive: true, force: true })
+  }
+})
+
+test("unknown provider identity cannot inspect or authorize a Keychain account", async () => {
+  const fixtureValue = await fixture("http://127.0.0.1:1/v1")
+  try {
+    for (const method of ["providers.keyStatus", "providers.authorizeKey"]) {
+      expect(
+        await handleRpcBody(rpc(method, { providerId: "missing" }), fixtureValue.handlers),
+      ).toMatchObject({ error: { code: -32603, message: "Internal error" } })
+    }
+    expect(fixtureValue.commands).toEqual([])
+  } finally {
+    rmSync(fixtureValue.directory, { recursive: true, force: true })
+  }
+})
+
+test("explicit Keychain authorization gets longer than a background helper command", async () => {
+  const { client, clock, input, running } = harness()
+  await client.waitForHello()
+  let timedOut = false
+  const authorization = client
+    .sendCommand({
+      type: "command",
+      name: "keychain.authorize",
+      args: { ref: "provider/synthetic" },
+    })
+    .catch((error: unknown) => {
+      timedOut = true
+      return error
+    })
+  clock.advanceBy(HELPER_COMMAND_TIMEOUT_MS)
+  await Promise.resolve()
+  expect(timedOut).toBe(false)
+  clock.advanceBy(120_000 - HELPER_COMMAND_TIMEOUT_MS)
+  expect(await authorization).toBeInstanceOf(HelperCommandTimeoutError)
+  input.end()
+  await running
+})
 
 test("Given a configured provider, when setting a key, then only its Keychain ref is saved", async () => {
   const fixtureValue = await fixture("http://127.0.0.1:1/v1")
@@ -916,6 +1261,153 @@ test("Given an in-flight provider key read and a replaced URL, the new key never
   }
 })
 
+test("a background read started during authorization cannot undo its later success", async () => {
+  const authorizationEntered = gate()
+  const authorizationRelease = gate()
+  let holdAuthorization = false
+  const fixtureValue = await fixture(
+    "http://127.0.0.1:1/v1",
+    true,
+    undefined,
+    undefined,
+    undefined,
+    async () => {
+      if (holdAuthorization) {
+        authorizationEntered.release()
+        await authorizationRelease.wait
+      }
+    },
+  )
+  try {
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: "synthetic-secret" }),
+      fixtureValue.handlers,
+    )
+    holdAuthorization = true
+    const authorization = handleRpcBody(
+      rpc("providers.authorizeKey", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    await authorizationEntered.wait
+    const staleReadFailed = fixtureValue.handlers.captureKeyReadInvalidation(fixtureValue.current())
+    const ref = apiKeyRefOf(fixtureValue.current().providers[0])
+    if (!ref) throw new TypeError("Missing synthetic key ref")
+    authorizationRelease.release()
+    expect(await authorization).toMatchObject({ result: { authorized: true } })
+    staleReadFailed(ref)
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: true, accessible: true } })
+  } finally {
+    authorizationRelease.release()
+    rmSync(fixtureValue.directory, { recursive: true, force: true })
+  }
+})
+
+test("a delayed background key failure cannot undo newer explicit authorization", async () => {
+  const fixtureValue = await fixture("http://127.0.0.1:1/v1")
+  try {
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: "old-secret" }),
+      fixtureValue.handlers,
+    )
+    await handleRpcBody(
+      rpc("providers.authorizeKey", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    const ref = apiKeyRefOf(fixtureValue.current().providers[0])
+    if (!ref) throw new TypeError("Missing synthetic key ref")
+    const oldReadFailed = fixtureValue.handlers.captureKeyReadInvalidation(fixtureValue.current())
+
+    await handleRpcBody(
+      rpc("providers.authorizeKey", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    oldReadFailed(ref)
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: true, accessible: true } })
+
+    const replacedReadFailed = fixtureValue.handlers.captureKeyReadInvalidation(
+      fixtureValue.current(),
+    )
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: "new-secret" }),
+      fixtureValue.handlers,
+    )
+    await handleRpcBody(
+      rpc("providers.authorizeKey", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    replacedReadFailed(ref)
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: true, accessible: true } })
+  } finally {
+    rmSync(fixtureValue.directory, { recursive: true, force: true })
+  }
+})
+
+test("Given a newer authorized provider, when an old provider test key read fails, then new key status stays accessible", async () => {
+  const keyEntered = gate()
+  const keyRelease = gate()
+  const fixtureValue = await fixture("http://127.0.0.1:1/v1", true, async () => {
+    keyEntered.release()
+    await keyRelease.wait
+    throw new HelperCommandTimeoutError("synthetic-command")
+  })
+  try {
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: "old-secret" }),
+      fixtureValue.handlers,
+    )
+    await handleRpcBody(
+      rpc("providers.authorizeKey", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    const oldTest = handleRpcBody(
+      rpc("providers.test", { providerId: "synthetic", modelId: "probe-model" }),
+      fixtureValue.handlers,
+    )
+    await keyEntered.wait
+    await handleRpcBody(
+      rpc("settings.patch", {
+        providers: [{ id: "synthetic", baseUrl: "http://127.0.0.1:2/v1", models: ["probe-model"] }],
+      }),
+      fixtureValue.settings,
+    )
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: "new-secret" }),
+      fixtureValue.handlers,
+    )
+    await handleRpcBody(
+      rpc("providers.authorizeKey", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+
+    keyRelease.release()
+    expect(await oldTest).toMatchObject({ result: { ok: false } })
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: true, accessible: true } })
+  } finally {
+    keyRelease.release()
+    rmSync(fixtureValue.directory, { recursive: true, force: true })
+  }
+})
+
 test("Given a model removed during the provider key read, no completion is sent", async () => {
   const keyEntered = gate()
   const keyRelease = gate()
@@ -996,6 +1488,55 @@ test("Given an in-flight model-list key read and a replaced URL, the new key nev
     keyRelease.release()
     oldServer.stop()
     newServer.stop()
+    rmSync(fixtureValue.directory, { recursive: true, force: true })
+  }
+})
+
+test("Given a newer authorized provider, when an old model-list key read fails, then new key status stays accessible", async () => {
+  const keyEntered = gate()
+  const keyRelease = gate()
+  const fixtureValue = await fixture("http://127.0.0.1:1/v1", true, async () => {
+    keyEntered.release()
+    await keyRelease.wait
+    throw new HelperCommandTimeoutError("synthetic-command")
+  })
+  try {
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: "old-secret" }),
+      fixtureValue.handlers,
+    )
+    const oldList = handleRpcBody(
+      rpc("providers.listModels", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+    await keyEntered.wait
+    await handleRpcBody(
+      rpc("settings.patch", {
+        providers: [{ id: "synthetic", baseUrl: "http://127.0.0.1:2/v1", models: ["probe-model"] }],
+      }),
+      fixtureValue.settings,
+    )
+    await handleRpcBody(
+      rpc("providers.setKey", { providerId: "synthetic", apiKey: "new-secret" }),
+      fixtureValue.handlers,
+    )
+    await handleRpcBody(
+      rpc("providers.authorizeKey", { providerId: "synthetic" }),
+      fixtureValue.handlers,
+    )
+
+    keyRelease.release()
+    expect(await oldList).toMatchObject({
+      result: { status: "unavailable", reason: "key-unavailable" },
+    })
+    expect(
+      await handleRpcBody(
+        rpc("providers.keyStatus", { providerId: "synthetic" }),
+        fixtureValue.handlers,
+      ),
+    ).toMatchObject({ result: { stored: true, accessible: true } })
+  } finally {
+    keyRelease.release()
     rmSync(fixtureValue.directory, { recursive: true, force: true })
   }
 })

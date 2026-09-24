@@ -93,6 +93,15 @@ export async function runFakeHelper(scenarioPath?: string): Promise<void> {
       case "keychain.get":
         data = keychain.get(message.args.ref) ?? null
         break
+      case "keychain.status":
+        data = {
+          stored: keychain.has(message.args.ref),
+          accessible: keychain.has(message.args.ref),
+        }
+        break
+      case "keychain.authorize":
+        data = { authorized: keychain.has(message.args.ref) }
+        break
       case "keychain.rotate":
         data = { key: Buffer.alloc(32, 9).toString("base64") }
         break

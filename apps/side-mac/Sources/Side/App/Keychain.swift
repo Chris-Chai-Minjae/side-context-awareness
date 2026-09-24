@@ -1,11 +1,14 @@
 import Foundation
+import LocalAuthentication
 import Security
 
-protocol SideKeyStore {
+protocol SideKeyStore: Sendable {
     func masterKey() throws -> Data
     func rotateMasterKey() throws -> Data
     func setProviderKey(ref: String, secret: String) throws
     func providerKey(ref: String) throws -> String?
+    func providerKeyStatus(ref: String) throws -> (stored: Bool, accessible: Bool)
+    func authorizeProviderKey(ref: String) throws -> Bool
 }
 
 enum SideKeychainError: Error {
@@ -75,23 +78,65 @@ struct SideKeychain: SideKeyStore {
 
     func providerKey(ref: String) throws -> String? {
         guard !ref.isEmpty else { throw SideKeychainError.invalidProviderKey }
-        guard let data = try read(service: Self.providerService, account: ref) else { return nil }
+        guard let data = try read(service: Self.providerService, account: ref, nonInteractive: true) else { return nil }
         guard let secret = String(data: data, encoding: .utf8) else {
             throw SideKeychainError.invalidProviderKey
         }
         return secret
     }
 
-    private func read(service: String, account: String) throws -> Data? {
-        var query = itemQuery(service: service, account: account)
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
+    func providerKeyStatus(ref: String) throws -> (stored: Bool, accessible: Bool) {
+        guard !ref.isEmpty else { throw SideKeychainError.invalidProviderKey }
+        let query = nonInteractiveQuery(service: Self.providerService, account: ref, returnAttributes: true)
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        if status == errSecItemNotFound { return (false, false) }
+        if status == errSecInteractionNotAllowed { return (true, false) }
+        guard status == errSecSuccess else { throw SideKeychainError.keychain(status) }
+        do {
+            return (true, try providerKey(ref: ref)?.isEmpty == false)
+        } catch SideKeychainError.keychain(let error) where error == errSecInteractionNotAllowed || error == errSecAuthFailed {
+            return (true, false)
+        }
+    }
+
+    func authorizeProviderKey(ref: String) throws -> Bool {
+        guard !ref.isEmpty else { throw SideKeychainError.invalidProviderKey }
+        do {
+            return try read(service: Self.providerService, account: ref) != nil
+        } catch SideKeychainError.keychain(let status) where status == errSecUserCanceled || status == errSecAuthFailed {
+            return false
+        }
+    }
+
+    private func read(service: String, account: String, nonInteractive: Bool = false) throws -> Data? {
+        let query: [String: Any]
+        if nonInteractive {
+            query = nonInteractiveQuery(service: service, account: account, returnAttributes: false)
+        } else {
+            var interactiveQuery = itemQuery(service: service, account: account)
+            interactiveQuery[kSecReturnData as String] = true
+            interactiveQuery[kSecMatchLimit as String] = kSecMatchLimitOne
+            query = interactiveQuery
+        }
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         if status == errSecItemNotFound { return nil }
         guard status == errSecSuccess else { throw SideKeychainError.keychain(status) }
         guard let data = item as? Data else { throw SideKeychainError.invalidProviderKey }
         return data
+    }
+
+    func nonInteractiveQuery(service: String, account: String, returnAttributes: Bool) -> [String: Any] {
+        var query = itemQuery(service: service, account: account)
+        query[(returnAttributes ? kSecReturnAttributes : kSecReturnData) as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        // The legacy file-based Keychain shim also needs this flag to avoid SecurityAgent.
+        query[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUIFail
+        let context = LAContext()
+        context.interactionNotAllowed = true
+        query[kSecUseAuthenticationContext as String] = context
+        return query
     }
 
     private func itemQuery(service: String, account: String) -> [String: Any] {

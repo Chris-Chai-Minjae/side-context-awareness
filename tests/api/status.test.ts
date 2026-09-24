@@ -22,12 +22,17 @@ const TODAY = {
   lastEventAt: 900_000,
 } as const
 
-function fixture(reportHealth = true) {
+function fixture(
+  reportHealth = true,
+  getAsideAdapterHealth?: () => "off" | "available" | "unavailable" | "error",
+  asideEnabled = false,
+) {
   const now = 1_000_000
   let settings = SettingsSchema.parse({
     version: 2,
     contextAwareness: {
       enabled: true,
+      asideAdapter: asideEnabled,
       rules: [{ scope: "url", behavior: "do_not_observe", urlDomain: "example.com" }],
     },
   })
@@ -73,6 +78,7 @@ function fixture(reportHealth = true) {
     getToday: () => TODAY,
     getStopReason: () => stopReason,
     automationUnavailable: () => automationUnavailable,
+    ...(getAsideAdapterHealth ? { getAsideAdapterHealth } : {}),
     now: () => now,
   })
   return {
@@ -92,6 +98,26 @@ function fixture(reportHealth = true) {
     },
   }
 }
+
+test("Aside adapter status comes from the daemon when enabled and reads off when disabled", async () => {
+  let adapterHealth: "off" | "available" | "unavailable" | "error" = "available"
+  const enabled = fixture(true, () => adapterHealth, true)
+  expect(await rpc(enabled.handlers, "status")).toMatchObject({
+    result: { health: { asideAdapter: "available" } },
+  })
+  adapterHealth = "unavailable"
+  expect(await rpc(enabled.handlers, "status")).toMatchObject({
+    result: { health: { asideAdapter: "unavailable" } },
+  })
+  const disabled = fixture(true, () => adapterHealth)
+  expect(await rpc(disabled.handlers, "status")).toMatchObject({
+    result: { health: { asideAdapter: "off" } },
+  })
+  const disconnected = fixture(false, () => adapterHealth, true)
+  expect(await rpc(disconnected.handlers, "status")).toMatchObject({
+    result: { health: { asideAdapter: "unavailable" } },
+  })
+})
 
 function rpc(handlers: ReturnType<typeof createStatusHandlers>, method: string, params?: unknown) {
   return handleRpcBody(

@@ -67,6 +67,45 @@ final class SupervisorTests: XCTestCase {
     }
 
     @MainActor
+    func testProviderStatusAndAuthorizationNeverReturnSecret() throws {
+        let store = FakeKeyStore()
+        store.setProviderKeyForTest(ref: "provider-1", secret: "synthetic-only")
+        store.accessible = false
+        let supervisor = DaemonSupervisor(daemonURL: URL(fileURLWithPath: "/unused/side"), keyStore: store)
+        let status = Data(#"{"type":"command","id":"s","name":"keychain.status","args":{"ref":"provider-1"}}"#.utf8)
+        let authorize = Data(#"{"type":"command","id":"a","name":"keychain.authorize","args":{"ref":"provider-1"}}"#.utf8)
+        let invalid = Data(#"{"type":"command","id":"bad","name":"keychain.authorize","args":{"ref":"provider-1","secret":"synthetic-only"}}"#.utf8)
+
+        let statusLine = try XCTUnwrap(supervisor.replyForCommand(status))
+        XCTAssertEqual(try object(from: statusLine)["data"] as? [String: Bool], ["stored": true, "accessible": false])
+        XCTAssertEqual(store.authorizationCount, 0)
+        let authorizationLine = try XCTUnwrap(supervisor.replyForCommand(authorize))
+        XCTAssertEqual(try object(from: authorizationLine)["data"] as? [String: Bool], ["authorized": true])
+        XCTAssertEqual(store.authorizationCount, 1)
+        XCTAssertEqual(try object(from: XCTUnwrap(supervisor.replyForCommand(invalid)))["error"] as? String, "invalid-arguments")
+        XCTAssertEqual(store.authorizationCount, 1)
+        XCTAssertFalse(String(decoding: statusLine + authorizationLine, as: UTF8.self).contains("synthetic-only"))
+    }
+
+    @MainActor
+    func testProviderKeyReadDoesNotBlockMainActor() async throws {
+        let store = BlockingKeyStore()
+        defer { store.release.signal() }
+        let supervisor = DaemonSupervisor(daemonURL: URL(fileURLWithPath: "/unused/side"), keyStore: store)
+        let command = Data(#"{"type":"command","id":"g","name":"keychain.get","args":{"ref":"provider-1"}}"#.utf8)
+        let read = Task { await supervisor.replyForProviderCommand(command) }
+        await Task.yield()
+        XCTAssertEqual(store.entered.wait(timeout: .now() + 2), .success)
+        let marker = expectation(description: "main actor remains responsive")
+        Task { @MainActor in marker.fulfill() }
+        await fulfillment(of: [marker], timeout: 1)
+        store.release.signal()
+        let result = await read.value
+        let reply = try XCTUnwrap(result)
+        XCTAssertEqual(try object(from: reply)["data"] as? String, "synthetic-only")
+    }
+
+    @MainActor
     func testWebSessionCommandCachesMemoryOnlyAndClearsOnStop() throws {
         let supervisor = DaemonSupervisor(daemonURL: URL(fileURLWithPath: "/unused/side"), keyStore: FakeKeyStore())
         var delivered: SettingsWebSession?
@@ -218,7 +257,77 @@ final class SupervisorTests: XCTestCase {
     }
 
     @MainActor
-    func testKeychainFailureShowsCaptureStoppedAndDoesNotSpawnDaemon() {
+    func testMasterKeyReadDoesNotRunOnMainThread() async {
+        // Given a synthetic key store that observes the thread used for the initial read.
+        let store = FakeKeyStore()
+        let readFinished = expectation(description: "master key read finished")
+        store.onMasterKeyRead = { onMainThread in
+            XCTAssertFalse(onMainThread)
+            readFinished.fulfill()
+        }
+        let supervisor = DaemonSupervisor(
+            daemonURL: URL(fileURLWithPath: "/unused/side"), keyStore: store
+        )
+
+        // When startup requests the master key.
+        supervisor.start()
+        defer { supervisor.stop() }
+
+        // Then the potentially interactive lookup runs away from the UI thread.
+        await fulfillment(of: [readFinished], timeout: 2)
+    }
+
+    @MainActor
+    func testStoppedSupervisorIgnoresPendingMasterKey() async throws {
+        // Given a Keychain read that remains pending after start returns.
+        let store = BlockingMasterKeyStore()
+        let supervisor = DaemonSupervisor(
+            daemonURL: URL(fileURLWithPath: "/unused/side"), keyStore: store
+        )
+        supervisor.start()
+        XCTAssertEqual(supervisor.state, .starting)
+        XCTAssertEqual(store.entered.wait(timeout: .now() + 2), .success)
+
+        // When the supervisor stops before the read finishes.
+        supervisor.stop()
+        store.release.signal()
+        XCTAssertEqual(store.firstReturned.wait(timeout: .now() + 2), .success)
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        // Then the late result cannot launch a child or change the stopped state.
+        XCTAssertEqual(supervisor.state, .stopped)
+        XCTAssertNil(supervisor.daemonPID)
+    }
+
+    @MainActor
+    func testOlderMasterKeyReadCannotReplaceNewerStart() async throws {
+        // Given a first read still pending when a second start begins.
+        let (directory, daemon) = try makeDaemonScript { _ in
+            "IFS= read -r hello\nwhile :; do sleep 1; done\n"
+        }
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = BlockingMasterKeyStore()
+        let supervisor = DaemonSupervisor(daemonURL: daemon, appVersion: "test", keyStore: store)
+        supervisor.start()
+        XCTAssertEqual(store.entered.wait(timeout: .now() + 2), .success)
+        supervisor.stop()
+
+        // When the second read launches a child and the old read then completes.
+        supervisor.start()
+        defer { supervisor.stop(); store.release.signal() }
+        try await waitForState(.running, in: supervisor)
+        let currentPID = supervisor.daemonPID
+        store.release.signal()
+        XCTAssertEqual(store.firstReturned.wait(timeout: .now() + 2), .success)
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        // Then only the newer start owns the running child.
+        XCTAssertEqual(supervisor.state, .running)
+        XCTAssertEqual(supervisor.daemonPID, currentPID)
+    }
+
+    @MainActor
+    func testKeychainFailureShowsCaptureStoppedAndDoesNotSpawnDaemon() async throws {
         // Given a Keychain read failure before daemon launch.
         let store = FakeKeyStore()
         store.failMasterKey = true
@@ -228,6 +337,7 @@ final class SupervisorTests: XCTestCase {
 
         // When the app starts its supervisor.
         supervisor.start()
+        try await waitForState(.keychainLocked, in: supervisor)
 
         // Then the stopped state is visible and no child receives a key.
         XCTAssertEqual(supervisor.state, .keychainLocked)
@@ -299,7 +409,7 @@ final class SupervisorTests: XCTestCase {
     }
 
     @MainActor
-    func testSpawnedDaemonDoesNotExposeSyntheticKeyInPsEnvironment() throws {
+    func testSpawnedDaemonDoesNotExposeSyntheticKeyInPsEnvironment() async throws {
         // Given a temporary daemon that reads hello without writing it anywhere.
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("side-supervisor-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -312,6 +422,7 @@ final class SupervisorTests: XCTestCase {
         // When the supervisor starts the daemon and ps prints its environment.
         supervisor.start()
         defer { supervisor.stop() }
+        try await waitForState(.running, in: supervisor)
         let pid = try XCTUnwrap(supervisor.daemonPID)
         let ps = Process()
         let output = Pipe()
@@ -356,6 +467,7 @@ final class SupervisorTests: XCTestCase {
         let supervisor = DaemonSupervisor(daemonURL: daemon, appVersion: "test", keyStore: FakeKeyStore())
         supervisor.start()
         defer { supervisor.stop() }
+        try await waitForState(.running, in: supervisor)
         var health = HelperHealth()
         health.state = .running
 
@@ -411,7 +523,7 @@ final class SupervisorTests: XCTestCase {
     }
 
     @MainActor
-    func testTransportWriteErrorPropagatesWithoutLeakingFrame() throws {
+    func testTransportWriteErrorPropagatesWithoutLeakingFrame() async throws {
         let (directory, daemon) = try makeDaemonScript { _ in
             "IFS= read -r hello\nIFS= read -r ignored\n"
         }
@@ -419,6 +531,7 @@ final class SupervisorTests: XCTestCase {
         let supervisor = DaemonSupervisor(daemonURL: daemon, appVersion: "test", keyStore: FakeKeyStore())
         supervisor.start()
         defer { supervisor.stop() }
+        try await waitForState(.running, in: supervisor)
         supervisor.writeData = { _, _ in throw NSError(domain: "SyntheticWrite", code: 1) }
 
         XCTAssertThrowsError(try supervisor.sendEvent(["kind": "window.changed"])) { error in
@@ -505,6 +618,15 @@ final class SupervisorTests: XCTestCase {
         return try XCTUnwrap(JSONSerialization.jsonObject(with: line.dropLast()) as? [String: Any])
     }
 
+    @MainActor
+    private func waitForState(_ expected: SupervisorState, in supervisor: DaemonSupervisor) async throws {
+        for _ in 0..<500 {
+            if supervisor.state == expected { return }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTFail("supervisor did not reach \(expected); current state: \(supervisor.state)")
+    }
+
     private func makeDaemonScript(_ body: (URL) -> String) throws -> (URL, URL) {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("side-supervisor-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -523,13 +645,17 @@ final class SupervisorTests: XCTestCase {
     }
 }
 
-private final class FakeKeyStore: SideKeyStore {
+private final class FakeKeyStore: SideKeyStore, @unchecked Sendable {
     private var providerKeys: [String: String] = [:]
     var failMasterKey = false
     var failRotation = false
     var rotations = 0
+    var accessible = true
+    var authorizationCount = 0
+    var onMasterKeyRead: (@Sendable (Bool) -> Void)?
 
     func masterKey() throws -> Data {
+        onMasterKeyRead?(Thread.isMainThread)
         if failMasterKey { throw NSError(domain: "SyntheticKeychain", code: 1) }
         return Data(repeating: 0x42, count: 32)
     }
@@ -540,4 +666,54 @@ private final class FakeKeyStore: SideKeyStore {
     }
     func setProviderKey(ref: String, secret: String) throws { providerKeys[ref] = secret }
     func providerKey(ref: String) throws -> String? { providerKeys[ref] }
+    func providerKeyStatus(ref: String) throws -> (stored: Bool, accessible: Bool) {
+        (providerKeys[ref] != nil, providerKeys[ref] != nil && accessible)
+    }
+    func authorizeProviderKey(ref: String) throws -> Bool {
+        authorizationCount += 1
+        accessible = providerKeys[ref] != nil
+        return accessible
+    }
+    func setProviderKeyForTest(ref: String, secret: String) { providerKeys[ref] = secret }
+}
+
+private final class BlockingKeyStore: SideKeyStore, @unchecked Sendable {
+    let entered = DispatchSemaphore(value: 0)
+    let release = DispatchSemaphore(value: 0)
+    func masterKey() throws -> Data { Data(repeating: 0x42, count: 32) }
+    func rotateMasterKey() throws -> Data { Data(repeating: 0x43, count: 32) }
+    func setProviderKey(ref: String, secret: String) throws {}
+    func providerKey(ref: String) throws -> String? {
+        entered.signal()
+        release.wait()
+        return "synthetic-only"
+    }
+    func providerKeyStatus(ref: String) throws -> (stored: Bool, accessible: Bool) { (true, true) }
+    func authorizeProviderKey(ref: String) throws -> Bool { true }
+}
+
+private final class BlockingMasterKeyStore: SideKeyStore, @unchecked Sendable {
+    let entered = DispatchSemaphore(value: 0)
+    let release = DispatchSemaphore(value: 0)
+    let firstReturned = DispatchSemaphore(value: 0)
+    private let lock = NSLock()
+    private var reads = 0
+
+    func masterKey() throws -> Data {
+        lock.lock()
+        reads += 1
+        let first = reads == 1
+        lock.unlock()
+        if first {
+            entered.signal()
+            release.wait()
+            firstReturned.signal()
+        }
+        return Data(repeating: first ? 0x41 : 0x42, count: 32)
+    }
+    func rotateMasterKey() throws -> Data { Data(repeating: 0x43, count: 32) }
+    func setProviderKey(ref: String, secret: String) throws {}
+    func providerKey(ref: String) throws -> String? { nil }
+    func providerKeyStatus(ref: String) throws -> (stored: Bool, accessible: Bool) { (false, false) }
+    func authorizeProviderKey(ref: String) throws -> Bool { false }
 }

@@ -142,6 +142,16 @@ export const DaemonToAppMessageSchema = z.union([
       name: z.literal("keychain.get"),
       args: z.strictObject({ ref: z.string() }),
     }),
+    z.strictObject({
+      ...CommandBase,
+      name: z.literal("keychain.status"),
+      args: z.strictObject({ ref: z.string() }),
+    }),
+    z.strictObject({
+      ...CommandBase,
+      name: z.literal("keychain.authorize"),
+      args: z.strictObject({ ref: z.string() }),
+    }),
   ]),
 ])
 

@@ -7,6 +7,11 @@ import {
 } from "../constants"
 import type { Settings } from "../contracts/settings"
 import { RecordSummaryTool } from "../contracts/summary"
+import {
+  HelperCommandFailureError,
+  HelperCommandTimeoutError,
+  HelperUnavailableError,
+} from "../helper/client"
 import type { Briefing } from "./briefing"
 import {
   ClaudeCliConsentRevokedError,
@@ -259,7 +264,18 @@ export async function callSummaryCompletion(
   return withCallSlot(async () => {
     if (options.canSendRequest && !options.canSendRequest()) throw new ProviderFallbackError()
     const { modelId, reasoningEffort } = model
-    const key = provider.apiKeyRef ? await options.getApiKey?.(provider.apiKeyRef) : undefined
+    let key: string | undefined
+    try {
+      key = provider.apiKeyRef ? await options.getApiKey?.(provider.apiKeyRef) : undefined
+    } catch (error) {
+      if (
+        error instanceof HelperCommandFailureError ||
+        error instanceof HelperCommandTimeoutError ||
+        error instanceof HelperUnavailableError
+      )
+        throw new ProviderFallbackError()
+      throw error
+    }
     if (provider.apiKeyRef && !key) throw new ProviderFallbackError()
     const body = JSON.stringify({
       model: modelId,

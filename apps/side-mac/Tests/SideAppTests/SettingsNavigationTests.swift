@@ -70,4 +70,17 @@ final class SettingsNavigationTests: XCTestCase {
         XCTAssertEqual(policy.navigationAction(for: wrongOrigin, isUserLink: true, targetBlank: false),
                        .openInDefaultBrowser)
     }
+
+    func testOnlyUserClickedPermissionPanesOpenSystemSettings() throws {
+        let panes = ["Privacy_Accessibility", "Privacy_ListenEvent", "Privacy_ScreenCapture"]
+        for pane in panes {
+            let url = try XCTUnwrap(URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)"))
+            XCTAssertEqual(policy.navigationAction(for: url, isUserLink: true, targetBlank: false), .openSystemSettings)
+            XCTAssertEqual(policy.navigationAction(for: url, isUserLink: false, targetBlank: false), .cancel)
+            XCTAssertEqual(policy.newWindowAction(for: url, isUserLink: true), .openSystemSettings)
+        }
+        let unrelated = try XCTUnwrap(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"))
+        XCTAssertEqual(policy.navigationAction(for: unrelated, isUserLink: true, targetBlank: false), .cancel)
+        XCTAssertEqual(policy.newWindowAction(for: unrelated, isUserLink: true), .cancel)
+    }
 }

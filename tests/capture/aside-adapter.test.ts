@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { AsideDomAdapter } from "../../src/capture/aside-adapter"
+import { AsideDomAdapter, resolveAsideExecutable } from "../../src/capture/aside-adapter"
 
 const asideBundleId = "at.studio.AsideBrowser"
 const axSnapshot = { source: "mac_ax", shape: "ax", content: "synthetic AX content" } as const
@@ -7,6 +7,17 @@ const validOutput =
   'Aside REPL banner\nSIDE_ASIDE_SNAPSHOT {"kind":"snapshot","content":"synthetic ARIA tree","beforeTabId":"tab-1","beforeUrl":"https://allowed.example/page?view=1","afterTabId":"tab-1","afterUrl":"https://allowed.example/page?view=1","attachedUrl":"https://allowed.example/page?view=1"}\n'
 
 describe("AsideDomAdapter", () => {
+  test("resolves Aside from absolute user or system paths with the app's restricted PATH", () => {
+    const home = "/Users/example"
+    expect(resolveAsideExecutable(home, (path) => path === `${home}/.local/bin/aside`)).toBe(
+      `${home}/.local/bin/aside`,
+    )
+    expect(resolveAsideExecutable(home, (path) => path === "/opt/homebrew/bin/aside")).toBe(
+      "/opt/homebrew/bin/aside",
+    )
+    expect(resolveAsideExecutable(home, () => false)).toBe("aside")
+  })
+
   test("uses AX and marks health unavailable when the aside binary is missing", async () => {
     // Given opt-in and Aside in the foreground, with no CLI executable.
     let fallbackCalls = 0

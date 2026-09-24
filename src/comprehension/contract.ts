@@ -17,7 +17,12 @@ function maskOutput(value: unknown, path = ""): { value: unknown; rules: readonl
     const result = redact(value)
     return {
       value: result.text,
-      rules: result.masks.map(({ rule }) => `${path || "record_summary"}: output contains ${rule}`),
+      rules: [
+        ...result.masks.map(({ rule }) => `${path || "record_summary"}: output contains ${rule}`),
+        ...(value.includes("\uFFFD")
+          ? [`${path || "record_summary"}: output contains replacement character`]
+          : []),
+      ],
     }
   }
   if (Array.isArray(value)) {

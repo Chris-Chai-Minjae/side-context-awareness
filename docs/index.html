@@ -182,10 +182,10 @@ cd side-context-awareness
 bun install --frozen-lockfile
 bun run build
 ditto apps/side-mac/.build/release/Side.app /Applications/Side.app
-open /Applications/Side.app</code></pre><p class="detail">앱을 종료한 뒤 새 빌드를 복사하세요. 이 로컬 빌드는 임시 서명되며, 교체 후 macOS 권한을 다시 부여해야 할 수 있습니다. 상세 조건은 <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness#설치와-시작">README</a>를 확인하세요.</p></div>
+open /Applications/Side.app</code></pre><p class="detail">앱을 종료한 뒤 새 빌드를 복사하세요. 이 로컬 빌드는 임시 서명되며, 교체 후 macOS 권한과 Keychain 접근을 다시 허용해야 할 수 있습니다. 상세 조건은 <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness#설치와-시작">README</a>를 확인하세요.</p></div>
       </div></section>
       <section class="section"><div class="shell split">
-        <div><p class="kicker">모델과 에이전트</p><h2>요약 제공자와 에이전트 연결은 선택 사항입니다.</h2><p>MiMo, MiniMax, OpenAI API 키는 Side 설정에 직접 입력하며 macOS Keychain에 보관됩니다. 이미 로그인한 Claude Code를 요약 제공자로 선택할 수도 있습니다.</p></div>
+        <div><p class="kicker">모델과 에이전트</p><h2>요약 제공자와 에이전트 연결은 선택 사항입니다.</h2><p>MiMo, MiniMax, OpenAI API 키는 Side 설정에 직접 입력하며 macOS Keychain에 보관됩니다. 이미 로그인한 Claude Code를 요약 제공자로 선택할 수도 있습니다.</p><p>활동이 많은 날에는 요약에 수백만 입력 토큰이 쓰일 수 있습니다. 현재 일일 한도는 없으므로 제공자 사용량을 확인하고, 필요하면 캡처를 일시정지하세요.</p></div>
         <div><div class="facts">
           <div class="fact"><strong>요약 제공자</strong><p>요약 제공자를 설정하지 않아도 기록은 할 수 있습니다. 요약 생성에는 제공자 설정과 전송 동의가 필요합니다.</p></div>
           <div class="fact"><strong>MCP 연결</strong><p>Claude Code, Codex, Cursor, Aside 등에서 검색하려면 각 클라이언트에 Side의 로컬 MCP 서버를 등록해야 합니다.</p></div>
@@ -194,7 +194,7 @@ open /Applications/Side.app</code></pre><p class="detail">앱을 종료한 뒤 �
       <section class="section" id="privacy"><div class="shell split">
         <div><p class="kicker">프라이버시와 동의</p><h2>제외할 앱·웹사이트와 외부 전송 여부를 설정하세요.</h2><p>Side는 원본 기록을 클라우드에 동기화하지 않습니다. 기록 보존 기간과 제외 목록을 설정하고, 기록을 일시정지하거나 삭제할 수 있습니다.</p></div>
         <div><div class="facts">
-          <div class="fact"><strong>macOS 권한</strong><p>Accessibility와 Input Monitoring 권한을 안내합니다. Screen Recording은 OCR을 위한 선택 권한이며, 지원하는 브라우저의 URL을 읽을 때는 Automation 권한을 사용합니다.</p></div>
+          <div class="fact"><strong>macOS 권한</strong><p>앱의 권한 화면에서 Accessibility, Input Monitoring, Screen Recording 상태를 각각 확인하고 해당 macOS 설정을 열 수 있습니다. Screen Recording은 OCR을 위한 선택 권한이며, 브라우저 URL에는 Automation 권한을 사용합니다.</p></div>
           <div class="fact"><strong>저장 방식</strong><p>원본 기록의 민감 정보가 담긴 컬럼은 마스킹 후 암호화하지만, 모든 비밀 정보를 찾아내지는 못합니다. 요약과 날짜별 페이지는 기기에 평문으로 저장됩니다.</p></div>
           <div class="fact"><strong>외부 전송</strong><p>“Send evidence to this provider” 설정은 기본적으로 꺼져 있습니다. 켜면 마스킹한 활동 브리핑을 선택한 제공자에게 전송합니다.</p></div>
           <div class="fact"><strong>에이전트 결과</strong><p>연결한 에이전트가 MCP 검색 결과를 자체 모델에 전달할 수 있습니다. 연결하기 전에 해당 서비스의 데이터 정책을 확인하세요.</p></div>
@@ -245,10 +245,10 @@ cd side-context-awareness
 bun install --frozen-lockfile
 bun run build
 ditto apps/side-mac/.build/release/Side.app /Applications/Side.app
-open /Applications/Side.app</code></pre><p class="detail">Quit Side before copying a new build. Local builds use ad hoc signing, so macOS permissions may need to be granted again after replacement. See the <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness#설치와-시작">README</a> for details.</p></div>
+open /Applications/Side.app</code></pre><p class="detail">Quit Side before copying a new build. Local builds use ad hoc signing, so macOS permissions and Keychain access may need to be granted again after replacement. See the <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness#설치와-시작">README</a> for details.</p></div>
       </div></section>
       <section class="section"><div class="shell split">
-        <div><p class="kicker">Models and agents</p><h2>Your connections, your choice.</h2><p>Each user enters their own MiMo, MiniMax, or OpenAI API key in Side settings; the keys are stored in their macOS Keychain. An existing Claude Code login is an optional summary provider.</p></div>
+        <div><p class="kicker">Models and agents</p><h2>Your connections, your choice.</h2><p>Each user enters their own MiMo, MiniMax, or OpenAI API key in Side settings; the keys are stored in their macOS Keychain. An existing Claude Code login is an optional summary provider.</p><p>On busy days, summaries may use millions of input tokens. Side has no daily cap yet, so check provider usage and pause capture when needed.</p></div>
         <div><div class="facts">
           <div class="fact"><strong>Summary provider</strong><p>Provider setup is optional. Capture can run without one, but summaries will wait.</p></div>
           <div class="fact"><strong>MCP connection</strong><p>Register Side's local MCP server separately in Claude Code, Codex, Cursor, Aside, or another client.</p></div>
@@ -257,7 +257,7 @@ open /Applications/Side.app</code></pre><p class="detail">Quit Side before copyi
       <section class="section" id="privacy-en"><div class="shell split">
         <div><p class="kicker">Privacy and consent</p><h2>Choose what stays and what leaves.</h2><p>Side does not sync raw captures to the cloud. Set retention, exclusions, pause capture, or delete Side history.</p></div>
         <div><div class="facts">
-          <div class="fact"><strong>macOS permissions</strong><p>Side guides you through Accessibility and Input Monitoring. Screen Recording is optional for OCR; Automation is used for supported browser URLs.</p></div>
+          <div class="fact"><strong>macOS permissions</strong><p>Side's Permissions page shows Accessibility, Input Monitoring, and Screen Recording separately and opens the matching macOS settings pane. Screen Recording is optional for OCR; Automation is used for supported browser URLs.</p></div>
           <div class="fact"><strong>Local storage</strong><p>Sensitive raw columns are masked and encrypted, but pattern matching cannot catch every secret. Summaries and daily pages remain readable local files.</p></div>
           <div class="fact"><strong>External provider</strong><p>“Send evidence to this provider” is off by default. Turning it on sends masked activity briefings to your chosen provider.</p></div>
           <div class="fact"><strong>Agent results</strong><p>A connected agent may pass MCP results to its own model. Check that service's data policy before connecting it.</p></div>

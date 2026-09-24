@@ -307,6 +307,53 @@ test("Given Korean settings, when the language selector changes, then the entire
   expect(element.querySelector(".settings-page h1")?.textContent).toBe("Side가 하루를 기억하도록")
 })
 
+test("Aside switch persists its value and shows an unchecked health state clearly", async () => {
+  settings["ui_language"] = "ko"
+  const offHealthFetch: FetchLike = async (_input, init) => {
+    const packet = JSON.parse(String(init?.body))
+    calls.push({ method: packet.method, params: packet.params })
+    const result =
+      packet.method === "status"
+        ? {
+            enabled: true,
+            state: "running",
+            paused_until: null,
+            banner: "none",
+            health: { asideAdapter: "off" },
+            stop_reason: null,
+          }
+        : response(packet.method, packet.params)
+    return Response.json({ jsonrpc: "2.0", id: packet.id, result })
+  }
+  const element = root()
+  mountApp(element, window, offHealthFetch)
+  await settle()
+  const row = Array.from(element.querySelectorAll<HTMLElement>(".setting-row")).find((item) =>
+    item.textContent?.includes("Aside Browser 페이지 내용 사용"),
+  )
+  if (!row) throw new Error("Missing Aside setting")
+  const toggle = row.querySelector<HTMLButtonElement>('[role="switch"]')
+  if (!toggle) throw new Error("Missing Aside switch")
+  expect(toggle.getAttribute("aria-checked")).toBe("true")
+  expect(row.querySelector(".setting-meta")?.textContent).toBe("아직 확인 전")
+
+  toggle.click()
+  await settle()
+  expect(calls.filter((call) => call.method === "settings.patch").at(-1)?.params).toEqual({
+    asideAdapter: false,
+  })
+  expect(toggle.getAttribute("aria-checked")).toBe("false")
+  expect(row.querySelector(".setting-meta")?.textContent).toBe("꺼짐")
+
+  toggle.click()
+  await settle()
+  expect(calls.filter((call) => call.method === "settings.patch").at(-1)?.params).toEqual({
+    asideAdapter: true,
+  })
+  expect(toggle.getAttribute("aria-checked")).toBe("true")
+  expect(row.querySelector(".setting-meta")?.textContent).toBe("아직 확인 전")
+})
+
 test("asks for missing Input Monitoring permission from the banner", async () => {
   const element = root()
   const permissionFetch: FetchLike = async (_input, init) => {

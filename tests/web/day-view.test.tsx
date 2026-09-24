@@ -292,6 +292,114 @@ test("allows clear today only on today and reloads after confirmation", async ()
   expect(calls.filter((call) => call.method === "day.get")).toHaveLength(2)
 })
 
+test("shows failed work for today and retries it only after an explicit click", async () => {
+  const today = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date())
+  window.location.hash = `#/history/${today}`
+  const fetcher: FetchLike = async (input, init) => {
+    const request = JSON.parse(String(init?.body))
+    if (request.method === "historyStatus") {
+      calls.push({ method: request.method, params: request.params })
+      return Response.json({
+        jsonrpc: "2.0",
+        id: request.id,
+        result: {
+          store_bytes: 1024,
+          average_bytes_per_day: 512,
+          days_with_summaries: [],
+          today_summary_states: { pending: 0, running: 0, done: 0, failed: 1, skipped: 0 },
+        },
+      })
+    }
+    if (request.method === "summaries.retryFailedToday") {
+      calls.push({ method: request.method, params: request.params })
+      return Response.json({ jsonrpc: "2.0", id: request.id, result: { requeued: 1 } })
+    }
+    return fakeFetch(input, init)
+  }
+  const element = root()
+  mountApp(element, window, fetcher)
+  await settle()
+  expect(calls.some((call) => call.method === "summaries.retryFailedToday")).toBe(false)
+  const retry = element.querySelector<HTMLButtonElement>('[data-action="retry-failed-today"]')
+  expect(retry).not.toBeNull()
+  retry?.click()
+  await settle()
+  expect(calls.filter((call) => call.method === "summaries.retryFailedToday")).toHaveLength(1)
+  expect(element.textContent).toContain("1 summary job queued")
+})
+
+test("refreshes a queued retry after asynchronous completion without retrying the model", async () => {
+  const today = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date())
+  window.location.hash = `#/history/${today}`
+  let queued = false
+  let completed = false
+  const fetcher: FetchLike = async (input, init) => {
+    const request = JSON.parse(String(init?.body))
+    if (request.method === "historyStatus") {
+      calls.push({ method: request.method, params: request.params })
+      return Response.json({
+        jsonrpc: "2.0",
+        id: request.id,
+        result: {
+          store_bytes: 1024,
+          average_bytes_per_day: 512,
+          days_with_summaries: completed ? [today] : [],
+          today_summary_states: {
+            pending: queued && !completed ? 1 : 0,
+            running: 0,
+            done: completed ? 1 : 0,
+            failed: queued ? 0 : 1,
+            skipped: 0,
+          },
+        },
+      })
+    }
+    if (request.method === "day.get") {
+      calls.push({ method: request.method, params: request.params })
+      return Response.json({
+        jsonrpc: "2.0",
+        id: request.id,
+        result: completed
+          ? { date: today, markdown, updated_at: "2026-09-23T09:41:00+09:00" }
+          : null,
+      })
+    }
+    if (request.method === "summaries.retryFailedToday") {
+      calls.push({ method: request.method, params: request.params })
+      queued = true
+      return Response.json({ jsonrpc: "2.0", id: request.id, result: { requeued: 1 } })
+    }
+    return fakeFetch(input, init)
+  }
+  const element = root()
+  mountApp(element, window, fetcher)
+  await settle()
+  expect(element.textContent).toContain("No summaries for this day.")
+  element.querySelector<HTMLButtonElement>('[data-action="retry-failed-today"]')?.click()
+  await settle()
+  expect(element.textContent).toContain("1 summary job queued")
+  expect(element.textContent).toContain("No summaries for this day.")
+  completed = true
+  const readsBeforeRefresh = calls.filter((call) => call.method === "day.get").length
+  await settle()
+  expect(calls.filter((call) => call.method === "day.get")).toHaveLength(readsBeforeRefresh)
+  const refresh = element.querySelector<HTMLButtonElement>('[data-action="refresh-day"]')
+  expect(refresh).not.toBeNull()
+  refresh?.click()
+  await settle()
+  expect(calls.filter((call) => call.method === "day.get")).toHaveLength(readsBeforeRefresh + 1)
+  expect(calls.filter((call) => call.method === "summaries.retryFailedToday")).toHaveLength(1)
+  expect(element.textContent).toContain("Day overview")
+})
+
 test.each(["loading", "error", "empty", "normal", "expired-evidence"])(
   "Day view demo renders %s without live RPC",
   async (state) => {

@@ -2,6 +2,8 @@ import type { Database } from "bun:sqlite"
 import { readFile, rm, stat } from "node:fs/promises"
 import { join } from "node:path"
 import { z } from "zod"
+import { requeueFailedSummaryJob } from "../../comprehension/queue"
+import { MAX_JOBS_PER_PASS } from "../../constants"
 import { RpcMethods } from "../../contracts/rpc"
 import { CitationSchema, HistorySummarySchema } from "../../contracts/rpc-resources"
 import { clearLedger } from "../../ledger/delete"
@@ -32,6 +34,8 @@ type HistoryDependencies = {
   readonly getMasterKey: () => Buffer | null
   readonly rotateKey?: () => void | Promise<void>
   readonly afterClear?: () => void | Promise<void>
+  readonly getRetentionDays: () => number
+  readonly onSummariesRetried: () => void
 }
 
 type HistoryHandlers = {
@@ -41,6 +45,9 @@ type HistoryHandlers = {
     params: unknown,
   ) => Promise<z.output<(typeof RpcMethods)["day.get"]["output"]>>
   readonly clear: (params: unknown) => Promise<z.output<typeof RpcMethods.clear.output>>
+  readonly "summaries.retryFailedToday": (
+    params: unknown,
+  ) => z.output<(typeof RpcMethods)["summaries.retryFailedToday"]["output"]>
 }
 
 function localDay(at: number): string {
@@ -141,6 +148,27 @@ export function createHistoryHandlers(dependencies: HistoryDependencies): Histor
         `)
         .all(input.to, input.from)
         .map(toSummary)
+    },
+    "summaries.retryFailedToday"(params) {
+      RpcMethods["summaries.retryFailedToday"].input.parse(params)
+      const now = dependencies.now()
+      const todayStart = localDayStart(now)
+      const tomorrow = new Date(todayStart)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const failed = db
+        .query<{ id: string }, [number, number]>(`
+          SELECT id FROM context_awareness_summaries
+          WHERE status = 'failed' AND window_from >= ? AND window_from < ?
+          ORDER BY window_from, id
+        `)
+        .all(todayStart, tomorrow.getTime())
+      let requeued = 0
+      for (const { id } of failed) {
+        if (requeued >= MAX_JOBS_PER_PASS) break
+        if (requeueFailedSummaryJob(db, id, now, dependencies.getRetentionDays())) requeued++
+      }
+      if (requeued > 0) dependencies.onSummariesRetried()
+      return { requeued }
     },
     async "day.get"(params) {
       const input = RpcMethods["day.get"].input.parse(params)

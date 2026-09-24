@@ -9,6 +9,7 @@ import {
 } from "../../src/comprehension/providers"
 import { SummaryContractError } from "../../src/comprehension/repair"
 import { type Settings, SettingsSchema } from "../../src/contracts/settings"
+import { HelperCommandFailureError } from "../../src/helper/client"
 
 const ref = `e:${"0".repeat(26)}`
 const briefing: Briefing = {
@@ -151,6 +152,43 @@ test.each([400, 401, 403, 408, 429, 500, 503])(
     }
   },
 )
+
+test("a model key permission failure falls back before sending evidence", async () => {
+  let firstCalls = 0
+  let secondCalls = 0
+  const first = startServer(() => {
+    firstCalls++
+    return toolResponse(valid)
+  })
+  const second = startServer(() => {
+    secondCalls++
+    return toolResponse(valid)
+  })
+  try {
+    const config = settings(
+      [
+        { ...provider("first", first.baseUrl), apiKeyRef: "first-key" },
+        { ...provider("second", second.baseUrl), apiKeyRef: "second-key" },
+      ],
+      { provider: "first", modelId: "first" },
+    )
+    const result = await summarizeBriefing({
+      settings: config,
+      briefing,
+      getApiKey: async (ref) => {
+        if (ref === "first-key") throw new HelperCommandFailureError("1", "keychain-unavailable")
+        return "synthetic-only"
+      },
+    })
+    expect(result.state).toBe("done")
+    if (result.state === "done") expect(result.model).toBe("second/second")
+    expect(firstCalls).toBe(0)
+    expect(secondCalls).toBe(1)
+  } finally {
+    first.stop()
+    second.stop()
+  }
+})
 
 test("Given bad response JSON and no usable JSON content, when summarizing, then later candidates are tried", async () => {
   let calls = 0

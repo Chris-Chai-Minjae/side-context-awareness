@@ -6,6 +6,7 @@ import { callSummaryCompletion, ProviderRequestError } from "../../comprehension
 import { saveSettings } from "../../config/index"
 import { SUMMARY_CALL_SLOT_WAIT_MS, SUMMARY_PROVIDER_TIMEOUT_MS } from "../../constants"
 import { RpcMethods } from "../../contracts/rpc"
+import { ProviderKeyAuthorizationSchema } from "../../contracts/rpc-resources"
 import type { Settings } from "../../contracts/settings"
 import type { HelperClient } from "../../helper/client"
 import type { RpcHandlers } from "../rpc"
@@ -70,7 +71,14 @@ function providerStillCurrent(
 
 export function createProviderHandlers(
   dependencies: ProviderDependencies,
-): Pick<RpcHandlers, "providers.setKey" | "providers.listModels" | "providers.test"> {
+): Pick<
+  RpcHandlers,
+  | "providers.setKey"
+  | "providers.keyStatus"
+  | "providers.authorizeKey"
+  | "providers.listModels"
+  | "providers.test"
+> & { captureKeyReadInvalidation(settings: Settings): (ref: string) => void } {
   const mutateSettings =
     dependencies.mutateSettings ??
     createSettingsMutation(dependencies.reconciler, (next) =>
@@ -78,7 +86,61 @@ export function createProviderHandlers(
     )
   const keyVersions = new Map<string, number>()
   const keyVersion = (id: string) => keyVersions.get(id) ?? 0
+  const verifiedKeys = new Map<string, string>()
+  const keyIdentity = (
+    provider: Exclude<Settings["providers"][number], { kind: "claude-code-cli" }>,
+  ) => JSON.stringify([provider.id, provider.baseUrl, provider.apiKeyRef])
+  const invalidateVerifiedKey = (provider: Settings["providers"][number], version: number) => {
+    if (
+      providerStillCurrent(dependencies.reconciler.currentSettings, provider) &&
+      keyVersion(provider.id) === version
+    )
+      verifiedKeys.delete(provider.id)
+  }
   return {
+    captureKeyReadInvalidation: (settings) => {
+      const versions = new Map(keyVersions)
+      return (ref) => {
+        for (const provider of settings.providers) {
+          if (provider.kind !== "claude-code-cli" && provider.apiKeyRef === ref)
+            invalidateVerifiedKey(provider, versions.get(provider.id) ?? 0)
+        }
+      }
+    },
+    "providers.keyStatus": async (value) => {
+      const { providerId } = RpcMethods["providers.keyStatus"].input.parse(value)
+      const provider = uniqueProvider(dependencies.reconciler.currentSettings, providerId)
+      if (!provider || provider.kind === "claude-code-cli") throw new TypeError("Invalid provider")
+      if (!provider.apiKeyRef) return { stored: false, accessible: false }
+      return verifiedKeys.get(providerId) === keyIdentity(provider)
+        ? { stored: true, accessible: true }
+        : { stored: null, accessible: null }
+    },
+    "providers.authorizeKey": async (value) => {
+      const { providerId } = RpcMethods["providers.authorizeKey"].input.parse(value)
+      const provider = uniqueProvider(dependencies.reconciler.currentSettings, providerId)
+      if (!provider || provider.kind === "claude-code-cli") throw new TypeError("Invalid provider")
+      if (!provider.apiKeyRef) return { authorized: false }
+      const version = keyVersion(providerId) + 1
+      keyVersions.set(providerId, version)
+      verifiedKeys.delete(providerId)
+      const result = ProviderKeyAuthorizationSchema.parse(
+        await dependencies.helper.sendCommand({
+          type: "command",
+          name: "keychain.authorize",
+          args: { ref: provider.apiKeyRef },
+        }),
+      )
+      if (
+        !providerStillCurrent(dependencies.reconciler.currentSettings, provider) ||
+        keyVersion(providerId) !== version
+      )
+        return { authorized: false }
+      keyVersions.set(providerId, version + 1)
+      if (result.authorized) verifiedKeys.set(providerId, keyIdentity(provider))
+      else verifiedKeys.delete(providerId)
+      return result
+    },
     "providers.setKey": async (value) => {
       const { providerId, apiKey } = RpcMethods["providers.setKey"].input.parse(value)
       const current = dependencies.reconciler.currentSettings
@@ -87,6 +149,7 @@ export function createProviderHandlers(
         throw new TypeError("Invalid provider key request")
 
       keyVersions.set(providerId, keyVersion(providerId) + 1)
+      verifiedKeys.delete(providerId)
       const endpointHash = createHash("sha256")
         .update(JSON.stringify([provider.id, provider.baseUrl]))
         .digest("hex")
@@ -150,9 +213,13 @@ export function createProviderHandlers(
         key = typeof value === "string" && value.length > 0 ? value : undefined
       } catch {
         // no-excuse-ok: catch -- only a fixed status crosses this RPC boundary.
+        invalidateVerifiedKey(provider, version)
         return { status: "unavailable", models: [], reason: "key-unavailable" }
       }
-      if (!key) return { status: "unavailable", models: [], reason: "key-unavailable" }
+      if (!key) {
+        invalidateVerifiedKey(provider, version)
+        return { status: "unavailable", models: [], reason: "key-unavailable" }
+      }
       if (
         !providerStillCurrent(dependencies.reconciler.currentSettings, provider) ||
         keyVersion(providerId) !== version
@@ -223,12 +290,19 @@ export function createProviderHandlers(
             providerStillCurrent(dependencies.reconciler.currentSettings, provider, modelId) &&
             keyVersion(providerId) === version,
           getApiKey: async (ref) => {
-            const secret = await dependencies.helper.sendCommand({
-              type: "command",
-              name: "keychain.get",
-              args: { ref },
-            })
-            return typeof secret === "string" ? secret : undefined
+            try {
+              const secret = await dependencies.helper.sendCommand({
+                type: "command",
+                name: "keychain.get",
+                args: { ref },
+              })
+              if (typeof secret === "string" && secret.length > 0) return secret
+              invalidateVerifiedKey(provider, version)
+              return undefined
+            } catch (error) {
+              invalidateVerifiedKey(provider, version)
+              throw error
+            }
           },
           log: (entry) => {
             status = entry.status

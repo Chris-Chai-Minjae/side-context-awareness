@@ -43,7 +43,7 @@ open /Applications/Side.app
 
 Side appears in the menu bar rather than the Dock. On first launch, grant capture permissions during onboarding and enable Context Awareness. You can skip summary provider setup; capture then works, but summaries wait for a provider. In the menu bar settings, manage retention, excluded apps and websites, the summary model, and agent connections. You can select 한국어 or English as the display language in settings.
 
-Local builds use ad hoc signing. After you rebuild and replace the app, macOS may not apply its previous Accessibility, Input Monitoring, and Screen Recording permissions to the new build. If that happens, remove the old `Side` entries from the corresponding lists under System Settings → Privacy & Security, then add `/Applications/Side.app` again. Developer ID signing and notarization required to distribute a prebuilt app to others remain a separate release gate. Check the current status in the [`docs/qa/`](docs/qa/) reports and the checkboxes in [`docs/planning/06-tasks.md`](docs/planning/06-tasks.md).
+Local builds use ad hoc signing. After you rebuild and replace the app, macOS may not apply its previous Accessibility, Input Monitoring, and Screen Recording permissions to the new build, and it may ask again for Keychain access to the saved encryption key. Approve the new Side in the Keychain dialog. If privacy permissions remain missing, remove the old `Side` entries from the corresponding lists under System Settings → Privacy & Security, then add `/Applications/Side.app` again. Developer ID signing and notarization required to distribute a prebuilt app to others remain a separate release gate. Check the current status in the [`docs/qa/`](docs/qa/) reports and the checkboxes in [`docs/planning/06-tasks.md`](docs/planning/06-tasks.md).
 
 ## macOS permissions
 
@@ -54,11 +54,15 @@ Local builds use ad hoc signing. After you rebuild and replace the app, macOS ma
 | Screen Recording | Use on-device OCR to read screen text when readable accessibility text is unavailable; images are not stored |
 | Automation | Read the current tab URL in supported browsers |
 
-Screen Recording is optional. You must approve Side in the macOS permission dialog for the corresponding observation feature to work. Check permission status and diagnostics in menu bar **Settings…** or with:
+Screen Recording is optional. You must approve Side in the macOS permission dialog for the corresponding observation feature to work. Open **Settings… → Permissions** from the menu bar to check each permission separately, request access, or open its macOS System Settings pane. The same page shows each summary provider's configured Keychain reference; access stays unchecked until you click **Authorize Keychain**. For CLI diagnostics, run:
 
 ```sh
 "/Applications/Side.app/Contents/Resources/side" doctor
 ```
+
+If today's summary is empty, first check whether its 10-minute window has ended. When the history page shows failed summary jobs, check the model connection and Keychain access, then click **Retry failed summaries**. After the job completes, click **Refresh summaries** to show its result. Failed jobs are not sent to the model again before you click the retry button.
+
+Summaries use a model for active 10-minute windows and six-hour rollups. Usage varies with activity, briefing length, and retries; continuous use can reach millions of input tokens in a day. Side does not currently enforce a daily token cap. Check your provider usage, and pause capture or turn off **Send evidence to this provider** to limit cost. Turning off evidence sending stops new summaries.
 
 ## Data and privacy
 

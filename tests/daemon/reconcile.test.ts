@@ -398,6 +398,7 @@ async function launchFakeHelper(
       embed(text: string): Promise<Float32Array>
       close(): Promise<void>
     }
+    keychainGet?: () => { ok: boolean; data?: string | null }
   } = {},
 ) {
   const input = new PassThrough()
@@ -409,7 +410,13 @@ async function launchFakeHelper(
     commands.push(message)
     if (message.type !== "command") return
     if (message.name !== "capture.request") {
-      const error = message.name === "browser.url" ? options.browserUrlError?.() : null
+      const keychainGet = message.name === "keychain.get" ? options.keychainGet?.() : undefined
+      const error =
+        message.name === "browser.url"
+          ? options.browserUrlError?.()
+          : keychainGet?.ok === false
+            ? "unavailable"
+            : null
       if (error) {
         input.write(`${JSON.stringify({ type: "result", id: message.id, ok: false, error })}\n`)
       } else {
@@ -420,7 +427,11 @@ async function launchFakeHelper(
               ? (options.permissionReply ?? null)
               : message.name === "keychain.set"
                 ? { ref: message.args.ref }
-                : null
+                : message.name === "keychain.authorize"
+                  ? { authorized: true }
+                  : message.name === "keychain.get"
+                    ? (keychainGet?.data ?? null)
+                    : null
         input.write(`${JSON.stringify({ type: "result", id: message.id, ok: true, data })}\n`)
       }
     }
@@ -2082,6 +2093,98 @@ test("Given a short accepted dwell, when the daemon stops, then its deadline can
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test.each(["failed", "empty"])(
+  "Given authorized synthetic keys, when a background summary key read is %s, then only its provider status becomes unknown",
+  async (readResult) => {
+    const directory = mkdtempSync(join(tmpdir(), "side-daemon-summary-key-test-"))
+    const clock = new FakeClock(new Date(2026, 8, 24, 9, 0).getTime())
+    await saveSettings(
+      directory,
+      SettingsSchema.parse({
+        version: 2,
+        contextAwareness: { enabled: true, summaryModel: { provider: "primary", modelId: "fake" } },
+        providers: [
+          {
+            id: "primary",
+            baseUrl: "https://fixture.invalid/v1",
+            models: ["fake"],
+            apiKeyRef: "provider/synthetic/primary",
+            allowEvidence: true,
+          },
+          {
+            id: "other",
+            baseUrl: "https://fixture.invalid/v1",
+            models: ["fake"],
+            apiKeyRef: "provider/synthetic/other",
+            allowEvidence: false,
+          },
+        ],
+      }),
+    )
+    const helper = await launchFakeHelper(directory, {
+      clock,
+      keychainGet: () => ({ ok: readResult !== "failed", data: null }),
+    })
+    const db = openLedger(join(directory, "context-awareness", "ledger.db"))
+    const call = async (method: string, providerId: string) => {
+      const response = await fetch("http://localhost/rpc", {
+        unix: join(directory, "run", "daemon.sock"),
+        method: "POST",
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params: { providerId } }),
+      })
+      return response.json()
+    }
+    try {
+      for (const id of ["primary", "other"]) {
+        expect(await call("providers.authorizeKey", id)).toMatchObject({
+          result: { authorized: true },
+        })
+        expect(await call("providers.keyStatus", id)).toMatchObject({
+          result: { stored: true, accessible: true },
+        })
+      }
+      helper.send({
+        kind: "window.changed",
+        source: "mac_ax",
+        occurredAt: clock.now(),
+        appName: "Synthetic Browser",
+        bundleId: "invalid.fixture.browser",
+        windowId: 1,
+        url: "https://fixture.invalid/page",
+      })
+      await waitFor(
+        () =>
+          db
+            .query<{ count: number }, []>("SELECT COUNT(*) AS count FROM context_awareness_events")
+            .get()?.count === 1,
+      )
+      clock.advanceBy(TEN_MINUTES_MS)
+      await waitFor(() =>
+        helper.commands.some(
+          (command) =>
+            command.type === "command" &&
+            command.name === "keychain.get" &&
+            command.args.ref === "provider/synthetic/primary",
+        ),
+      )
+      let status: unknown
+      for (let attempt = 0; attempt < 100; attempt++) {
+        status = await call("providers.keyStatus", "primary")
+        if (JSON.stringify(status).includes('"accessible":null')) break
+        await Bun.sleep(1)
+      }
+      expect(status).toMatchObject({ result: { stored: null, accessible: null } })
+      expect(await call("providers.keyStatus", "other")).toMatchObject({
+        result: { stored: true, accessible: true },
+      })
+    } finally {
+      db.close()
+      await helper.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  },
+)
 
 test("Given a closed qualified window and an allowed fake provider, when the comprehension timer runs, then the daemon writes a cited day page", async () => {
   const directory = mkdtempSync(join(tmpdir(), "side-daemon-summary-test-"))

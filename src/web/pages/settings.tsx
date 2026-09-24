@@ -826,7 +826,14 @@ export function SettingsPage({
                 "When Aside Browser is in front, read the page through Aside for better text. Requires the Aside CLI.",
               )}
             </p>
-            <span class="setting-meta">{t(language, status.health.asideAdapter)}</span>
+            <span class="setting-meta">
+              {t(
+                language,
+                settings.aside_adapter && status.health.asideAdapter === "off"
+                  ? "Not checked yet"
+                  : status.health.asideAdapter,
+              )}
+            </span>
           </div>
           <button
             type="button"

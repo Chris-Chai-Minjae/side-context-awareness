@@ -17,6 +17,7 @@ type WithoutId<T> = T extends Command ? Omit<T, "id"> : never
 export type HelperCommandRequest = WithoutId<Command>
 type Observation = Extract<AppToDaemonMessage, { type: "event" }>["event"]
 const RotationResultSchema = z.strictObject({ key: z.string().regex(/^[A-Za-z0-9+/]{43}=$/) })
+const KEYCHAIN_AUTHORIZATION_TIMEOUT_MS = 120_000
 
 type Pending = {
   readonly resolve: (data: unknown) => void
@@ -146,7 +147,12 @@ export class HelperClient {
     }
     return new Promise((resolve, reject) => {
       const schedule = this.options.scheduleTimeout ?? realTimeout
-      const cancelTimeout = schedule(() => this.timeout(id), HELPER_COMMAND_TIMEOUT_MS)
+      const cancelTimeout = schedule(
+        () => this.timeout(id),
+        request.name === "keychain.authorize"
+          ? KEYCHAIN_AUTHORIZATION_TIMEOUT_MS
+          : HELPER_COMMAND_TIMEOUT_MS,
+      )
       this.pending.set(id, { resolve, reject, cancelTimeout })
       try {
         const written = this.options.output.write(`${line}\n`)

@@ -6,6 +6,7 @@ export type SettingsDemoState = DemoState | "permissions_needed" | "paused"
 
 export type Route =
   | { readonly kind: "settings" }
+  | { readonly kind: "permissions" }
   | { readonly kind: "history"; readonly date: string }
   | { readonly kind: "demo"; readonly state: DemoState }
   | { readonly kind: "settings-demo"; readonly state: SettingsDemoState }
@@ -18,6 +19,7 @@ export function routeFromHash(hash: string): Route {
   if (path === "" || path === "/" || path === "/settings/context-awareness") {
     return { kind: "settings" }
   }
+  if (path === "/permissions") return { kind: "permissions" }
   const history = /^\/history\/(\d{4}-\d{2}-\d{2})(?:#s:[0-9A-HJKMNP-TV-Z]{26})?$/.exec(path)
   if (history?.[1]) return { kind: "history", date: history[1] }
   if (path === "/demo/phase-4/s0-shell") {

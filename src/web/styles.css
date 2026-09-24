@@ -878,3 +878,40 @@ select {
     transition: none;
   }
 }
+
+.permission-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  min-block-size: 64px;
+  padding-block: var(--space-3);
+  border-block-end: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+
+.permission-row > div {
+  min-inline-size: 0;
+}
+
+.permission-row .setting-meta {
+  display: block;
+}
+
+.permission-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.permissions-link,
+.permissions-action {
+  justify-self: start;
+  margin-block: var(--space-3);
+}
+
+.permissions-link {
+  color: var(--focus);
+}

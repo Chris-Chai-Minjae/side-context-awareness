@@ -8,6 +8,7 @@ import { PermissionBanner } from "./components/permission-banner"
 import { UntrustedTextView } from "./components/untrusted-text-view"
 import { t, type UiLanguage } from "./i18n"
 import { DayViewPage } from "./pages/day-view"
+import { PermissionsPage } from "./pages/permissions"
 import { SettingsPage } from "./pages/settings"
 import type { DemoState, Route } from "./router"
 import { useHashRoute } from "./router"
@@ -61,6 +62,8 @@ function routeTitle(route: Route, language: UiLanguage): string {
   switch (route.kind) {
     case "settings":
       return t(language, "Settings")
+    case "permissions":
+      return t(language, "Permissions")
     case "history":
       return `${t(language, "History")} · ${route.date}`
     case "demo":
@@ -125,7 +128,7 @@ function App({ browser, rpc }: AppProps) {
   }, [browser, language, route])
 
   useEffect(() => {
-    if (settingsRoute || dayRoute) return
+    if (settingsRoute || dayRoute || route.kind === "permissions") return
     let active = true
     setLoad({ kind: "loading" })
     client
@@ -142,7 +145,7 @@ function App({ browser, rpc }: AppProps) {
     return () => {
       active = false
     }
-  }, [client, dayRoute, reload, settingsRoute])
+  }, [client, dayRoute, reload, route.kind, settingsRoute])
 
   function run(method: "pause" | "resume" | "requestPermissions", params?: unknown) {
     setBusy(true)
@@ -175,6 +178,9 @@ function App({ browser, rpc }: AppProps) {
           <a href="#/settings/context-awareness" aria-current={settingsRoute ? "page" : undefined}>
             {t(language, "Settings")}
           </a>
+          <a href="#/permissions" aria-current={route.kind === "permissions" ? "page" : undefined}>
+            {t(language, "Permissions")}
+          </a>
           <a
             href={`#/history/${today}`}
             aria-current={route.kind === "history" ? "page" : undefined}
@@ -188,7 +194,9 @@ function App({ browser, rpc }: AppProps) {
       </header>
       <main class="app-main">
         <div class={dayRoute ? "content content-day" : "content"}>
-          {settingsRoute ? (
+          {route.kind === "permissions" ? (
+            <PermissionsPage rpc={rpc} language={language} />
+          ) : settingsRoute ? (
             <SettingsPage
               rpc={rpc}
               browser={browser}
@@ -208,7 +216,8 @@ function App({ browser, rpc }: AppProps) {
           ) : (
             <h1>{routeTitle(route, language)}</h1>
           )}
-          {settingsRoute || dayRoute ? null : route.kind === "not-found" ? (
+          {settingsRoute || dayRoute || route.kind === "permissions" ? null : route.kind ===
+            "not-found" ? (
             <p>{t(language, "The requested page could not be found.")}</p>
           ) : load.kind === "loading" ? (
             <p role="status" class="state-message">

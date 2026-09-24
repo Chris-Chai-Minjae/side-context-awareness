@@ -44,6 +44,15 @@ export const ProviderTestResultSchema = z.strictObject({
   error: z.string().optional(),
 })
 
+export const ProviderKeyStatusSchema = z
+  .strictObject({
+    stored: z.boolean().nullable(),
+    accessible: z.boolean().nullable(),
+  })
+  .refine((value) => value.accessible !== true || value.stored === true)
+
+export const ProviderKeyAuthorizationSchema = z.strictObject({ authorized: z.boolean() })
+
 export const ProviderModelListSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("available"), models: z.array(z.string()) }),
   z.strictObject({

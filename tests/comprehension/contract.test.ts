@@ -170,6 +170,22 @@ test("all output strings are rescanned and secrets are masked before repair", ()
   expect(JSON.stringify(result.previousToolArguments)).toContain("[redacted:capture]")
 })
 
+test("replacement characters in a model summary require one clean repair", async () => {
+  const corrupted = { ...valid, title: "카카오\uFFFD" }
+  const checked = validateRecordSummary(corrupted, briefing)
+  expect(checked.ok).toBe(false)
+  if (checked.ok) return
+  expect(checked.rules).toContain("title: output contains replacement character")
+
+  let calls = 0
+  const summary = await runSummaryWithOneRepair(briefing, async () => {
+    calls++
+    return calls === 1 ? corrupted : valid
+  })
+  expect(calls).toBe(2)
+  expect(summary.title).toBe(valid.title)
+})
+
 test("JSON tool arguments are parsed and malformed JSON carries masked repair context", () => {
   expect(validateRecordSummary(JSON.stringify(valid), briefing).ok).toBe(true)
   const syntheticKey = `AKIA${"A".repeat(16)}`

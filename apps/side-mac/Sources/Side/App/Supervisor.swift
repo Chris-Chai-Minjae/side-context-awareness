@@ -57,6 +57,8 @@ final class DaemonSupervisor {
     private var frame = Data()
     private var policy = RestartPolicy()
     private var restartTask: Task<Void, Never>?
+    private var launchGeneration = 0
+    private var launchPending = false
 
     private(set) var state: SupervisorState = .stopped {
         didSet { onStateChange?(state) }
@@ -81,7 +83,7 @@ final class DaemonSupervisor {
     }
 
     func start() {
-        guard process == nil else { return }
+        guard process == nil, !launchPending else { return }
         restartTask?.cancel()
         restartTask = nil
         policy = RestartPolicy()
@@ -89,6 +91,8 @@ final class DaemonSupervisor {
     }
 
     func stop() {
+        launchGeneration += 1
+        launchPending = false
         restartTask?.cancel()
         restartTask = nil
         let child = process
@@ -188,8 +192,27 @@ final class DaemonSupervisor {
                 return try? CaptureProtocol.encodeResultFailure(id: id, error: "keychain-unavailable")
             }
         }
-        guard name == "keychain.set" || name == "keychain.get" else { return nil }
+        return Self.replyForProviderCommand(line, keyStore: keyStore)
+    }
+
+    func replyForProviderCommand(_ line: Data) async -> Data? {
+        let store = keyStore
+        return await Task.detached(priority: .userInitiated) {
+            Self.replyForProviderCommand(line, keyStore: store)
+        }.value
+    }
+
+    private nonisolated static func replyForProviderCommand(_ line: Data, keyStore: SideKeyStore) -> Data? {
+        guard let message = try? JSONSerialization.jsonObject(with: line) as? [String: Any],
+              message["type"] as? String == "command",
+              let id = message["id"] as? String,
+              let name = message["name"] as? String,
+              ["keychain.set", "keychain.get", "keychain.status", "keychain.authorize"].contains(name) else { return nil }
+        guard Set(message.keys) == ["type", "id", "name", "args"] else {
+            return try? CaptureProtocol.encodeResultFailure(id: id, error: "invalid-arguments")
+        }
         guard let args = message["args"] as? [String: Any],
+              Set(args.keys) == (name == "keychain.set" ? ["ref", "secret"] : ["ref"]),
               let ref = args["ref"] as? String, !ref.isEmpty else {
             return try? CaptureProtocol.encodeResultFailure(id: id, error: "invalid-arguments")
         }
@@ -201,6 +224,16 @@ final class DaemonSupervisor {
                 try keyStore.setProviderKey(ref: ref, secret: secret)
                 return try CaptureProtocol.encodeResultSuccess(id: id, data: ["ref": ref])
             }
+            if name == "keychain.status" {
+                let status = try keyStore.providerKeyStatus(ref: ref)
+                return try CaptureProtocol.encodeResultSuccess(
+                    id: id, data: ["stored": status.stored, "accessible": status.accessible]
+                )
+            }
+            if name == "keychain.authorize" {
+                let authorized = try keyStore.authorizeProviderKey(ref: ref)
+                return try CaptureProtocol.encodeResultSuccess(id: id, data: ["authorized": authorized])
+            }
             let secret = try keyStore.providerKey(ref: ref)
             return try CaptureProtocol.encodeResultSuccess(id: id, data: secret)
         } catch {
@@ -209,16 +242,28 @@ final class DaemonSupervisor {
     }
 
     private func launch() {
+        launchGeneration += 1
+        let generation = launchGeneration
+        launchPending = true
         clearWebSession()
+        guard launchGeneration == generation else { return }
         state = .starting
-        let hello: Data
-        do {
-            hello = try CaptureProtocol.encodeHello(key: keyStore.masterKey(), appVersion: appVersion)
-        } catch {
+        guard launchGeneration == generation else { return }
+        let store = keyStore
+        let version = appVersion
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let hello = try? CaptureProtocol.encodeHello(key: store.masterKey(), appVersion: version)
+            await self?.finishLaunch(hello, generation: generation)
+        }
+    }
+
+    private func finishLaunch(_ hello: Data?, generation: Int) {
+        guard launchGeneration == generation else { return }
+        launchPending = false
+        guard let hello else {
             state = .keychainLocked
             return
         }
-
         let child = makeProcess()
         let stdin = Pipe()
         let stdout = Pipe()
@@ -272,7 +317,14 @@ final class DaemonSupervisor {
             child.terminate()
             return
         }
-        if let reply = replyForCommand(line) {
+        let commandName = (try? JSONSerialization.jsonObject(with: line) as? [String: Any])?["name"] as? String
+        let keychainReply: Data?
+        if let commandName, ["keychain.set", "keychain.get", "keychain.status", "keychain.authorize"].contains(commandName) {
+            keychainReply = await replyForProviderCommand(line)
+        } else {
+            keychainReply = replyForCommand(line)
+        }
+        if let reply = keychainReply {
             try? write(reply, to: child)
             return
         }

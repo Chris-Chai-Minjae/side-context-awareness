@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from "preact/hooks"
+import { RpcMethods } from "../../contracts/rpc"
 import {
   ClearOperationSchema,
   DayPageSchema,
@@ -29,6 +30,7 @@ type DayLoad =
       readonly kind: "ready"
       readonly days: readonly string[]
       readonly markdown: string | null
+      readonly failedToday: number
     }
 function localToday(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -49,6 +51,7 @@ export function DayViewPage({ browser, rpc, date, demoState, language }: DayView
   const [matchInput, setMatchInput] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [retryBusy, setRetryBusy] = useState(false)
   const [notice, setNotice] = useState("")
   const [reload, setReload] = useState(0)
 
@@ -61,7 +64,11 @@ export function DayViewPage({ browser, rpc, date, demoState, language }: DayView
       .then(([statusValue, dayValue]) => {
         const status = HistoryStatusSchema.parse(statusValue)
         const page = DayPageSchema.nullable().parse(dayValue)
-        return { days: [...status.days_with_summaries].sort(), markdown: page?.markdown ?? null }
+        return {
+          days: [...status.days_with_summaries].sort(),
+          markdown: page?.markdown ?? null,
+          failedToday: status.today_summary_states.failed,
+        }
       })
       .then(
         (data) => {
@@ -125,6 +132,33 @@ export function DayViewPage({ browser, rpc, date, demoState, language }: DayView
     }
   }
 
+  async function retryFailedToday(): Promise<void> {
+    if (retryBusy) return
+    setRetryBusy(true)
+    try {
+      const result = RpcMethods["summaries.retryFailedToday"].output.parse(
+        await client.call("summaries.retryFailedToday"),
+      )
+      const count = result.requeued
+      setNotice(
+        language === "ko"
+          ? count > 0
+            ? `요약 작업 ${count}개를 다시 대기열에 넣었습니다.`
+            : "다시 시도할 수 있는 요약 작업이 없습니다."
+          : count > 0
+            ? `${count} summary job${count === 1 ? "" : "s"} queued for retry.`
+            : "No eligible summary jobs to retry.",
+      )
+      setReload((value) => value + 1)
+    } catch {
+      setNotice(
+        language === "ko" ? "요약을 다시 시도할 수 없습니다." : "Could not retry summaries.",
+      )
+    } finally {
+      setRetryBusy(false)
+    }
+  }
+
   const days = load.kind === "ready" ? load.days : []
   const previous = days.filter((day) => day < date).at(-1)
   const next = days.find((day) => day > date)
@@ -179,11 +213,37 @@ export function DayViewPage({ browser, rpc, date, demoState, language }: DayView
                 {t(language, "Next day")} →
               </a>
             )}
+            <button
+              type="button"
+              class="button button-secondary"
+              data-action="refresh-day"
+              onClick={() => setReload((value) => value + 1)}
+            >
+              {language === "ko" ? "요약 새로고침" : "Refresh summaries"}
+            </button>
           </nav>
           {notice && (
             <p role="status" class="supporting-text">
               {notice}
             </p>
+          )}
+          {date === localToday() && load.failedToday > 0 && (
+            <div class="state-message" role="status">
+              <p>
+                {language === "ko"
+                  ? `오늘 요약 작업 ${load.failedToday}개가 실패했습니다. 모델 연결을 확인한 뒤 다시 시도하세요.`
+                  : `${load.failedToday} summary job${load.failedToday === 1 ? "" : "s"} failed today. Check the model connection, then retry.`}
+              </p>
+              <button
+                type="button"
+                class="button button-secondary"
+                data-action="retry-failed-today"
+                disabled={retryBusy}
+                onClick={() => void retryFailedToday()}
+              >
+                {language === "ko" ? "실패한 요약 다시 시도" : "Retry failed summaries"}
+              </button>
+            </div>
           )}
           <div class="day-columns">
             {load.markdown ? (

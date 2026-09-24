@@ -68,11 +68,18 @@ enum SettingsNavigationAction: Equatable {
     case deferToUIDelegate
     case loadInWebView
     case openInDefaultBrowser
+    case openSystemSettings
     case cancel
 }
 
 struct SettingsNavigationPolicy {
     let localPort: Int
+
+    private static let permissionPanes: Set<String> = [
+        "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
+        "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent",
+        "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
+    ]
 
     func isLocal(_ url: URL) -> Bool {
         url.scheme?.lowercased() == "http" && url.host?.lowercased() == "127.0.0.1"
@@ -85,6 +92,7 @@ struct SettingsNavigationPolicy {
             if targetBlank { return isUserLink ? .deferToUIDelegate : .cancel }
             return .allowInWebView
         }
+        if isUserLink && Self.permissionPanes.contains(url.absoluteString) { return .openSystemSettings }
         guard isExternalHTTP(url), isUserLink else { return .cancel }
         return targetBlank ? .deferToUIDelegate : .openInDefaultBrowser
     }
@@ -92,6 +100,7 @@ struct SettingsNavigationPolicy {
     func newWindowAction(for url: URL?, isUserLink: Bool) -> SettingsNavigationAction {
         guard let url, isUserLink else { return .cancel }
         if isLocal(url) { return .loadInWebView }
+        if Self.permissionPanes.contains(url.absoluteString) { return .openSystemSettings }
         return isExternalHTTP(url) ? .openInDefaultBrowser : .cancel
     }
 
@@ -197,6 +206,9 @@ extension SettingsWindowController: WKNavigationDelegate, WKUIDelegate {
                 _ = NSWorkspace.shared.open(url)
             }
             decisionHandler(.cancel)
+        case .openSystemSettings:
+            if let url = navigationAction.request.url { _ = NSWorkspace.shared.open(url) }
+            decisionHandler(.cancel)
         case .loadInWebView, .cancel:
             decisionHandler(.cancel)
         }
@@ -215,6 +227,8 @@ extension SettingsWindowController: WKNavigationDelegate, WKUIDelegate {
             if let request = session.request(forLocalURL: url) { webView.load(request) }
         case .openInDefaultBrowser:
             if !url.absoluteString.contains(session.token) { _ = NSWorkspace.shared.open(url) }
+        case .openSystemSettings:
+            _ = NSWorkspace.shared.open(url)
         case .allowInWebView, .deferToUIDelegate, .cancel:
             break
         }

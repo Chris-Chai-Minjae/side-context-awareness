@@ -612,12 +612,21 @@ async function runPrivateDaemon<TimerId>(options: DaemonOptions<TimerId>): Promi
     onError: fail,
   })
   const mutateSettings = createSettingsMutation(reconciler, (next) => saveSettings(directory, next))
+  const { captureKeyReadInvalidation, ...providerHandlers } = createProviderHandlers({
+    directory,
+    reconciler,
+    helper,
+    mutateSettings,
+  })
+  let kickSummaryPass: () => void = () => {}
   const historyHandlers = createHistoryHandlers({
     db,
     directory,
     stats,
     now: () => clock.now(),
     getMasterKey: () => helper.getMasterKey(),
+    getRetentionDays: () => reconciler.currentSettings.contextAwareness.retentionDays,
+    onSummariesRetried: () => kickSummaryPass(),
     rotateKey: async () => {
       try {
         const result = await helper.sendCommand({ type: "command", name: "keychain.rotate" })
@@ -652,6 +661,7 @@ async function runPrivateDaemon<TimerId>(options: DaemonOptions<TimerId>): Promi
               ? "no-summary-model"
               : null,
       automationUnavailable: () => automationUnavailable,
+      getAsideAdapterHealth: () => asideAdapter.health,
       onAutomationPermissions: (automation) => {
         automationUnavailable = Object.values(automation).some((granted) => !granted)
       },
@@ -659,7 +669,7 @@ async function runPrivateDaemon<TimerId>(options: DaemonOptions<TimerId>): Promi
       mutateSettings,
     }),
     ...createSettingsHandlers({ directory, reconciler, mutateSettings }),
-    ...createProviderHandlers({ directory, reconciler, helper, mutateSettings }),
+    ...providerHandlers,
     ...createMcpUsageHandlers({ directory }),
     ...historyHandlers,
     clear: async (params: unknown) => {
@@ -801,7 +811,7 @@ async function runPrivateDaemon<TimerId>(options: DaemonOptions<TimerId>): Promi
   let closing = false
   let summaryPass: Promise<void> | null = null
   let queuedSummaryPass = false
-  const kickSummaryPass = (): void => {
+  kickSummaryPass = (): void => {
     if (
       closing ||
       clearAllActive ||
@@ -814,21 +824,30 @@ async function runPrivateDaemon<TimerId>(options: DaemonOptions<TimerId>): Promi
       return
     }
     queuedSummaryPass = false
+    const settings = reconciler.currentSettings
     summaryPass = runSummaryPass({
       db,
-      settings: reconciler.currentSettings,
+      settings,
       getCurrentSettings: () => reconciler.currentSettings,
       dataDir: directory,
       now: clock.now(),
       getMasterKey: () => helper.getMasterKey(),
       onDigested: () => indexSync.schedule(),
       getApiKey: async (ref) => {
-        const secret = await helper.sendCommand({
-          type: "command",
-          name: "keychain.get",
-          args: { ref },
-        })
-        return typeof secret === "string" ? secret : undefined
+        const invalidateKeyRead = captureKeyReadInvalidation(settings)
+        try {
+          const secret = await helper.sendCommand({
+            type: "command",
+            name: "keychain.get",
+            args: { ref },
+          })
+          if (typeof secret === "string" && secret.length > 0) return secret
+          invalidateKeyRead(ref)
+          return undefined
+        } catch (error) {
+          invalidateKeyRead(ref)
+          throw error
+        }
       },
     }).then(() => {})
     void summaryPass.catch(fail).finally(() => {

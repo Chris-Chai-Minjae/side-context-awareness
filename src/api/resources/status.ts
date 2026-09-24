@@ -55,6 +55,7 @@ export type StatusResourceDependencies = {
   readonly getToday: () => DayCounters
   readonly getStopReason: () => string | null
   readonly automationUnavailable: () => boolean
+  readonly getAsideAdapterHealth?: () => HelperHealth["asideAdapter"]
   readonly onAutomationPermissions?: (automation: Readonly<Record<string, boolean>>) => void
   readonly now: () => number
   readonly mutateSettings?: SettingsMutation
@@ -117,7 +118,14 @@ export function createStatusHandlers(dependencies: StatusResourceDependencies): 
       const capture = dependencies.reconciler.currentSettings.contextAwareness
       const observed = dependencies.health.current
       const machineState = dependencies.health.state
-      const health = observed ?? { ...UNAVAILABLE_HEALTH, state: machineState }
+      const health: HelperHealth = {
+        ...(observed ?? { ...UNAVAILABLE_HEALTH, state: machineState }),
+        asideAdapter: !capture.asideAdapter
+          ? "off"
+          : observed === null
+            ? "unavailable"
+            : (dependencies.getAsideAdapterHealth?.() ?? "off"),
+      }
       const state =
         observed === null || observed.state === "starting" || observed.state === "stopped"
           ? machineState

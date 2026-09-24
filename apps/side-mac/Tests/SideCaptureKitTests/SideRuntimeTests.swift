@@ -16,6 +16,8 @@ private struct RuntimeKeyStore: SideKeyStore {
     func rotateMasterKey() throws -> Data { Data(repeating: 0x43, count: 32) }
     func setProviderKey(ref: String, secret: String) throws {}
     func providerKey(ref: String) throws -> String? { nil }
+    func providerKeyStatus(ref: String) throws -> (stored: Bool, accessible: Bool) { (false, false) }
+    func authorizeProviderKey(ref: String) throws -> Bool { false }
 }
 
 @MainActor

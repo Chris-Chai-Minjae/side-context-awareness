@@ -4,6 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { ulid } from "ulid"
 import { createHistoryHandlers } from "../../src/api/resources/history"
+import { markNonGlanceEvent } from "../../src/comprehension/queue"
 import { openLedger } from "../../src/ledger/schema"
 import { LedgerStats } from "../../src/ledger/stats"
 
@@ -16,11 +17,13 @@ async function withHistory(
     directory: string
     handlers: ReturnType<typeof createHistoryHandlers>
     rotations: string[]
+    retries: string[]
   }) => Promise<void>,
 ): Promise<void> {
   const directory = mkdtempSync(join(tmpdir(), "side-api-history-"))
   const db = openLedger(join(directory, "ledger.db"))
   const rotations: string[] = []
+  const retries: string[] = []
   const handlers = createHistoryHandlers({
     db,
     directory,
@@ -30,14 +33,47 @@ async function withHistory(
     rotateKey: () => {
       rotations.push("rotated")
     },
+    getRetentionDays: () => 14,
+    onSummariesRetried: () => {
+      retries.push("scheduled")
+    },
   })
   try {
-    await run({ db, directory, handlers, rotations })
+    await run({ db, directory, handlers, rotations, retries })
   } finally {
     db.close()
     rmSync(directory, { recursive: true, force: true })
   }
 }
+
+test("Given failed summaries with retained source today, retry only requeues today's eligible work", async () => {
+  await withHistory(async ({ db, handlers, retries }) => {
+    const eligibleAt = new Date(2026, 8, 24, 9).getTime()
+    const oldAt = new Date(2026, 8, 23, 9).getTime()
+    const eligible = addSummary(db, { at: eligibleAt, status: "failed" })
+    const missingSource = addSummary(db, { at: eligibleAt + 600_000, status: "failed" })
+    const old = addSummary(db, { at: oldAt, status: "failed" })
+    for (const [id, at] of [
+      [eligible, eligibleAt],
+      [old, oldAt],
+    ] as const) {
+      const eventId = `synthetic-${id}`
+      db.query(
+        "INSERT INTO context_awareness_events (id, occurred_at, source, kind, payload) VALUES (?, ?, 'test', 'content.snapshot', '{}')",
+      ).run(eventId, at + 1)
+      markNonGlanceEvent(db, eventId, at + 1)
+    }
+
+    expect(await handlers["summaries.retryFailedToday"](undefined)).toEqual({ requeued: 1 })
+    const state = db.query<{ status: string; attempt_count: number }, [string]>(
+      "SELECT status, attempt_count FROM context_awareness_summaries WHERE id = ?",
+    )
+    expect(state.get(eligible)).toEqual({ status: "pending", attempt_count: 0 })
+    expect(state.get(missingSource)?.status).toBe("failed")
+    expect(state.get(old)?.status).toBe("failed")
+    expect(retries).toEqual(["scheduled"])
+  })
+})
 
 function addSummary(
   db: ReturnType<typeof openLedger>,

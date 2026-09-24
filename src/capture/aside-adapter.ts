@@ -1,4 +1,7 @@
 import { execFile } from "node:child_process"
+import { existsSync } from "node:fs"
+import { homedir } from "node:os"
+import { join } from "node:path"
 import { promisify } from "node:util"
 import { z } from "zod"
 import { ASIDE_ADAPTER_FAILURE_LIMIT, ASIDE_REPL_TIMEOUT_MS } from "../constants"
@@ -61,15 +64,30 @@ export class AsideOutputError extends Error {
 
 const execFileAsync = promisify(execFile)
 
+export function resolveAsideExecutable(
+  home = homedir(),
+  exists: (path: string) => boolean = existsSync,
+): string {
+  return (
+    [join(home, ".local/bin/aside"), "/usr/local/bin/aside", "/opt/homebrew/bin/aside"].find(
+      exists,
+    ) ?? "aside"
+  )
+}
+
 async function runAsideCommand(
   command: string,
   args: readonly string[],
   timeoutMs: number,
 ): Promise<string> {
-  const { stdout } = await execFileAsync(command, [...args], {
-    timeout: timeoutMs,
-    encoding: "utf8",
-  })
+  const { stdout } = await execFileAsync(
+    command === "aside" ? resolveAsideExecutable() : command,
+    [...args],
+    {
+      timeout: timeoutMs,
+      encoding: "utf8",
+    },
+  )
   return stdout
 }
 
