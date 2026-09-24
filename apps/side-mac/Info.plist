@@ -6,6 +6,8 @@
     <string>Side</string>
     <key>CFBundleName</key>
     <string>Side</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon.icns</string>
     <key>CFBundleIdentifier</key>
     <string>com.minjaechai.Side</string>
     <key>CFBundlePackageType</key>

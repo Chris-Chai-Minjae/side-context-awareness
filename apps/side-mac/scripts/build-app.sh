@@ -13,6 +13,9 @@ rm -rf "$app_dir"
 mkdir -p "$app_dir/Contents/MacOS" "$resources/lib" "$resources/web" "$resources/models"
 cp "$bin_dir/Side" "$app_dir/Contents/MacOS/Side"
 cp "$package_dir/Info.plist" "$app_dir/Contents/Info.plist"
+cp "$package_dir/Assets/AppIcon.icns" "$resources/AppIcon.icns"
+cp "$package_dir/Assets/MenuBarTemplate.png" "$resources/MenuBarTemplate.png"
+cp "$package_dir/Assets/MenuBarTemplate@2x.png" "$resources/MenuBarTemplate@2x.png"
 (cd "$repo_dir" && bun run scripts/build-daemon.ts src/cli.ts "$resources/side")
 
 sqlite_library=${SIDE_SQLITE_LIBRARY:-}

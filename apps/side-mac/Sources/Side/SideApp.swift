@@ -14,9 +14,17 @@ struct SideApp: App {
                 Task { await runtime.quit(); NSApplication.shared.terminate(nil) }
             }
         } label: {
-            Image(systemName: menuState.display.systemImage)
-                .accessibilityLabel("Side, \(menuState.display.text)")
-                .task { await menuState.poll() }
+            HStack(spacing: 2) {
+                Image("MenuBarTemplate")
+                    .renderingMode(.template)
+                    .resizable()
+                    .frame(width: 18, height: 18)
+                Image(systemName: menuState.display.systemImage)
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Side, \(menuState.display.text)")
+            .task { await menuState.poll() }
         }
     }
 }
