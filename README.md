@@ -1,5 +1,7 @@
 # Side
 
+**[한국어](README.md) · [English](README.en.md)**
+
 <img src="docs/assets/side-logo.png" alt="Side 로고" width="88">
 
 Side는 Mac에서 활성 브라우저와 앱의 읽을 수 있는 내용을 기기에 기록하고, 나중에 시간·단어·주제로 찾아볼 수 있는 메뉴바 앱입니다. Aside Context Awareness의 macOS 동작을 독립적으로 구현했으며, Aside 설치나 Max 플랜 없이 사용할 수 있습니다.
