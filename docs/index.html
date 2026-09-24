@@ -209,7 +209,7 @@ open /Applications/Side.app</code></pre><p class="detail">앱을 종료한 뒤 �
           <p class="eyebrow">Open source macOS menu bar app</p>
           <h1>Find the context<br>behind your day.</h1>
           <p class="lead">Side stores readable content from active browser and Mac app windows on your device. Search it with its sources, or create daily summaries after configuring a provider and consenting to send activity briefings. Connected agents can search that history too.</p>
-          <div class="actions"><a class="button primary" href="#start-en">Build on your Mac</a><a class="button" href="side-for-beginners.html">Complete beginner guide (Korean) ↗</a><a class="button" href="https://github.com/Chris-Chai-Minjae/side-context-awareness">View source ↗</a></div>
+          <div class="actions"><a class="button primary" href="#start-en">Build on your Mac</a><a class="button" href="side-for-beginners.en.html">Complete beginner guide ↗</a><a class="button" href="https://github.com/Chris-Chai-Minjae/side-context-awareness">View source ↗</a></div>
           <p class="hero-note">In development · macOS 14+ · source build only</p>
         </div>
         <figure class="preview" aria-label="Illustrative Side history view">
@@ -229,7 +229,7 @@ open /Applications/Side.app</code></pre><p class="detail">앱을 종료한 뒤 �
           <div class="flow-image"><img src="assets/side-flow.png" width="2103" height="748" loading="lazy" decoding="async" alt="Four linked stages: Side reads active Mac windows, stores activity locally, makes it searchable by date, and connects it to agents"></div>
           <figcaption>
             <ol class="flow-stages"><li><span>01</span>Read active windows</li><li><span>02</span>Store on your Mac</li><li><span>03</span>Search records and summaries</li><li><span>04</span>Find with Aside agents</li></ol>
-            <p class="flow-note">While Side.app is running, register Side as an MCP server in Aside so Aside agents can search activity recorded by Side. <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.md">See connection steps ↗</a></p>
+            <p class="flow-note">While Side.app is running, register Side as an MCP server in Aside so Aside agents can search activity recorded by Side. <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.en.md">See connection steps ↗</a></p>
           </figcaption>
         </figure>
         <div class="steps">
@@ -239,7 +239,7 @@ open /Applications/Side.app</code></pre><p class="detail">앱을 종료한 뒤 �
         </div>
       </div></section>
       <section class="section" id="start-en"><div class="shell split">
-        <div><p class="kicker">Get started</p><h2>Build it from source.</h2><p>Requires macOS 14+, Bun, Xcode Command Line Tools, and a SQLite dylib with FTS5 and extension loading. The build downloads the MiniLM model.</p><p><a href="side-for-beginners.html">Detailed beginner guide (Korean) ↗</a></p></div>
+        <div><p class="kicker">Get started</p><h2>Build it from source.</h2><p>Requires macOS 14+, Bun, Xcode Command Line Tools, and a SQLite dylib with FTS5 and extension loading. The build downloads the MiniLM model.</p><p><a href="side-for-beginners.en.html">Detailed beginner guide ↗</a></p></div>
         <div><pre class="code-block"><code>git clone https://github.com/Chris-Chai-Minjae/side-context-awareness.git
 cd side-context-awareness
 bun install --frozen-lockfile
@@ -252,7 +252,7 @@ open /Applications/Side.app</code></pre><p class="detail">Quit Side before copyi
         <div><div class="facts">
           <div class="fact"><strong>Summary provider</strong><p>Provider setup is optional. Capture can run without one, but summaries will wait.</p></div>
           <div class="fact"><strong>MCP connection</strong><p>Register Side's local MCP server separately in Claude Code, Codex, Cursor, Aside, or another client.</p></div>
-        </div><pre class="code-block"><code>claude mcp add --scope user side -- "/Applications/Side.app/Contents/Resources/side" mcp</code></pre><p class="detail">Example: register Side in Claude Code at user scope while Side is running. See <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.md">agent connection instructions ↗</a> for other clients.</p></div>
+        </div><pre class="code-block"><code>claude mcp add --scope user side -- "/Applications/Side.app/Contents/Resources/side" mcp</code></pre><p class="detail">Example: register Side in Claude Code at user scope while Side is running. See <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.en.md">agent connection instructions ↗</a> for other clients.</p></div>
       </div></section>
       <section class="section" id="privacy-en"><div class="shell split">
         <div><p class="kicker">Privacy and consent</p><h2>Choose what stays and what leaves.</h2><p>Side does not sync raw captures to the cloud. Set retention, exclusions, pause capture, or delete Side history.</p></div>
@@ -275,7 +275,7 @@ open /Applications/Side.app</code></pre><p class="detail">Quit Side before copyi
       const sections = document.querySelectorAll('[data-locale]');
       const buttons = document.querySelectorAll('[data-switch]');
       const nav = document.querySelectorAll('[data-ko][data-en]');
-      const names = { ko: { title: 'Side — Mac 활동 기록과 검색', description: 'Side는 Mac의 활성 창에서 읽을 수 있는 내용을 기기에 기록하고, 기록과 출처를 검색할 수 있는 오픈 소스 메뉴바 앱입니다.', footer: '소스에서 빌드해 사용하는 macOS 앱', guide: '처음 사용하기' }, en: { title: 'Side — Find the context behind your day', description: 'Side is an open source macOS menu bar app for local activity history, summaries, and source-aware recall.', footer: 'Build from source on macOS', guide: 'Beginner guide (KO)' } };
+      const names = { ko: { title: 'Side — Mac 활동 기록과 검색', description: 'Side는 Mac의 활성 창에서 읽을 수 있는 내용을 기기에 기록하고, 기록과 출처를 검색할 수 있는 오픈 소스 메뉴바 앱입니다.', footer: '소스에서 빌드해 사용하는 macOS 앱', guide: '처음 사용하기' }, en: { title: 'Side — Find the context behind your day', description: 'Side is an open source macOS menu bar app for local activity history, summaries, and source-aware recall.', footer: 'Build from source on macOS', guide: 'Beginner guide' } };
       function setLanguage(language) {
         if (!names[language]) return;
         document.documentElement.lang = language;
@@ -289,6 +289,7 @@ open /Applications/Side.app</code></pre><p class="detail">Quit Side before copyi
         });
         document.getElementById('footer-copy').textContent = names[language].footer;
         document.getElementById('guide-link').textContent = names[language].guide;
+        document.getElementById('guide-link').href = language === 'en' ? 'side-for-beginners.en.html' : 'side-for-beginners.html';
       }
       buttons.forEach(button => { button.addEventListener('click', () => setLanguage(button.dataset.switch)); });
       setLanguage(navigator.language.toLowerCase().startsWith('ko') ? 'ko' : 'en');
