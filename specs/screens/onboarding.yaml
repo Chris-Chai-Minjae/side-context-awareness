@@ -1,0 +1,56 @@
+version: "2.0"
+# 출처: docs/planning/06-screens.md S7(+), 03-capture.md §8.2. 네이티브 SwiftUI 시트
+screen:
+  name: 첫 실행 온보딩
+  route: native://onboarding
+  layout: full-width
+
+data_requirements:
+  - resource: permissions
+    needs: [accessibility, input_monitoring, screen_recording]
+  - resource: settings
+    needs: [enabled, screen_ocr, providers]
+
+components:
+  - id: intro_step
+    type: detail
+    position: main
+    function: "헤더 문구 + 'Everything stays on this Mac unless you choose a summary provider.'"
+    events: [{ on: click:continue, do: 다음 단계 }]
+  - id: permission_steps
+    type: form
+    position: main
+    function: "Accessibility → Input Monitoring → (선택) Screen Recording. 각 단계는 시스템 설정 딥링크 + 1s 폴링으로 부여 감지"
+    data_source: { resource: permissions }
+    events:
+      - { on: click:open_settings, do: "x-apple.systempreferences:com.apple.preference.security?Privacy_<kind>" }
+      - { on: granted, do: 자동으로 다음 단계, health.permissionSheetVisible 갱신 }
+      - { on: skip:screen_recording, do: "settings.patch({screenOcr:false})" }
+  - id: provider_step
+    type: form
+    position: main
+    function: 요약 provider 추가(이름·Base URL·API key·모델) 또는 건너뛰기
+    data_source: { resource: settings }
+    events:
+      - { on: submit, do: "settings.patch(providers) + providers.setKey + providers.test" }
+      - { on: skip, do: 캡처만 시작(요약은 대기 상태) }
+  - id: finish_step
+    type: detail
+    position: main
+    function: "'Enable Context Awareness' 최종 확인 → settings.patch({enabled:true})"
+    events: [{ on: click:enable, do: 시트 닫고 메뉴바 상태 갱신 }]
+
+connections:
+  navigations:
+    - { from: finish_step, to: "native://menubar" }
+
+tests:
+  - name: 권한 부여 감지
+    when: 시스템 설정에서 Accessibility 부여
+    then: [2s 안에 다음 단계로 자동 이동]
+  - name: Screen Recording 후 재개
+    when: Screen Recording 부여로 앱이 재시작됨
+    then: ["재시작 뒤 온보딩이 provider 단계부터 이어서 열림"]
+  - name: provider 건너뛰기
+    when: provider 단계 건너뜀 후 Enable
+    then: ["enabled=true, 캡처는 running", "요약 작업은 pending으로 쌓이고 stop_reason='no-summary-model'"]

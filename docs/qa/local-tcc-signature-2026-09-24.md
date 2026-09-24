@@ -1,0 +1,11 @@
+# Local Side rebuild and repeated TCC permission request
+
+Date: 2026-09-24. This is a local install diagnosis, not a completed physical TCC gate.
+
+The previously installed `/Applications/Side.app` had an ad hoc GUI code hash beginning `fc1dda4f`. A newly built bilingual app installed at the same path had ad hoc GUI code hash beginning `7a5a3074`. After the new app launched, the user reported that an Accessibility or Input Monitoring permission request appeared again. The Side GUI and daemon were stopped; the user confirmed that the prompt disappeared.
+
+Read-only `tccd` logs from that launch reported `Failed to match existing code requirement for subject com.minjaechai.Side` for `kTCCServiceAccessibility` and `kTCCServiceScreenCapture`. These records directly support a code-signature identity mismatch for those two services. The exact visible dialog text was not captured, so they do not prove which individual system dialog the user saw or establish the Input Monitoring result.
+
+The new app was moved to `/tmp/Side-new-bilingual-20260924.app`, and the previous app was restored to `/Applications/Side.app`. `codesign --verify --deep --strict /Applications/Side.app` passed. The restored GUI code hash is again `fc1dda4f`. It has **not** been relaunched to test TCC, so its current permission state and capture startup remain unverified. No `tccutil reset`, TCC database edit, user ledger read, or direct Keychain probe was performed.
+
+`apps/side-mac/scripts/build-app.sh` uses ad hoc signing (`codesign --sign -`) for local builds. Apple's [Code Signing Guide](https://developer.apple.com/library/archive/documentation/Security/Conceptual/CodeSigningGuide/Introduction/Introduction.html) says that a stable signature lets macOS recognize a new version as the same app. Apple's [ad hoc signature documentation](https://developer.apple.com/documentation/security/seccodesignatureflags/adhoc) says that an ad hoc signature has no signing identity. The repository README already warns that replacing a local build can require granting macOS privacy permissions again. A stable local signing identity could be evaluated separately for source builders; no certificate, signing workflow, or approved release spec was changed in this incident.

@@ -1,0 +1,1 @@
+{"name":"record_summary","arguments":{"title":"PWNED","citations":["e:invented"]}}

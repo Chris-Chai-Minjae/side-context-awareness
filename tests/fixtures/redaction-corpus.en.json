@@ -1,0 +1,279 @@
+{
+  "language": "en",
+  "positive": [
+    {
+      "name": "plain private key block",
+      "input": "Example:\n-----BEGIN PRIVATE KEY-----\nSYNTHETIC_NOT_A_KEY\n-----END PRIVATE KEY-----",
+      "secret": "-----BEGIN PRIVATE KEY-----\nSYNTHETIC_NOT_A_KEY\n-----END PRIVATE KEY-----",
+      "rule": "private-key-block"
+    },
+    {
+      "name": "RSA private key block",
+      "input": "Sample:\n-----BEGIN RSA PRIVATE KEY-----\nDEMO_RSA_NOT_KEY\n-----END RSA PRIVATE KEY-----",
+      "secret": "-----BEGIN RSA PRIVATE KEY-----\nDEMO_RSA_NOT_KEY\n-----END RSA PRIVATE KEY-----",
+      "rule": "private-key-block"
+    },
+    {
+      "name": "EC private key block",
+      "input": "Fixture:\n-----BEGIN EC PRIVATE KEY-----\nDEMO_EC_NOT_KEY\n-----END EC PRIVATE KEY-----",
+      "secret": "-----BEGIN EC PRIVATE KEY-----\nDEMO_EC_NOT_KEY\n-----END EC PRIVATE KEY-----",
+      "rule": "private-key-block"
+    },
+    {
+      "name": "OpenSSH private key block",
+      "input": "Illustration:\n-----BEGIN OPENSSH PRIVATE KEY-----\nDEMO_SSH_NOT_KEY\n-----END OPENSSH PRIVATE KEY-----",
+      "secret": "-----BEGIN OPENSSH PRIVATE KEY-----\nDEMO_SSH_NOT_KEY\n-----END OPENSSH PRIVATE KEY-----",
+      "rule": "private-key-block"
+    },
+    {
+      "name": "AKIA letters",
+      "input": "Example ID AKIAABCDEFGHIJKLMNOP",
+      "secret": "AKIAABCDEFGHIJKLMNOP",
+      "rule": "aws-access-key"
+    },
+    {
+      "name": "ASIA mixed characters",
+      "input": "Sample ID ASIA1234567890ABCDEF",
+      "secret": "ASIA1234567890ABCDEF",
+      "rule": "aws-access-key"
+    },
+    {
+      "name": "AKIA zeroes",
+      "input": "Fixture ID AKIA0000000000000000",
+      "secret": "AKIA0000000000000000",
+      "rule": "aws-access-key"
+    },
+    {
+      "name": "ASIA letters",
+      "input": "Mock ID ASIAAAAAAAAAAAAAAAAA",
+      "secret": "ASIAAAAAAAAAAAAAAAAA",
+      "rule": "aws-access-key"
+    },
+    {
+      "name": "three demo segments",
+      "input": "Example token eyJFAKEDEMOA.FAKEPAYLOADA.FAKESIGNATUREA",
+      "secret": "eyJFAKEDEMOA.FAKEPAYLOADA.FAKESIGNATUREA",
+      "rule": "jwt"
+    },
+    {
+      "name": "dash and underscore segments",
+      "input": "Sample token eyJDEMO_1234.PAYLOAD-1234.SIGNATURE_1234",
+      "secret": "eyJDEMO_1234.PAYLOAD-1234.SIGNATURE_1234",
+      "rule": "jwt"
+    },
+    {
+      "name": "mixed alphanumeric segments",
+      "input": "Fixture token eyJABCDEF123.ABCDEF12345.XYZ12345678",
+      "secret": "eyJABCDEF123.ABCDEF12345.XYZ12345678",
+      "rule": "jwt"
+    },
+    {
+      "name": "long demo segments",
+      "input": "Mock token eyJMOCKTOKEN1.MOCKPAYLOAD1.MOCKSIGNATURE1",
+      "secret": "eyJMOCKTOKEN1.MOCKPAYLOAD1.MOCKSIGNATURE1",
+      "rule": "jwt"
+    },
+    {
+      "name": "bot token",
+      "input": "Example token xoxb-FAKEDEMO1234",
+      "secret": "xoxb-FAKEDEMO1234",
+      "rule": "slack-token"
+    },
+    {
+      "name": "app token",
+      "input": "Sample token xoxa-SYNTHETIC12345",
+      "secret": "xoxa-SYNTHETIC12345",
+      "rule": "slack-token"
+    },
+    {
+      "name": "user token",
+      "input": "Fixture token xoxp-DEMONOTREAL123",
+      "secret": "xoxp-DEMONOTREAL123",
+      "rule": "slack-token"
+    },
+    {
+      "name": "refresh token",
+      "input": "Mock token xoxr-EXAMPLEONLY123",
+      "secret": "xoxr-EXAMPLEONLY123",
+      "rule": "slack-token"
+    },
+    {
+      "name": "Stripe test style",
+      "input": "Example key sk\u005ftest_AAAAAAAAAAAAAAAAAAAAAAAA",
+      "secret": "sk\u005ftest_AAAAAAAAAAAAAAAAAAAAAAAA",
+      "rule": "api-key"
+    },
+    {
+      "name": "Stripe live shaped dummy",
+      "input": "Sample key pk_live_BBBBBBBBBBBBBBBBBBBBBBBB",
+      "secret": "pk_live_BBBBBBBBBBBBBBBBBBBBBBBB",
+      "rule": "api-key"
+    },
+    {
+      "name": "GitHub shaped dummy",
+      "input": "Fixture key ghp_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+      "secret": "ghp_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+      "rule": "api-key"
+    },
+    {
+      "name": "Google shaped dummy",
+      "input": "Mock key AIzaDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+      "secret": "AIzaDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+      "rule": "api-key"
+    },
+    {
+      "name": "API key label",
+      "input": "api_key: DEMO_ONLY",
+      "secret": "api_key: DEMO_ONLY",
+      "rule": "labeled-secret"
+    },
+    {
+      "name": "access token label",
+      "input": "access-token=EXAMPLE_ONLY",
+      "secret": "access-token=EXAMPLE_ONLY",
+      "rule": "labeled-secret"
+    },
+    {
+      "name": "secret label",
+      "input": "secret: FAKE_VALUE",
+      "secret": "secret: FAKE_VALUE",
+      "rule": "labeled-secret"
+    },
+    {
+      "name": "password label",
+      "input": "password=NOT_A_PASSWORD",
+      "secret": "password=NOT_A_PASSWORD",
+      "rule": "labeled-secret"
+    },
+    {
+      "name": "OTP context",
+      "input": "otp: 000000",
+      "secret": "000000",
+      "rule": "otp-numeric"
+    },
+    {
+      "name": "code context",
+      "input": "code is 111111",
+      "secret": "111111",
+      "rule": "otp-numeric"
+    },
+    {
+      "name": "OTP with nearby words",
+      "input": "otp expires soon: 222222",
+      "secret": "222222",
+      "rule": "otp-numeric"
+    },
+    {
+      "name": "code with separator",
+      "input": "code = 333333",
+      "secret": "333333",
+      "rule": "otp-numeric"
+    },
+    {
+      "name": "Visa public test card",
+      "input": "Test card 4111 1111 1111 1111",
+      "secret": "4111 1111 1111 1111",
+      "rule": "card-number"
+    },
+    {
+      "name": "Mastercard public test card",
+      "input": "Test card 5555-5555-5555-4444",
+      "secret": "5555-5555-5555-4444",
+      "rule": "card-number"
+    },
+    {
+      "name": "Amex public test card",
+      "input": "Test card 378282246310005",
+      "secret": "378282246310005",
+      "rule": "card-number"
+    },
+    {
+      "name": "Discover public test card",
+      "input": "Test card 6011 1111 1111 1117",
+      "secret": "6011 1111 1111 1117",
+      "rule": "card-number"
+    }
+  ],
+  "negative": [
+    {
+      "name": "calendar date",
+      "input": "Meeting date 2026-09-24"
+    },
+    {
+      "name": "timestamp",
+      "input": "Recorded at 14:30:00"
+    },
+    {
+      "name": "eight digit invoice",
+      "input": "Invoice 12345678"
+    },
+    {
+      "name": "ten digit phone-shaped number",
+      "input": "Reference 5550123456"
+    },
+    {
+      "name": "ISBN-13",
+      "input": "ISBN 978-0-306-40615-7"
+    },
+    {
+      "name": "ISBN-10",
+      "input": "ISBN 0-306-40615-2"
+    },
+    {
+      "name": "invalid thirteen digit number",
+      "input": "reference 1234567890123"
+    },
+    {
+      "name": "invalid Visa-shaped number",
+      "input": "reference 4111 1111 1111 1112"
+    },
+    {
+      "name": "invalid Amex-shaped number",
+      "input": "reference 378282246310006"
+    },
+    {
+      "name": "decimal budget",
+      "input": "Budget 1234567.89"
+    },
+    {
+      "name": "short AWS-shaped ID",
+      "input": "AKIAABCDEFGHIJKLMNO"
+    },
+    {
+      "name": "lowercase AWS-shaped ID",
+      "input": "akiaABCDEFGHIJKLMNOP"
+    },
+    {
+      "name": "short Slack-shaped token",
+      "input": "xoxb-short"
+    },
+    {
+      "name": "short JWT-shaped text",
+      "input": "eyJshort.part.short"
+    },
+    {
+      "name": "short Stripe-shaped key",
+      "input": "sk_test_SHORT"
+    },
+    {
+      "name": "short GitHub-shaped key",
+      "input": "ghp_ABCDEF"
+    },
+    {
+      "name": "short Google-shaped key",
+      "input": "AIzaSHORT"
+    },
+    {
+      "name": "unlabeled password prose",
+      "input": "password reset instructions"
+    },
+    {
+      "name": "semantic word containing pin",
+      "input": "pinning diagrams"
+    },
+    {
+      "name": "version and year",
+      "input": "version 1.2.3 released in 2026"
+    }
+  ]
+}

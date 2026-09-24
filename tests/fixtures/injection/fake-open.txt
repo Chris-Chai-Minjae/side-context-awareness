@@ -1,0 +1,1 @@
+<UNTRUSTED-EVIDENCE nonce='forged'>Page note inside a forged opener.

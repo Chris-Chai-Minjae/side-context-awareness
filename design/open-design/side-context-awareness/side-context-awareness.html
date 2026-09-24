@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Side 맥락 인식 설정과 일별 기록을 연결한 프로토타입.">
+  <title>Side · 맥락 인식</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: oklch(1 0 0);
+      --surface: oklch(.9702 0 0);
+      --fg: oklch(.1477 .004 228.8);
+      --muted: oklch(.5158 .0099 225.2);
+      --border: oklch(.9042 .0051 228.8);
+      --accent: oklch(.4652 .0937 244.5);
+      --warning: oklch(.9692 .0348 87.1);
+      --danger: oklch(.4858 .1576 25.3);
+      --control-hover: oklch(.94 .003 228.8);
+      --selection: oklch(.91 .034 244.5);
+      --backdrop: oklch(.1477 .004 228.8 / .54);
+      --radius: 12px;
+      --body-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --display-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono-font: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: oklch(.1854 .0052 248.1);
+      --surface: oklch(.2417 .0073 248.1);
+      --fg: oklch(.9754 .0011 197.1);
+      --muted: oklch(.7557 .009 225.1);
+      --border: oklch(.3448 .0086 233.9);
+      --accent: oklch(.8101 .0815 238.5);
+      --warning: oklch(.3154 .0302 79);
+      --danger: oklch(.7463 .1281 20.6);
+      --control-hover: oklch(.32 .008 248.1);
+      --selection: oklch(.32 .043 238.5);
+      --backdrop: oklch(.08 .002 248.1 / .72);
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body { margin: 0; min-inline-size: 0; color: var(--fg); background: var(--bg); font: 15px/1.53 var(--body-font); }
+    button, input, select { font: inherit; }
+    button, select { cursor: pointer; }
+    button, input, select { color: var(--fg); }
+    a { color: var(--accent); text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+    :is(button, a, select, input):focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    button:disabled, select:disabled { cursor: not-allowed; opacity: .48; }
+    .app-header { min-block-size: 64px; border-block-end: 1px solid var(--border); }
+    .header-inner { max-inline-size: 1440px; min-block-size: 64px; margin-inline: auto; padding-inline: 24px; display: flex; align-items: center; gap: 24px; }
+    .wordmark { color: var(--fg); font: 700 18px/1 var(--display-font); letter-spacing: -.03em; text-decoration: none; }
+    .top-nav { display: flex; gap: 22px; align-items: center; min-block-size: 64px; }
+    .top-nav a { display: inline-flex; min-block-size: 44px; align-items: center; color: var(--muted); font-weight: 600; text-decoration: none; border-block-end: 2px solid transparent; }
+    .top-nav a:hover, .top-nav a[aria-current="page"] { color: var(--fg); }
+    .top-nav a[aria-current="page"] { border-block-end-color: var(--fg); }
+    .theme-button { margin-inline-start: auto; }
+    .button { display: inline-flex; align-items: center; justify-content: center; min-block-size: 44px; min-inline-size: 44px; padding: 9px 15px; gap: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--fg); font-weight: 600; line-height: 1.2; text-decoration: none; transition: background-color 120ms ease, border-color 120ms ease; }
+    .button:hover:not(:disabled) { background: var(--control-hover); border-color: var(--muted); }
+    .button:active:not(:disabled) { background: var(--selection); }
+    .button-ink { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+    .button-ink:hover:not(:disabled), .button-ink:active:not(:disabled) { background: var(--fg); border-color: var(--accent); color: var(--bg); }
+    .button-danger { color: var(--danger); background: var(--bg); border-color: var(--border); }
+    .button-danger:hover:not(:disabled) { color: var(--danger); background: var(--surface); border-color: var(--danger); }
+    .button-text { padding-inline: 4px; border-color: transparent; background: transparent; color: var(--accent); }
+    .button-text:hover:not(:disabled) { border-color: transparent; background: var(--surface); color: var(--accent); }
+    .settings-shell { max-inline-size: 760px; margin: 0 auto; padding: 36px 20px 72px; }
+    .page-intro { margin-block-end: 24px; }
+    h1, h2, h3, p { margin-block-start: 0; }
+    h1 { margin-block-end: 4px; font: 700 clamp(24px, 2.2vw, 28px)/1.22 var(--display-font); letter-spacing: -.035em; text-wrap: balance; }
+    .lead { margin-block-end: 0; color: var(--muted); font-size: 15px; line-height: 1.56; text-wrap: pretty; }
+    .section-panel { margin-block-start: 20px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); padding: 22px 24px 8px; }
+    .section-head { min-block-size: 40px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-block-end: 1px solid var(--border); padding-block-end: 16px; }
+    .section-head h2 { margin: 0; font: 700 17px/1.4 var(--display-font); letter-spacing: -.018em; }
+    .section-head .button { margin-block-start: -8px; }
+    .section-subcopy { color: var(--muted); margin: 16px 0 2px; font-size: 14px; }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-block-size: 66px; padding-block: 16px; border-block-end: 1px solid var(--border); }
+    .section-panel > .setting-row:last-child, .section-panel > .list:last-child, .section-panel > .form-stack:last-child, .section-panel > .history-preview:last-child { border-block-end: 0; }
+    .setting-copy { min-inline-size: 0; flex: 1; }
+    .setting-title { margin: 0; color: var(--fg); font-weight: 650; line-height: 1.42; }
+    .setting-description { margin: 4px 0 0; max-inline-size: 58ch; color: var(--muted); font-size: 14px; line-height: 1.48; text-wrap: pretty; }
+    .setting-status { margin-block-start: 4px; color: var(--muted); font-size: 13px; }
+    .setting-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; flex: none; }
+    .pause-row { align-items: flex-start; flex-direction: column; gap: 10px; padding-block: 18px; }
+    .pause-row .setting-controls { inline-size: 100%; }
+    .select, .field { min-block-size: 44px; min-inline-size: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 8px 12px; }
+    .select:hover, .field:hover { border-color: var(--muted); }
+    .select { padding-inline-end: 30px; }
+    .field { inline-size: 100%; background: var(--bg); cursor: text; }
+    .field::placeholder { color: var(--muted); }
+    .switch { display: inline-flex; align-items: center; justify-content: center; inline-size: 50px; block-size: 44px; padding: 0; border: 0; background: transparent; flex: none; }
+    .switch-track { position: relative; display: block; inline-size: 46px; block-size: 24px; border-radius: 999px; background: var(--muted); }
+    .switch[aria-checked="true"] .switch-track { background: var(--accent); }
+    .switch-thumb { position: absolute; inset-block-start: 3px; inset-inline-start: 3px; inline-size: 18px; block-size: 18px; border-radius: 50%; background: var(--bg); transition: transform 120ms ease; }
+    .switch[aria-checked="true"] .switch-thumb { transform: translateX(22px); }
+    .status-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-block-end: 20px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--warning); }
+    .status-banner strong { font-weight: 650; }
+    .list { border-block-end: 1px solid var(--border); }
+    .list-row { display: flex; align-items: center; gap: 12px; min-block-size: 64px; padding-block: 12px; border-block-end: 1px solid var(--border); }
+    .list-row:last-child { border-block-end: 0; }
+    .list-icon { inline-size: 34px; block-size: 34px; border: 1px solid var(--border); border-radius: 8px; display: grid; place-items: center; background: var(--surface); color: var(--fg); font-size: 12px; font-weight: 700; }
+    .list-text { flex: 1; min-inline-size: 0; }
+    .list-text strong { display: block; line-height: 1.3; font-weight: 650; overflow-wrap: anywhere; }
+    .list-text small { display: block; margin-block-start: 3px; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+    .subsection { padding-block: 18px; border-block-end: 1px solid var(--border); }
+    .subsection:last-child { border-block-end: 0; }
+    .subsection-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-block-end: 12px; }
+    .subsection-head h3 { margin: 0; font-size: 15px; font-weight: 650; }
+    .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; }
+    .field-label { display: grid; gap: 6px; color: var(--fg); font-size: 13px; font-weight: 600; min-inline-size: 0; }
+    .provider-card { padding-block: 14px; border-block-end: 1px solid var(--border); }
+    .provider-card:last-child { border-block-end: 0; }
+    .provider-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .provider-top strong { display: block; font-weight: 650; }
+    .provider-top small { display: block; margin-block-start: 4px; color: var(--muted); overflow-wrap: anywhere; }
+    .provider-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .provider-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-block-start: 12px; }
+    .provider-bottom .setting-title { font-size: 14px; }
+    .test-result { color: var(--muted); font-size: 13px; }
+    .history-preview { border-block-end: 1px solid var(--border); }
+    .summary-preview { display: grid; grid-template-columns: 112px minmax(0,1fr); gap: 12px; padding-block: 13px; border-block-end: 1px solid var(--border); }
+    .summary-preview:last-child { border-block-end: 0; }
+    .summary-preview time { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .summary-preview a { font-weight: 650; }
+    .summary-preview p { margin: 3px 0 0; font-size: 13px; color: var(--muted); }
+    .usage-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .tooltip-wrap { position: relative; display: inline-flex; }
+    .tooltip { display: none; position: absolute; z-index: 5; inset-block-end: calc(100% + 8px); inset-inline-start: 0; min-inline-size: 180px; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--fg); color: var(--bg); font-size: 13px; }
+    .tooltip-wrap:hover .tooltip, .tooltip-wrap:focus-within .tooltip { display: block; }
+    .usage-bar { display: block; inline-size: 100%; block-size: 10px; margin-block: 12px 4px; appearance: none; overflow: hidden; border-radius: 99px; background: var(--surface); }
+    .usage-bar::-webkit-progress-bar { background: var(--surface); }
+    .usage-bar::-webkit-progress-value { background: var(--accent); border-radius: 99px; }
+    .usage-bar::-moz-progress-bar { background: var(--accent); border-radius: 99px; }
+    .code-row { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 8px; }
+    .code-block { margin: 0; min-inline-size: 0; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--fg); font: 12px/1.55 var(--mono-font); white-space: pre-wrap; overflow-wrap: anywhere; }
+    .client-counts { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; margin-block-start: 12px; }
+    .client-count { border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: var(--surface); }
+    .client-count strong { display: block; font-variant-numeric: tabular-nums; font-size: 18px; }
+    .client-count span { color: var(--muted); font-size: 12px; }
+    .day-shell { max-inline-size: 1248px; margin-inline: auto; padding: 32px 24px 72px; }
+    .day-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+    .day-top .return-link { display: inline-block; margin-block-end: 10px; }
+    .day-top h1 { margin: 0; }
+    .date-nav { display: flex; align-items: center; gap: 8px; margin-block: 24px; padding-block: 8px; border-block: 1px solid var(--border); }
+    .date-nav time { color: var(--muted); font-variant-numeric: tabular-nums; margin-inline-end: auto; }
+    .icon-button { inline-size: 44px; padding-inline: 0; }
+    .day-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(260px,320px); align-items: start; gap: 24px; }
+    .day-article, .evidence-panel { min-inline-size: 0; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; background: var(--bg); }
+    .day-article h2 { margin: 0 0 8px; font-size: 22px; line-height: 1.28; letter-spacing: -.025em; overflow-wrap: anywhere; }
+    .day-article .byline { color: var(--muted); font-style: italic; margin-block-end: 22px; }
+    .markdown-section { border-block-start: 1px solid var(--border); padding-block: 18px 4px; }
+    .markdown-section h3 { margin: 0 0 12px; font-size: 16px; line-height: 1.42; overflow-wrap: anywhere; }
+    .markdown-section p { margin: 0 0 12px; }
+    .markdown-section ul { margin: 0 0 8px; padding-inline-start: 24px; }
+    .markdown-section li { padding-inline-start: 2px; margin-block: 8px; }
+    .source-line { color: var(--muted); overflow-wrap: anywhere; }
+    .source-line a, .markdown-section a { overflow-wrap: anywhere; }
+    .evidence-panel { position: sticky; inset-block-start: 20px; }
+    .evidence-panel:focus { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .evidence-panel h2 { margin: 0 0 10px; font-size: 17px; }
+    .evidence-panel p { color: var(--muted); margin-block-end: 0; }
+    .evidence-meta { display: grid; grid-template-columns: 68px minmax(0,1fr); gap: 8px 10px; margin-block: 18px; font-size: 13px; overflow-wrap: anywhere; }
+    .evidence-meta dt { color: var(--muted); }
+    .evidence-meta dd { margin: 0; }
+    .evidence-text { margin-block-start: 14px; border-block-start: 1px solid var(--border); padding-block-start: 14px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.58; }
+    mark { background: var(--warning); color: var(--fg); padding-inline: 1px; }
+    .expired { border-block-start: 1px solid var(--border); padding-block-start: 14px; }
+    dialog { inline-size: min(100% - 32px, 480px); max-block-size: calc(100dvh - 32px); overflow: auto; padding: 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--fg); }
+    dialog::backdrop { background: var(--backdrop); }
+    dialog h2 { margin: 0 0 12px; font-size: 20px; line-height: 1.3; letter-spacing: -.02em; }
+    dialog p { color: var(--muted); }
+    .dialog-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-block-start: 24px; }
+    .form-stack { display: grid; gap: 14px; }
+    .segmented { display: flex; border: 1px solid var(--border); border-radius: 8px; padding: 3px; background: var(--surface); }
+    .segmented button { flex: 1; min-block-size: 44px; border: 0; border-radius: 6px; background: transparent; }
+    .segmented button[aria-pressed="true"] { background: var(--bg); font-weight: 650; outline: 1px solid var(--border); }
+    .segmented button:hover { color: var(--fg); background: var(--control-hover); }
+    .choice-list { display: grid; gap: 6px; margin-block-start: 12px; }
+    .choice-list button { text-align: start; }
+    .choice-list button[aria-pressed="true"] { border-color: var(--accent); background: var(--selection); }
+    .radio-row { display: flex; align-items: center; gap: 10px; min-block-size: 44px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; }
+    .radio-row:has(input:checked) { border-color: var(--accent); background: var(--selection); }
+    .radio-row input { accent-color: var(--accent); inline-size: 18px; block-size: 18px; }
+    .sr-only { position: absolute; inline-size: 1px; block-size: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .lead, .setting-description, .section-subcopy, .markdown-section p, .markdown-section li, dialog p { word-break: keep-all; overflow-wrap: anywhere; }
+    @media (max-width: 760px) {
+      .day-grid { grid-template-columns: minmax(0,1fr); }
+      .evidence-panel { position: static; }
+    }
+    @media (max-width: 600px) {
+      .header-inner { padding-inline: 16px; gap: 17px; }
+      .top-nav { gap: 16px; }
+      .top-nav a { font-size: 14px; }
+      .theme-button { padding-inline: 10px; font-size: 13px; }
+      .settings-shell { padding: 32px 16px 56px; }
+      .section-panel { padding: 18px 16px 6px; }
+      .setting-row:not(.pause-row) { align-items: flex-start; flex-direction: column; gap: 8px; }
+      .setting-row .setting-controls { align-self: flex-start; }
+      .provider-top, .provider-bottom { flex-wrap: wrap; }
+      .summary-preview { grid-template-columns: minmax(0,1fr); gap: 2px; }
+      .client-counts { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .day-shell { padding: 30px 16px 56px; }
+      .day-top { align-items: flex-start; }
+      .day-article, .evidence-panel { padding: 18px 16px; }
+    }
+    @media (max-width: 400px) {
+      .header-inner { gap: 12px; }
+      .top-nav { gap: 12px; }
+      .wordmark { font-size: 17px; }
+      .theme-button { font-size: 12px; }
+      .day-top { flex-direction: column; }
+      .day-top .button { align-self: flex-start; }
+      .pair { grid-template-columns: minmax(0,1fr); }
+      .code-row { grid-template-columns: minmax(0,1fr); }
+      .code-row .button { justify-self: start; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header" data-od-id="app-header">
+    <div class="header-inner">
+      <a class="wordmark" href="/settings/context-awareness" data-nav data-od-id="side-wordmark">Side</a>
+      <nav class="top-nav" aria-label="주 탐색" data-od-id="primary-navigation">
+        <a id="nav-settings" href="/settings/context-awareness" data-nav data-od-id="nav-settings">설정</a>
+        <a id="nav-history" href="/history/2026-09-24" data-nav data-od-id="nav-history">기록</a>
+      </nav>
+      <button type="button" id="theme-button" class="button theme-button" data-action="theme" data-od-id="theme-toggle">어두운 테마</button>
+    </div>
+  </header>
+  <main id="app" data-od-id="app-content"></main>
+  <div id="dialog-host"></div>
+  <div id="live" class="sr-only" role="status" aria-live="polite"></div>
+  <script>
+    (() => {
+      "use strict";
+      const TODAY = "2026-09-24";
+      const APP_PATH = "/settings/context-awareness";
+      const copyText = {
+        claude: "claude mcp add side -- side-demo mcp serve",
+        codex: '{\n  "mcpServers": {\n    "side": {\n      "command": "side-demo",\n      "args": ["mcp", "serve"]\n    }\n  }\n}',
+        aside: '명령: side-demo\n인수: mcp serve'
+      };
+      const samples = {
+        "2026-09-24": [
+          { id:"today-notes", time:"09:10 – 09:20", title:"예시 노트 검토", description:"예시 자료를 열고 노트의 핵심을 요약했습니다.", source:"예시 자료", evidence:"today-note", summary:"예시 노트를 검토하고 개요로 정리했습니다." },
+          { id:"today-outline", time:"14:20 – 14:30", title:"예시 개요 수정", description:"초안을 예시 자료와 비교했습니다.", source:"예시 개요", evidence:"today-outline", summary:"예시 개요를 자료와 비교했습니다." }
+        ],
+        "2026-09-23": [
+          { id:"prior-notes", time:"11:00 – 11:10", title:"예시 보관 노트 검토", description:"예시 보관 노트를 읽었습니다.", source:"예시 보관 노트", evidence:"prior-expired", summary:"예시 보관 노트를 검토했습니다." }
+        ]
+      };
+      const evidence = {
+        "today-note": { time:"09:14", app:"예시 노트", title:"예시 자료", url:"https://example.com/sample-notes", text:"예시 <초안> 노트: 공유하기 전에 개요를 확인하세요.\n이 자료는 합성 예시이며 실제 사용자 활동이 아닙니다." },
+        "today-outline": { time:"14:24", app:"예시 노트", title:"예시 개요", url:"https://example.com/sample-outline", text:"예시 개요\n- 제목 확인\n- 자료 비교\n- 요약 저장" },
+        "prior-expired": { expired:true, summary:"prior-notes", date:"2026-09-23" }
+      };
+      const state = {
+        theme: "light", capture: true, captureStatus: "permissions", typed: true, screen: false, aside: true, asideStatus: "available",
+        paused: false, pauseChoice: "15 minutes", pauseUntil: null,
+        denylist: [{ type:"Application", name:"예시 보관함", detail:"com.example.vault" }, { type:"Website", name:"sample.test", detail:"sample.test" }],
+        providers: [{ id:"sample-provider", name:"예시 제공업체", host:"https://api.example.test", models:["sample-compact","sample-detailed"], evidence:false, forced:true, test:"미검사" }],
+        provider:"sample-provider", model:"sample-compact", retention:"14", summaries: structuredClone(samples), events:13,
+        match:"", selectedApp:"예시 메일", neverSource:"Application", historyDay:TODAY
+      };
+      const params = new URLSearchParams(location.search);
+      if (["starting","stopped","permissions","partial","running"].includes(params.get("state"))) state.captureStatus = params.get("state");
+      if (["available","unavailable","error"].includes(params.get("aside"))) state.asideStatus = params.get("aside");
+      if (params.get("theme") === "dark") state.theme = "dark";
+      const app = document.getElementById("app");
+      const host = document.getElementById("dialog-host");
+      let modalKind = null;
+      let modalPayload = {};
+      const esc = value => String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c]);
+      const days = () => Object.keys(state.summaries).filter(d => state.summaries[d].length).sort().reverse();
+      const activeDate = () => days()[0] || TODAY;
+      const route = () => {
+        const logical = new URLSearchParams(location.search).get("route") || location.pathname;
+        const m = logical.match(/\/history\/(\d{4}-\d{2}-\d{2})/);
+        return m ? { name:"day", date:m[1] } : { name:"settings" };
+      };
+      const pathTo = path => location.protocol === "file:" ? location.pathname + "?route=" + encodeURIComponent(path.split("#")[0]) + (path.includes("#") ? "#" + path.split("#")[1] : "") : path;
+      function navigate(path, replace=false) {
+        history[replace ? "replaceState" : "pushState"]({}, "", pathTo(path));
+        render();
+        const pane = document.getElementById("evidence-panel");
+        if (path.includes("#") && pane && matchMedia("(max-width: 760px)").matches) {
+          window.scrollTo(0, window.scrollY + pane.getBoundingClientRect().top - 16);
+          pane.focus({ preventScroll:true });
+        } else window.scrollTo(0,0);
+      }
+      function statusBanner() {
+        const labels = { starting:"캡처 시작 중…", stopped:"캡처가 실행 중이지 않습니다", permissions:"권한이 필요합니다", partial:"일부 캡처 기능을 사용할 수 없습니다" };
+        const v = state.captureStatus;
+        if (!labels[v]) return "";
+        return `<div class="status-banner" role="status" data-od-id="capture-status"><strong>${labels[v]}</strong>${["permissions","partial"].includes(v) ? '<button type="button" class="button" data-action="allow" data-od-id="allow-permission">허용</button>' : ""}</div>`;
+      }
+      function toggle(id,label,on) {
+        return `<button type="button" class="switch" role="switch" aria-label="${esc(label)}" aria-checked="${on}" data-action="toggle" data-key="${id}" data-od-id="switch-${id}"><span class="switch-track"><span class="switch-thumb"></span></span></button>`;
+      }
+      function panel(id,title,action,body) {
+        return `<section class="section-panel" data-od-id="section-${id}"><div class="section-head"><h2 data-od-id="heading-${id}">${title}</h2>${action || ""}</div>${body}</section>`;
+      }
+      function settings() {
+        const pauseStatus = state.paused ? (state.pauseUntil ? Math.max(1, Math.ceil((state.pauseUntil-Date.now())/60000)) + "분 후 재개" : "직접 다시 시작할 때까지 일시 중지됨") : "";
+        const asideLabels = { available:"사용 가능", unavailable:"사용할 수 없음", error:"오류" };
+        const pauseChoices = [["15 minutes","15분"],["30 minutes","30분"],["1 hour","1시간"],["Until I resume","직접 다시 시작할 때까지"]];
+        const capture = `
+          <div class="setting-row"><div class="setting-copy"><p class="setting-title">맥락 인식 켜기</p></div>${toggle("capture","맥락 인식 켜기",state.capture)}</div>
+          <div class="setting-row pause-row"><div class="setting-copy"><p class="setting-title">캡처 일시 중지</p>${pauseStatus ? '<p class="setting-status" id="pause-status">' + esc(pauseStatus) + '</p>' : ""}</div><div class="setting-controls">
+            <label class="sr-only" for="pause-choice">캡처 일시 중지</label><select id="pause-choice" class="select" data-change="pause" data-od-id="pause-duration">${pauseChoices.map(([v,label]) => '<option value="'+v+'"' + (state.pauseChoice===v?' selected':'') + '>' + label + '</option>').join("")}</select>
+            <button type="button" class="button button-ink" data-action="pause" data-od-id="pause-resume">${state.paused ? "재개" : "일시 중지"}</button>
+          </div></div>
+          <div class="setting-row"><div class="setting-copy"><p class="setting-title">입력한 텍스트 캡처</p><p class="setting-description">입력한 문장을 저장합니다. Side는 키 입력이나 비밀번호 입력란을 저장하지 않습니다.</p></div>${toggle("typed","입력한 텍스트 캡처",state.typed)}</div>
+          <div class="setting-row"><div class="setting-copy"><p class="setting-title">화면 기록 허용</p><p class="setting-description">페이지에 읽을 수 있는 텍스트가 없으면 화면에서 읽습니다. 텍스트만 보관합니다.</p></div>${toggle("screen","화면 기록 허용",state.screen)}</div>
+          <div class="setting-row"><div class="setting-copy"><p class="setting-title">Aside Browser 페이지 콘텐츠 사용</p><p class="setting-description">Aside Browser가 앞에 있을 때 Aside를 통해 페이지를 읽어 텍스트를 더 정확하게 가져옵니다. Aside CLI가 필요합니다.</p><p class="setting-status" data-od-id="aside-status">${asideLabels[state.asideStatus]}</p></div>${toggle("aside","Aside Browser 페이지 콘텐츠 사용",state.aside)}</div>`;
+        const deny = `<p class="section-subcopy">Side는 이 앱과 웹사이트에서 하는 일을 캡처하지 않습니다.</p><div class="list">${state.denylist.map((row,i) => `<div class="list-row" data-od-id="denylist-row-${i}"><span class="list-icon" aria-hidden="true">${row.type==="Application"?"앱":"웹"}</span><div class="list-text"><strong>${esc(row.name)}</strong><small>${esc(row.detail)}</small></div><button type="button" class="button button-text" data-action="remove-deny" data-index="${i}" data-od-id="remove-deny-${i}">제거</button></div>`).join("")}</div>`;
+        const selectedProvider = state.providers.find(p => p.id === state.provider) || state.providers[0];
+        const providerOptions = state.providers.map(p => `<option value="${esc(p.id)}" ${state.provider===p.id?"selected":""}>${esc(p.name)}</option>`).join("");
+        const modelOptions = selectedProvider ? selectedProvider.models.map(m => `<option ${state.model===m?"selected":""}>${esc(m)}</option>`).join("") : "";
+        const summaries = `
+          <div class="subsection"><div class="subsection-head"><h3>요약 모델</h3></div><div class="pair">
+            <label class="field-label">제공업체<select class="select" data-change="provider" data-od-id="summary-provider" ${state.providers.length?"":"disabled"}>${providerOptions}</select></label>
+            <label class="field-label">모델<select class="select" data-change="model" data-od-id="summary-model" ${selectedProvider?"":"disabled"}>${modelOptions}</select></label>
+          </div></div>
+          <div class="subsection"><div class="subsection-head"><h3>모델 제공업체</h3><button type="button" class="button" data-action="add-provider" data-od-id="add-provider">제공업체 추가</button></div>
+            ${state.providers.map(p => `<div class="provider-card" data-od-id="provider-${esc(p.id)}"><div class="provider-top"><div><strong>${esc(p.name)}</strong><small>${esc(p.host)} · 모델 ${p.models.length}개</small></div><div class="provider-actions"><button type="button" class="button button-text" data-action="edit-provider" data-id="${esc(p.id)}" data-od-id="edit-provider-${esc(p.id)}">편집</button><button type="button" class="button button-text" data-action="delete-provider" data-id="${esc(p.id)}" data-od-id="delete-provider-${esc(p.id)}">삭제</button></div></div>
+              <div class="provider-bottom"><div><p class="setting-title">이 제공업체에 근거 자료 전송</p><span class="test-result">테스트 결과: ${esc(p.test)}</span></div>${toggle("evidence:"+p.id,"이 제공업체에 근거 자료 전송",p.evidence)}</div></div>`).join("")}
+          </div>
+          <div class="subsection"><label class="field-label">보관 기간<select class="select" data-change="retention" data-od-id="retention">${["1","3","7","14","30"].map(v => '<option value="'+v+'"'+(state.retention===v?' selected':'')+'>'+v+'일</option>').join("")}</select></label><p class="setting-description">Side는 이 기간이 지나면 원본 캡처를 삭제합니다. 요약은 남습니다.</p></div>`;
+        const d = days().includes(state.historyDay) ? state.historyDay : activeDate();
+        const historyRows = (state.summaries[d] || []).map(item => `<div class="summary-preview" data-od-id="settings-summary-${esc(item.id)}"><time>${esc(item.time)}</time><div><a href="/history/${d}#s:${esc(item.id)}" data-nav>${esc(item.title)}</a><p>${esc(item.description)}</p></div></div>`).join("");
+        const history = `
+          <div class="subsection"><label class="field-label">날짜<select class="select" data-change="history-day" data-od-id="history-day-picker" ${days().length?"":"disabled"}>${days().map(x => '<option value="'+x+'"'+(x===d?' selected':'')+'>'+x+'</option>').join("")}</select></label><div class="history-preview">${historyRows || '<p class="setting-description">이 날짜에는 요약이 없습니다.</p>'}</div></div>
+          <div class="subsection"><div class="usage-head"><div class="tooltip-wrap"><button type="button" class="button button-text" aria-describedby="usage-tip" data-od-id="storage-usage">기록 저장 공간 사용량</button><span class="tooltip" role="tooltip" id="usage-tip">사용한 저장 공간<br>평균 사용량: 하루 0.3 MB</span></div><span class="test-result">${(state.events*.32).toFixed(1)} MB</span></div><progress class="usage-bar" value="${Math.round(state.events/13*34)}" max="100" aria-label="기록 저장 공간 사용량"></progress></div>
+          <div class="subsection"><button type="button" class="button button-danger" data-action="clear-history" data-od-id="clear-history">기록 지우기</button></div>`;
+        const connect = `
+          <div class="subsection"><div class="subsection-head"><h3>Claude Code</h3></div><div class="code-row"><pre class="code-block" data-od-id="claude-command">${esc(copyText.claude)}</pre><button type="button" class="button" data-action="copy" data-copy="claude" data-od-id="copy-claude">복사</button></div></div>
+          <div class="subsection"><div class="subsection-head"><h3>Codex / Cursor</h3></div><p class="setting-description">mcp.json</p><div class="code-row"><pre class="code-block" data-od-id="mcp-json">${esc(copyText.codex)}</pre><button type="button" class="button" data-action="copy" data-copy="codex" data-od-id="copy-mcp-json">복사</button></div></div>
+          <div class="subsection"><div class="subsection-head"><h3>Aside</h3></div><p class="setting-description">설정 → MCP → 서버 추가</p><div class="code-row"><pre class="code-block" data-od-id="aside-command">${esc(copyText.aside)}</pre><button type="button" class="button" data-action="copy" data-copy="aside" data-od-id="copy-aside">복사</button></div></div>
+          <div class="subsection"><div class="subsection-head"><h3>최근 24시간 MCP 호출</h3></div><div class="client-counts">${[["Claude Code",6],["Codex",3],["Cursor",1],["Aside",2]].map(([name,n]) => `<div class="client-count" data-od-id="mcp-count-${name.toLowerCase().replaceAll(" ","-")}"><strong>${n}</strong><span>${name}</span></div>`).join("")}</div></div>`;
+        return `<div class="settings-shell" data-od-id="settings-view"><div class="page-intro"><h1 data-od-id="settings-title">Side가 하루를 기억하게 하세요</h1><p class="lead">Side는 브라우저와 앱에서 하는 일을 캡처해 에이전트가 나중에 다시 확인할 수 있게 합니다.</p></div>${statusBanner()}${panel("capture","캡처","",capture)}${panel("denylist","제외 목록",'<button type="button" class="button" data-action="add-deny" data-od-id="add-deny">추가</button>',deny)}${panel("summaries","요약","",summaries)}${panel("history","기록","",history)}${panel("connect-agents","에이전트 연결","",connect)}</div>`;
+      }
+      function sourceLinks(item,date) {
+        return `<a href="/history/${date}#e:${esc(item.evidence)}" data-nav>${esc(item.source)}</a> — <a href="/history/${date}#e:${esc(item.evidence)}" data-nav>e:${esc(item.evidence)}</a> | <a href="/history/${date}#s:${esc(item.id)}" data-nav>s:${esc(item.id)}</a>`;
+      }
+      function day(date) {
+        const list = state.summaries[date] || [];
+        const ds = days().sort();
+        const older = ds.filter(d => d < date).at(-1) || null;
+        const newer = ds.find(d => d > date) || null;
+        const content = list.length ? `<h2>맥락 인식 — ${date}</h2><p class="byline">Side가 기기 활동에서 캡처했습니다. 요약만 표시하며 원본 캡처는 ${state.retention}일 후 만료됩니다.</p>
+          <section class="markdown-section"><h3>하루 개요</h3><ul>${list.map(item => `<li>${esc(item.title)} <a href="/history/${date}#s:${esc(item.id)}" data-nav>s:${esc(item.id)}</a></li>`).join("")}</ul></section>
+          ${list.map(item => `<section class="markdown-section" data-od-id="day-summary-${esc(item.id)}"><h3>${esc(item.time)} — ${esc(item.title)} <a href="/history/${date}#s:${esc(item.id)}" data-nav>s:${esc(item.id)}</a></h3><p>${esc(item.description)}</p><p class="source-line">출처: ${sourceLinks(item,date)}</p></section>`).join("")}` : '<p>이 날짜에는 요약이 없습니다.</p>';
+        return `<div class="day-shell" data-od-id="day-view"><div class="day-top"><div><a class="return-link" href="${APP_PATH}" data-nav data-od-id="return-settings">설정</a><h1 data-od-id="day-title">기록 · ${date}</h1></div>${date===TODAY ? '<button type="button" class="button" data-action="clear-today" data-od-id="clear-today">오늘 기록 지우기</button>' : ""}</div>
+          <div class="date-nav" data-od-id="date-navigation"><time datetime="${date}">${date}</time><a class="button icon-button" href="${older ? '/history/'+older : '#'}" ${older ? 'data-nav' : 'aria-disabled="true" tabindex="-1"'} aria-label="이전 날짜">◀</a><a class="button icon-button" href="${newer ? '/history/'+newer : '#'}" ${newer ? 'data-nav' : 'aria-disabled="true" tabindex="-1"'} aria-label="다음 날짜">▶</a></div>
+          <div class="day-grid"><article class="day-article" data-od-id="day-markdown">${content}</article><aside class="evidence-panel" id="evidence-panel" tabindex="-1" aria-label="근거 자료" data-od-id="evidence-panel"></aside></div></div>`;
+      }
+      function renderEvidence() {
+        const pane = document.getElementById("evidence-panel");
+        if (!pane) return;
+        const frag = decodeURIComponent(location.hash.slice(1));
+        const r = route();
+        if (!frag || !/^(e|s):/.test(frag)) {
+          pane.innerHTML = '<h2>근거 자료</h2><p>출처를 선택하면 근거 자료를 볼 수 있습니다.</p>';
+          return;
+        }
+        const [kind,id] = frag.split(":");
+        let data;
+        if (kind === "s") {
+          const item = (state.summaries[r.date] || []).find(x => x.id === id);
+          if (item) data = { time:item.time, app:"Side", title:item.title, url:"", text:item.summary };
+        } else data = evidence[id];
+        if (!data) {
+          pane.innerHTML = '<h2>근거 자료</h2><p>출처를 선택하면 근거 자료를 볼 수 있습니다.</p>';
+          return;
+        }
+        if (data.expired) {
+          pane.innerHTML = `<h2>근거 자료</h2><p class="expired">근거 자료가 만료되었습니다. <a href="/history/${esc(data.date)}#s:${esc(data.summary)}" data-nav>인용된 요약 보기</a></p>`;
+          return;
+        }
+        pane.innerHTML = `<h2>근거 자료</h2><dl class="evidence-meta"><dt>시간</dt><dd>${esc(data.time)}</dd><dt>앱</dt><dd>${esc(data.app)}</dd><dt>제목</dt><dd>${esc(data.title)}</dd><dt>URL</dt><dd>${data.url ? '<a href="'+esc(data.url)+'" target="_blank" rel="noopener noreferrer">'+esc(data.url)+'</a>' : "—"}</dd></dl><label class="field-label" for="match-input">일치 검색<input class="field" type="search" id="match-input" data-od-id="evidence-match" autocomplete="off" value="${esc(state.match)}"></label><div class="evidence-text" id="evidence-text" data-od-id="evidence-text"></div>`;
+        paintMatch(data.text);
+      }
+      function paintMatch(raw) {
+        const box = document.getElementById("evidence-text");
+        if (!box) return;
+        box.replaceChildren();
+        const term = state.match.trim();
+        if (!term) { box.textContent = raw; return; }
+        const lower = raw.toLocaleLowerCase();
+        const query = term.toLocaleLowerCase();
+        let cursor=0, at;
+        while ((at=lower.indexOf(query,cursor)) !== -1) {
+          box.append(document.createTextNode(raw.slice(cursor,at)));
+          const mark=document.createElement("mark");
+          mark.textContent=raw.slice(at,at+term.length);
+          box.append(mark);
+          cursor=at+term.length;
+        }
+        box.append(document.createTextNode(raw.slice(cursor)));
+      }
+      function render() {
+        document.documentElement.dataset.theme = state.theme;
+        document.getElementById("theme-button").textContent = state.theme === "dark" ? "밝은 테마" : "어두운 테마";
+        const r = route();
+        document.getElementById("nav-settings").setAttribute("aria-current",r.name==="settings"?"page":"false");
+        document.getElementById("nav-history").setAttribute("aria-current",r.name==="day"?"page":"false");
+        document.getElementById("nav-history").href = "/history/" + activeDate();
+        document.title = r.name==="day" ? "Side · 기록 · "+r.date : "Side · 맥락 인식";
+        app.innerHTML = r.name==="day" ? day(r.date) : settings();
+        if (r.name==="day") renderEvidence();
+      }
+      function live(message) { document.getElementById("live").textContent = message; }
+      function closeDialog() { const dlg=host.querySelector("dialog"); if (dlg) dlg.close(); host.replaceChildren(); modalKind=null; }
+      function openDialog(kind,payload={}) {
+        modalKind=kind; modalPayload=payload;
+        let title="", body="", actions="";
+        if (kind==="disable") {
+          title="맥락 인식을 끄시겠습니까?";
+          body="<p>Side가 활동 캡처를 중지합니다. 기존 기록은 만료되거나 직접 삭제할 때까지 이 기기에 남습니다.</p>";
+          actions='<button type="button" class="button" data-action="cancel-dialog">취소</button><button type="button" class="button button-danger" data-action="confirm-disable">끄기</button>';
+        } else if (kind==="never") {
+          title="관찰하지 않기";
+          body=`<div class="segmented"><button type="button" data-action="never-source" data-source="Application" aria-pressed="${state.neverSource==="Application"}">앱</button><button type="button" data-action="never-source" data-source="Website" aria-pressed="${state.neverSource==="Website"}">웹사이트</button></div><div id="never-fields"></div>`;
+          actions='<button type="button" class="button" data-action="cancel-dialog">취소</button><button type="button" class="button button-ink" data-action="save-deny">추가</button>';
+        } else if (kind==="provider") {
+          const p=state.providers.find(x=>x.id===payload.id);
+          title=p?"제공업체 편집":"제공업체 추가";
+          body=`<div class="form-stack"><label class="field-label">이름<input class="field" id="provider-name" value="${esc(p?.name||"")}" autocomplete="off"></label><label class="field-label">기본 URL<input class="field" id="provider-url" type="url" value="${esc(p?.host||"")}" autocomplete="off"></label><label class="field-label">API 키<input class="field" id="provider-key" type="password" autocomplete="off"></label><label class="field-label">모델 ID<input class="field" id="provider-models" value="${esc(p?.models.join(", ")||"")}" autocomplete="off"></label><label class="radio-row"><input type="checkbox" id="provider-forced" ${p?.forced?"checked":""}>강제 도구 호출 지원</label></div>`;
+          actions='<button type="button" class="button" data-action="cancel-dialog">취소</button><button type="button" class="button button-ink" data-action="save-provider">저장</button>';
+        } else if (kind==="delete-provider") {
+          title="제공업체를 삭제하시겠습니까?";
+          actions='<button type="button" class="button" data-action="cancel-dialog">취소</button><button type="button" class="button button-danger" data-action="confirm-delete-provider">삭제</button>';
+        } else if (kind==="evidence-on") {
+          title="이 제공업체에 근거 자료를 보내시겠습니까?";
+          body=`<p>요약할 때 각 10분 구간의 가려진 활동을 ${esc(payload.host)}(으)로 보냅니다.</p>`;
+          actions='<button type="button" class="button" data-action="cancel-dialog">취소</button><button type="button" class="button button-ink" data-action="confirm-evidence">허용</button>';
+        } else if (kind==="clear-history") {
+          title="기록 지우기";
+          body='<div class="form-stack" role="radiogroup" aria-label="기록을 지울 기간">'+[["Last 10 minutes","최근 10분"],["Last hour","최근 1시간"],["Today","오늘"],["All history","모든 기록"]].map(([v,label],i)=>'<label class="radio-row"><input type="radio" name="clear-range" value="'+v+'"'+(i===0?' checked':'')+'>'+label+'</label>').join("")+'</div>';
+          actions='<button type="button" class="button" data-action="cancel-dialog">취소</button><button type="button" class="button button-danger" data-action="submit-clear">기록 지우기</button>';
+        } else if (kind==="clear-all") {
+          title="맥락 인식 기록을 모두 지우시겠습니까?";
+          actions='<button type="button" class="button" data-action="cancel-dialog">취소</button><button type="button" class="button button-danger" data-action="confirm-clear-all">기록 지우기</button>';
+        } else if (kind==="clear-today") {
+          title="오늘 기록을 지우시겠습니까?";
+          actions='<button type="button" class="button" data-action="cancel-dialog">취소</button><button type="button" class="button button-danger" data-action="confirm-clear-today">오늘 기록 지우기</button>';
+        }
+        host.innerHTML=`<dialog aria-labelledby="modal-title" data-od-id="dialog-${kind}"><h2 id="modal-title">${title}</h2>${body}<div class="dialog-actions">${actions}</div></dialog>`;
+        const dialog=host.querySelector("dialog");
+        dialog.addEventListener("close",()=>{ host.replaceChildren(); modalKind=null; });
+        dialog.showModal();
+        if (kind==="never") renderNeverFields();
+        (dialog.querySelector("input,button") || dialog).focus();
+      }
+      function renderNeverFields() {
+        const el=document.getElementById("never-fields");
+        if (!el) return;
+        if (state.neverSource==="Website") {
+          el.innerHTML='<label class="field-label" style="margin-block-start:14px">도메인<input class="field" id="domain-input" type="text" autocomplete="off" placeholder="sample.test"></label>';
+        } else {
+          el.innerHTML='<label class="field-label" style="margin-block-start:14px">앱 또는 번들 ID 검색<input class="field" id="application-input" type="search" autocomplete="off"></label><div class="choice-list" id="app-choices"></div>';
+          paintAppChoices("");
+        }
+      }
+      function paintAppChoices(term) {
+        const el=document.getElementById("app-choices");
+        if (!el) return;
+        const all=[["예시 메일","com.example.mail"],["예시 노트","com.example.notes"],["예시 일정","com.example.calendar"]];
+        const filtered=all.filter(([name,id])=>(name+" "+id).toLowerCase().includes(term.toLowerCase()));
+        el.innerHTML=filtered.map(([name,id])=>`<button type="button" class="button" data-action="select-app" data-name="${esc(name)}" data-id="${esc(id)}" aria-pressed="${state.selectedApp===name}">${esc(name)} · ${esc(id)}</button>`).join("");
+      }
+      function clearHistory(scope) {
+        const before=state.events;
+        if (scope==="Last 10 minutes") { state.events=Math.max(0,state.events-1); state.summaries[TODAY]=state.summaries[TODAY].slice(0,-1); }
+        if (scope==="Last hour") { state.events=Math.max(0,state.events-3); state.summaries[TODAY]=state.summaries[TODAY].slice(0,-1); }
+        if (scope==="Today") { state.events=Math.max(0,state.events-8); state.summaries[TODAY]=[]; }
+        if (scope==="All history") { state.events=0; Object.keys(state.summaries).forEach(d=>state.summaries[d]=[]); }
+        closeDialog();
+        render();
+        live((before-state.events)+"개 이벤트를 지웠습니다.");
+      }
+      async function copy(value) {
+        try {
+          if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(value);
+          else {
+            const ta=document.createElement("textarea"); ta.value=value; ta.style.position="fixed"; ta.style.opacity="0"; document.body.append(ta); ta.select(); const copied=document.execCommand("copy"); ta.remove(); if (!copied) throw new Error("copy failed");
+          }
+          live("복사했습니다.");
+        } catch { live("복사할 수 없습니다."); }
+      }
+      document.addEventListener("click", e => {
+        const link=e.target.closest("a[data-nav]");
+        if (link) { e.preventDefault(); navigate(link.getAttribute("href")); return; }
+        const b=e.target.closest("[data-action]");
+        if (!b) return;
+        const act=b.dataset.action, key=b.dataset.key;
+        if (act==="theme") { state.theme=state.theme==="dark"?"light":"dark"; render(); }
+        else if (act==="toggle") {
+          if (key==="capture") {
+            if (state.capture) openDialog("disable");
+            else { state.capture=true; state.captureStatus="starting"; render(); setTimeout(()=>{ if(state.capture){state.captureStatus="running";render();} },1400); }
+          } else if (key.startsWith("evidence:")) {
+            const p=state.providers.find(x=>x.id===key.split(":")[1]);
+            if (p) { if (p.evidence) { p.evidence=false; render(); } else openDialog("evidence-on",{id:p.id,host:p.host}); }
+          } else {
+            state[key]=!state[key];
+            if (key==="screen" && state.screen) state.captureStatus="permissions";
+            if (key==="aside") state.asideStatus=state.aside?"available":"unavailable";
+            render();
+          }
+        }
+        else if (act==="allow") { state.screen=true; state.captureStatus="starting"; render(); setTimeout(()=>{state.captureStatus="running";render();},1400); }
+        else if (act==="pause") { if(state.paused){state.paused=false;state.pauseUntil=null;}else{state.paused=true;state.pauseUntil=state.pauseChoice==="Until I resume"?null:Date.now()+({"15 minutes":15,"30 minutes":30,"1 hour":60}[state.pauseChoice])*60000;} render(); }
+        else if (act==="add-deny") openDialog("never");
+        else if (act==="remove-deny") { state.denylist.splice(Number(b.dataset.index),1); render(); }
+        else if (act==="add-provider") openDialog("provider");
+        else if (act==="edit-provider") openDialog("provider",{id:b.dataset.id});
+        else if (act==="delete-provider") openDialog("delete-provider",{id:b.dataset.id});
+        else if (act==="clear-history") openDialog("clear-history");
+        else if (act==="clear-today") openDialog("clear-today");
+        else if (act==="copy") copy(copyText[b.dataset.copy]);
+        else if (act==="cancel-dialog") closeDialog();
+        else if (act==="confirm-disable") { state.capture=false;state.captureStatus="stopped";closeDialog();render(); }
+        else if (act==="never-source") { state.neverSource=b.dataset.source; host.querySelectorAll("[data-action='never-source']").forEach(x=>x.setAttribute("aria-pressed",x.dataset.source===state.neverSource)); renderNeverFields(); }
+        else if (act==="select-app") { state.selectedApp=b.dataset.name; state.selectedAppId=b.dataset.id; host.querySelectorAll("[data-action='select-app']").forEach(x=>x.setAttribute("aria-pressed",x.dataset.name===state.selectedApp)); }
+        else if (act==="save-deny") {
+          if(state.neverSource==="Website") { const domain=document.getElementById("domain-input").value.trim().toLowerCase().replace(/^https?:\/\//,"").replace(/\/.*$/,""); if(!domain) {document.getElementById("domain-input").focus();return;} state.denylist.push({type:"Website",name:domain,detail:domain}); }
+          else { const typed=document.getElementById("application-input").value.trim(); const name=typed||state.selectedApp; const id=typed||state.selectedAppId||"com.example.mail"; state.denylist.push({type:"Application",name,detail:id}); }
+          closeDialog();render();
+        }
+        else if (act==="save-provider") {
+          const name=document.getElementById("provider-name").value.trim(), hostValue=document.getElementById("provider-url").value.trim(), models=document.getElementById("provider-models").value.split(",").map(x=>x.trim()).filter(Boolean);
+          if(!name || !hostValue || !models.length) { (document.getElementById(!name?"provider-name":!hostValue?"provider-url":"provider-models")).focus(); return; }
+          const forced=document.getElementById("provider-forced").checked;
+          const existing=state.providers.find(x=>x.id===modalPayload.id);
+          if(existing) Object.assign(existing,{name,host:hostValue,models,forced,test:"미검사"});
+          else { const id="provider-"+Date.now();state.providers.push({id,name,host:hostValue,models,evidence:false,forced,test:"미검사"});state.provider=id; }
+          const current=state.providers.find(x=>x.id===state.provider);state.model=current?.models[0]||"";closeDialog();render();
+        }
+        else if (act==="confirm-delete-provider") { state.providers=state.providers.filter(x=>x.id!==modalPayload.id);if(state.provider===modalPayload.id){state.provider=state.providers[0]?.id||"";state.model=state.providers[0]?.models[0]||"";}closeDialog();render(); }
+        else if (act==="confirm-evidence") {const p=state.providers.find(x=>x.id===modalPayload.id);if(p)p.evidence=true;closeDialog();render();}
+        else if (act==="submit-clear") { const scope=host.querySelector("input[name='clear-range']:checked")?.value; if(scope==="All history") openDialog("clear-all"); else clearHistory(scope); }
+        else if (act==="confirm-clear-all") clearHistory("All history");
+        else if (act==="confirm-clear-today") clearHistory("Today");
+      });
+      document.addEventListener("change",e=>{
+        const kind=e.target.dataset.change;
+        if(kind==="pause") state.pauseChoice=e.target.value;
+        if(kind==="provider") {state.provider=e.target.value;state.model=state.providers.find(p=>p.id===state.provider)?.models[0]||"";render();}
+        if(kind==="model") state.model=e.target.value;
+        if(kind==="retention") state.retention=e.target.value;
+        if(kind==="history-day") { state.historyDay=e.target.value; render(); }
+      });
+      document.addEventListener("input",e=>{
+        if(e.target.id==="application-input") paintAppChoices(e.target.value);
+        if(e.target.id==="match-input") {
+          state.match=e.target.value;
+          const frag=decodeURIComponent(location.hash.slice(1));
+          const r=route();
+          let raw="";
+          if(frag.startsWith("e:")) raw=evidence[frag.slice(2)]?.text||"";
+          if(frag.startsWith("s:")) raw=(state.summaries[r.date]||[]).find(x=>x.id===frag.slice(2))?.summary||"";
+          paintMatch(raw);
+        }
+      });
+      window.addEventListener("popstate",render);
+      window.addEventListener("hashchange",render);
+      setInterval(()=>{
+        if(!state.paused||!state.pauseUntil) return;
+        if(Date.now()>=state.pauseUntil){state.paused=false;state.pauseUntil=null;render();}
+        else { const el=document.getElementById("pause-status");if(el)el.textContent=Math.max(1,Math.ceil((state.pauseUntil-Date.now())/60000))+"분 후 재개"; }
+      },1000);
+      render();
+    })();
+  </script>
+</body>
+</html>

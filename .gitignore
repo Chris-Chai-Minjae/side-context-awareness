@@ -1,0 +1,15 @@
+node_modules/
+native/observe
+native/key
+*.sqlite*
+worktree/
+models/
+dist/
+*.dylib
+apps/side-mac/.build/
+.claude/memory/
+.env
+.env.*
+!.env.example
+*.p12
+*.p8

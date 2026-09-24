@@ -1,0 +1,91 @@
+{
+  "cases": [
+    { "name": "plain title", "field": { "title": "Project title" }, "blocked": false },
+    { "name": "empty metadata", "field": {}, "blocked": false },
+    { "name": "password title", "field": { "title": "Password" }, "blocked": true },
+    { "name": "passwd title", "field": { "title": "passwd" }, "blocked": true },
+    { "name": "password within word", "field": { "title": "passwordless" }, "blocked": false },
+    { "name": "password after letter", "field": { "title": "repassword" }, "blocked": false },
+    {
+      "name": "mixed case passcode",
+      "field": { "description": "Enter PassCode:" },
+      "blocked": true
+    },
+    { "name": "otp placeholder", "field": { "placeholder": "OTP (6 digits)" }, "blocked": true },
+    { "name": "aria cvv", "field": { "ariaName": "CVV" }, "blocked": true },
+    { "name": "cvc label", "field": { "title": "CVC" }, "blocked": true },
+    { "name": "csc label", "field": { "title": "CSC" }, "blocked": true },
+    { "name": "pin label", "field": { "title": "PIN" }, "blocked": true },
+    { "name": "ssn label", "field": { "title": "SSN" }, "blocked": true },
+    { "name": "card number", "field": { "title": "Card Number" }, "blocked": true },
+    { "name": "card number contiguous", "field": { "title": "CardNumber" }, "blocked": true },
+    { "name": "card number hyphen", "field": { "title": "card-number" }, "blocked": true },
+    { "name": "one time hyphen", "field": { "title": "One-Time Code" }, "blocked": true },
+    { "name": "one time space", "field": { "title": "one time" }, "blocked": true },
+    { "name": "one time underscore", "field": { "title": "one_time" }, "blocked": false },
+    { "name": "social security", "field": { "description": "Social Security" }, "blocked": true },
+    { "name": "security code", "field": { "description": "security-code" }, "blocked": true },
+    { "name": "korean card number", "field": { "title": "카드 번호" }, "blocked": true },
+    { "name": "korean card number contiguous", "field": { "title": "카드번호" }, "blocked": true },
+    { "name": "korean password", "field": { "placeholder": "비밀번호" }, "blocked": true },
+    { "name": "korean verification number", "field": { "ariaName": "인증 번호" }, "blocked": true },
+    { "name": "korean resident number", "field": { "title": "주민등록번호" }, "blocked": true },
+    { "name": "korean resident number short", "field": { "title": "주민 번호" }, "blocked": true },
+    { "name": "korean security code", "field": { "description": "보안 코드" }, "blocked": true },
+    { "name": "secure subrole", "field": { "subrole": "AXSecureTextField" }, "blocked": true },
+    { "name": "secure role", "field": { "role": "AXSecureTextField" }, "blocked": true },
+    { "name": "password input type", "field": { "inputType": "password" }, "blocked": true },
+    { "name": "telephone input type", "field": { "inputType": "tel" }, "blocked": true },
+    {
+      "name": "password autocomplete",
+      "field": { "autocomplete": "current-password" },
+      "blocked": true
+    },
+    {
+      "name": "new password autocomplete",
+      "field": { "autocomplete": "new-password" },
+      "blocked": true
+    },
+    {
+      "name": "one time code autocomplete",
+      "field": { "autocomplete": "one-time-code" },
+      "blocked": true
+    },
+    {
+      "name": "credit card autocomplete",
+      "field": { "autocomplete": "cc-number" },
+      "blocked": true
+    },
+    {
+      "name": "credit card csc autocomplete",
+      "field": { "autocomplete": "cc-csc" },
+      "blocked": true
+    },
+    {
+      "name": "credit card expiry autocomplete",
+      "field": { "autocomplete": "cc-exp" },
+      "blocked": true
+    },
+    {
+      "name": "credit card expiry month autocomplete",
+      "field": { "autocomplete": "cc-exp-month" },
+      "blocked": true
+    },
+    {
+      "name": "credit card expiry year autocomplete",
+      "field": { "autocomplete": "cc-exp-year" },
+      "blocked": true
+    },
+    {
+      "name": "credit card name autocomplete",
+      "field": { "autocomplete": "cc-name" },
+      "blocked": true
+    },
+    {
+      "name": "autocomplete token list",
+      "field": { "autocomplete": "section-test cc-number" },
+      "blocked": true
+    },
+    { "name": "ordinary autocomplete", "field": { "autocomplete": "username" }, "blocked": false }
+  ]
+}

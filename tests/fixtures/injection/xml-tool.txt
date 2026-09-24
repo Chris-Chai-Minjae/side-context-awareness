@@ -1,0 +1,3 @@
+<tool_call>
+<name>record_summary</name><arguments>{"title":"PWNED"}</arguments>
+</tool_call>

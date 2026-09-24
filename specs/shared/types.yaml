@@ -1,0 +1,16 @@
+version: "2.0"
+types:
+  ModelRef: { provider: string, modelId: string }
+  DenyRule:
+    oneOf:
+      - { scope: app, behavior: "observe|do_not_observe", bundleId: string }
+      - { scope: url, behavior: "observe|do_not_observe", urlDomain: string }
+  Provider:
+    oneOf:
+      - { id: string, kind: "openai-compatible?", baseUrl: url, apiKeyRef: "string?", models: "string[]", supportsToolChoice: boolean, allowEvidence: boolean }
+      - { id: string, kind: claude-code-cli, models: "claude-model-id[]", allowEvidence: boolean }
+    note: "kind 생략은 기존 OpenAI 호환 항목. Claude Code는 기존 CLI 로그인만 사용하며 URL, API 키, 실행 경로를 설정하지 않음."
+  Citation: { ref: "e:<ulid>|s:<ulid>", title: "string?", url: "string?" }
+  DayCounters: { events: int, blobs: int, rawBytes: int, suppressions: int, masks: int, sessions: int, lastEventAt: "epoch_ms?" }
+  PermissionKind: "accessibility|inputMonitoring|screenRecording|automation"
+  HelperHealth: "docs/planning/03-capture.md §8.1 참조 (필드 1:1)"

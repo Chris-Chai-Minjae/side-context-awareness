@@ -1,0 +1,149 @@
+# 도메인 리소스 — 출처: docs/planning/02-architecture.md §4(API), §6(settings), 04-data-model.md
+# 전송: JSON-RPC 2.0 over HTTP (UDS run/daemon.sock, 웹 UI는 127.0.0.1 + Bearer 토큰)
+version: "2.0"
+
+resources:
+  capture_status:
+    endpoints:
+      - { method: RPC, path: status, input: "{url?}" }
+    fields:
+      enabled: { type: boolean }
+      state: { type: enum, values: [starting, running, paused, stopped] }
+      paused_until: { type: epoch_ms, nullable: true, note: "PAUSE_INDEFINITE = Number.MAX_SAFE_INTEGER" }
+      banner: { type: enum, values: [none, starting, not_running, permissions_needed, some_unavailable] }
+      stop_reason: { type: string, nullable: true, note: "keychain-locked | no-summary-model | helper-unavailable 등" }
+      health: { type: HelperHealth, ref: shared/types.yaml }
+      today: { type: DayCounters, ref: shared/types.yaml }
+      url_denied: { type: boolean, note: "입력 url이 denylist에 걸리는지" }
+
+  permissions:
+    endpoints:
+      - { method: RPC, path: permissions }
+      - { method: RPC, path: requestPermissions, input: "{kinds?: PermissionKind[]}" }
+    fields:
+      accessibility: { type: boolean }
+      input_monitoring: { type: boolean }
+      screen_recording: { type: boolean }
+      automation: { type: "map<bundleId, boolean>" }
+
+  pause:
+    endpoints:
+      - { method: RPC, path: pause, input: "{until?} | {durationMs?}" }
+      - { method: RPC, path: resume }
+    fields:
+      paused_until: { type: epoch_ms, nullable: true }
+
+  settings:
+    endpoints:
+      - { method: RPC, path: settings.get }
+      - { method: RPC, path: settings.patch, input: "Partial<Settings>", note: "zod 검증 → 원자적 저장 → reconcile" }
+    fields:
+      enabled: { type: boolean, default: false }
+      capture_typed_text: { type: boolean, default: true }
+      screen_ocr: { type: boolean, default: true }
+      aside_adapter: { type: boolean, default: false }
+      retention_days: { type: enum, values: [1, 3, 7, 14, 30], default: 14 }
+      rules: { type: "DenyRule[]", ref: shared/types.yaml, max: 500 }
+      summary_model: { type: ModelRef, nullable: true }
+      default_model: { type: ModelRef, nullable: true }
+      providers: { type: "Provider[]", ref: shared/types.yaml }
+
+  applications:
+    endpoints:
+      - { method: RPC, path: listApplications }
+      - { method: RPC, path: appIcons, input: "{bundleIds}" }
+    fields:
+      bundle_id: { type: string }
+      name: { type: string }
+      icon_png_base64: { type: string, note: "appIcons 전용, 32px@2x" }
+      denied: { type: boolean, note: "do_not_observe 대상이면 피커에서 제외" }
+
+  summary_model_default:
+    endpoints:
+      - { method: RPC, path: summaryModelDefault }
+    fields:
+      model: { type: ModelRef, nullable: true }
+      source: { type: enum, values: [summaryModel, defaultModel, none] }
+
+  providers:
+    endpoints:
+      - { method: RPC, path: settings.patch, note: "목록 편집은 settings.providers" }
+      - { method: RPC, path: providers.setKey, input: "{providerId, apiKey}", note: "OpenAI 호환 항목 전용" }
+      - { method: RPC, path: providers.listModels, input: "{providerId}", output: "{status:'available', models:string[]} | {status:'unavailable', models:[], reason, httpStatus?}", note: "OpenAI 호환 Base URL은 GET /models; Claude Code는 endpoint-unavailable로 수동 ID 유지" }
+      - { method: RPC, path: providers.test, input: "{providerId, modelId}", note: "Claude Code는 합성 증거만으로 제한된 CLI 경로 시험" }
+    fields:
+      id: { type: string }
+      kind: { type: enum, values: [openai-compatible, claude-code-cli], default: openai-compatible }
+      base_url: { type: url, nullable: true, note: "Claude Code는 null" }
+      host: { type: string, nullable: true, derived: "OpenAI 호환 URL의 host; Claude Code는 null" }
+      models: { type: "string[]" }
+      supports_tool_choice: { type: boolean, default: true, note: "Claude Code는 false; JSON schema 구조화 출력 사용" }
+      allow_evidence: { type: boolean, default: false }
+      has_key: { type: boolean, derived: "OpenAI 호환 apiKeyRef 존재 여부. Claude Code는 false. 키 원문은 절대 반환하지 않음" }
+      test_result: { type: "{ok, latencyMs, toolChoiceSupported, error?}", nullable: true }
+
+  history_status:
+    endpoints:
+      - { method: RPC, path: historyStatus }
+    fields:
+      store_bytes: { type: integer }
+      average_bytes_per_day: { type: integer }
+      days_with_summaries: { type: "date[]" }
+      today_summary_states: { type: "map<pending|running|done|failed|skipped, integer>" }
+
+  history_summaries:
+    endpoints:
+      - { method: RPC, path: historyList, input: "{from, to}" }
+    fields:
+      id: { type: ulid, display: "s:<id>" }
+      kind: { type: enum, values: ["10min", "6h"] }
+      window_from: { type: epoch_ms }
+      window_to: { type: epoch_ms }
+      title: { type: string }
+      description: { type: string }
+      status: { type: enum, values: [pending, running, done, failed, skipped] }
+      citations: { type: "Citation[]", ref: shared/types.yaml }
+
+  day_pages:
+    endpoints:
+      - { method: RPC, path: day.get, input: "{date}" }
+    fields:
+      date: { type: date }
+      markdown: { type: string, nullable: true }
+      updated_at: { type: iso8601 }
+
+  evidence:
+    endpoints:
+      - { method: RPC, path: read, input: "{id, match?, contextLines?}", note: "= MCP history_read" }
+    fields:
+      id: { type: string, pattern: "e:<ulid> | s:<ulid>" }
+      occurred_at: { type: epoch_ms }
+      app: { type: string }
+      title: { type: string }
+      url: { type: url, nullable: true }
+      text: { type: string, note: "≤ READ_CALL_BYTES, <untrusted-evidence> 경계 포함" }
+      expired: { type: boolean }
+
+  clear_operation:
+    endpoints:
+      - { method: RPC, path: clear, input: "{target: last10m|lastHour|today|all}" }
+    fields:
+      deleted_events: { type: integer }
+      deleted_summaries: { type: integer }
+      deletion_epoch: { type: integer }
+
+  mcp_usage:
+    endpoints:
+      - { method: RPC, path: mcp.usage, input: "{sinceMs}" }
+    fields:
+      client_name: { type: string }
+      calls: { type: "map<tool, integer>" }
+      avg_latency_ms: { type: integer }
+
+  agent_connection:
+    endpoints: []
+    note: "정적 값. 번들 경로로부터 계산해 웹 UI가 렌더"
+    fields:
+      binary_path: { type: string, default: "/Applications/Side.app/Contents/Resources/side" }
+      claude_code_command: { type: string }
+      mcp_json_snippet: { type: string }

@@ -1,0 +1,53 @@
+version: "2.0"
+# 출처: docs/planning/06-screens.md S1(+). 네이티브 SwiftUI MenuBarExtra — route는 식별자
+screen:
+  name: 메뉴바 메뉴
+  route: native://menubar
+  layout: full-width
+
+data_requirements:
+  - resource: capture_status
+    needs: [enabled, state, paused_until, banner]
+
+components:
+  - id: status_line
+    type: detail
+    position: header
+    function: "Capturing / Paused until HH:MM / Paused until you resume / Capture is not running / Permissions needed"
+    data_source: { resource: capture_status }
+    events: [{ on: menu_open, do: status 즉시 조회(평소 30s 캐시) }]
+  - id: pause_menu
+    type: navigation
+    position: main
+    function: shared pause_control(서브메뉴) + Resume(일시정지일 때만)
+    data_source: { resource: capture_status }
+    events: [{ on: select, do: pause/resume 호출 후 status_line 갱신 }]
+  - id: actions
+    type: navigation
+    position: main
+    function: "Today's summary… · Settings… · Quit Side"
+    events:
+      - { on: click:today, do: "WKWebView 창에서 /history/<오늘>" }
+      - { on: click:settings, do: "settings.open → 토큰 주입 후 /settings/context-awareness" }
+      - { on: click:quit, do: "데몬에 SIGTERM, 5s 후 강제 종료, 앱 종료" }
+  - id: status_icon
+    type: detail
+    position: header
+    function: 아이콘 3종(활성·일시정지·오류). 캡처 중 깜박임 없음
+
+connections:
+  navigations:
+    - { from: actions, to: "/history/:date" }
+    - { from: actions, to: "/settings/context-awareness" }
+  shared_components: [pause_control]
+
+tests:
+  - name: 일시정지 반영
+    when: Pause ▸ 30 minutes 선택
+    then: ["상태 줄이 'Paused until HH:MM'", 아이콘이 일시정지로 바뀜]
+  - name: 데몬 다운
+    when: 데몬 프로세스가 죽은 상태에서 메뉴 열기
+    then: ["'Capture is not running'", 오류 아이콘]
+  - name: 설정 열기
+    when: Settings… 클릭
+    then: [WKWebView 창이 토큰과 함께 설정 화면을 열고, 토큰은 URL 기록에 남지 않음]

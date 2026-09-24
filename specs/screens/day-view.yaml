@@ -1,0 +1,61 @@
+version: "2.0"
+# 출처: docs/planning/06-screens.md S6(+), 07-recall-index.md §1, §5
+screen:
+  name: Day view
+  route: /history/:date
+  layout: main-sidebar          # 본문(day page) + 오른쪽 증거 패널
+  auth: true
+
+data_requirements:
+  - resource: day_pages
+    needs: [date, markdown, updated_at]
+    filters: { date: ":date" }
+  - resource: history_status
+    needs: [days_with_summaries]
+  - resource: evidence
+    needs: [id, occurred_at, app, title, url, text, expired]
+
+components:
+  - id: date_nav
+    type: navigation
+    position: header
+    function: "◀ ▶ 날짜 이동(요약 있는 날만), 이 날 삭제(오늘일 때만 Clear 'Today')"
+    data_source: { resource: history_status }
+    events:
+      - { on: click:prev_next, do: "인접한 요약 있는 날짜로 route 변경" }
+      - { on: click:clear_today, do: "confirm_dialog → clear({target:'today'}) → 페이지 재조회" }
+  - id: day_page
+    type: detail
+    position: main
+    function: "day page 마크다운 렌더(Day overview + 10분 섹션 + Sources). HTML 원문 비활성(sanitize), 외부 링크는 기본 브라우저로 열기"
+    data_source: { resource: day_pages }
+    events:
+      - { on: "click:ref(e:|s:)", do: "evidence_panel에 read({id}) 결과 표시" }
+      - { on: "load:#s:<id>", do: 해당 섹션으로 스크롤 }
+  - id: evidence_panel
+    type: detail
+    position: sidebar
+    function: "history_read 결과: 메타(시각·앱·제목·URL) + 본문(untrusted_text_view). match 입력란으로 재조회"
+    data_source: { resource: evidence }
+    events:
+      - { on: submit:match, do: "read({id, match, contextLines:10})" }
+
+connections:
+  navigations:
+    - { from: date_nav, to: "/history/:date" }
+    - { from: day_page, to: "/settings/context-awareness" }
+  shared_components: [confirm_dialog, untrusted_text_view]
+
+tests:
+  - name: 페이지 로드
+    when: 요약 있는 날짜로 접속
+    then: [Day overview와 10분 섹션 렌더, 각 섹션에 Sources 링크]
+  - name: 증거 열람
+    when: "e: 링크 클릭"
+    then: ["read 호출", "패널에 텍스트가 HTML로 해석되지 않고 표시"]
+  - name: 만료 증거
+    when: 보존 기간이 지난 e:id 클릭
+    then: ["'expired' 안내 + 이를 인용한 요약 링크"]
+  - name: 요약 없는 날
+    when: day.get이 null
+    then: ["'No summaries for this day.' 표시, 이전/다음 이동 가능"]

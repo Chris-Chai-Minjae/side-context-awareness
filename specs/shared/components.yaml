@@ -1,0 +1,23 @@
+version: "2.0"
+components:
+  permission_banner:
+    function: capture_status.banner에 따라 4가지 상태 배너와 Allow 버튼 표시
+    used_by: [settings-context-awareness, menubar]
+    copy:
+      starting: "Starting capture…"
+      not_running: "Capture is not running"
+      permissions_needed: "Permissions needed"
+      some_unavailable: "Some capture features are unavailable"
+      allow_button: "Allow"
+  pause_control:
+    function: 일시정지 드롭다운(15 minutes / 30 minutes / 1 hour / Until I resume) + Resume
+    used_by: [settings-context-awareness, menubar]
+    copy:
+      paused_indefinite: "Paused until you resume"
+      paused_timed: "Resuming in …"
+  confirm_dialog:
+    function: 파괴적 작업 확인(제목·본문·확인 버튼 스타일 destructive)
+    used_by: [settings-context-awareness, day-view]
+  untrusted_text_view:
+    function: evidence 텍스트를 이스케이프해 표시(HTML 해석 금지), match 하이라이트
+    used_by: [day-view]

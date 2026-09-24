@@ -1,0 +1,279 @@
+{
+  "language": "ko",
+  "positive": [
+    {
+      "name": "일반 개인키 블록",
+      "input": "예시:\n-----BEGIN PRIVATE KEY-----\n가짜_키_내용\n-----END PRIVATE KEY-----",
+      "secret": "-----BEGIN PRIVATE KEY-----\n가짜_키_내용\n-----END PRIVATE KEY-----",
+      "rule": "private-key-block"
+    },
+    {
+      "name": "RSA 개인키 블록",
+      "input": "샘플:\n-----BEGIN RSA PRIVATE KEY-----\n가짜_RSA_내용\n-----END RSA PRIVATE KEY-----",
+      "secret": "-----BEGIN RSA PRIVATE KEY-----\n가짜_RSA_내용\n-----END RSA PRIVATE KEY-----",
+      "rule": "private-key-block"
+    },
+    {
+      "name": "EC 개인키 블록",
+      "input": "시험:\n-----BEGIN EC PRIVATE KEY-----\n가짜_EC_내용\n-----END EC PRIVATE KEY-----",
+      "secret": "-----BEGIN EC PRIVATE KEY-----\n가짜_EC_내용\n-----END EC PRIVATE KEY-----",
+      "rule": "private-key-block"
+    },
+    {
+      "name": "OpenSSH 개인키 블록",
+      "input": "모형:\n-----BEGIN OPENSSH PRIVATE KEY-----\n가짜_SSH_내용\n-----END OPENSSH PRIVATE KEY-----",
+      "secret": "-----BEGIN OPENSSH PRIVATE KEY-----\n가짜_SSH_내용\n-----END OPENSSH PRIVATE KEY-----",
+      "rule": "private-key-block"
+    },
+    {
+      "name": "AKIA 영문 식별자",
+      "input": "가상 식별자 AKIABCDEFGHIJKLMNOPQ",
+      "secret": "AKIABCDEFGHIJKLMNOPQ",
+      "rule": "aws-access-key"
+    },
+    {
+      "name": "ASIA 숫자 식별자",
+      "input": "예시 식별자 ASIA0987654321ABCDEF",
+      "secret": "ASIA0987654321ABCDEF",
+      "rule": "aws-access-key"
+    },
+    {
+      "name": "AKIA 반복 문자",
+      "input": "샘플 식별자 AKIAZZZZZZZZZZZZZZZZ",
+      "secret": "AKIAZZZZZZZZZZZZZZZZ",
+      "rule": "aws-access-key"
+    },
+    {
+      "name": "ASIA 반복 문자",
+      "input": "시험 식별자 ASIAQQQQQQQQQQQQQQQQ",
+      "secret": "ASIAQQQQQQQQQQQQQQQQ",
+      "rule": "aws-access-key"
+    },
+    {
+      "name": "가상 세 부분",
+      "input": "가상 토큰 eyJKOREADEMOA.KOREAPAYLOADA.KOREASIGNATUREA",
+      "secret": "eyJKOREADEMOA.KOREAPAYLOADA.KOREASIGNATUREA",
+      "rule": "jwt"
+    },
+    {
+      "name": "밑줄 포함 세 부분",
+      "input": "예시 토큰 eyJKOREA_1234.FAKE_BODY_1234.FAKE_SIGN_1234",
+      "secret": "eyJKOREA_1234.FAKE_BODY_1234.FAKE_SIGN_1234",
+      "rule": "jwt"
+    },
+    {
+      "name": "숫자 포함 세 부분",
+      "input": "샘플 토큰 eyJ987654321.BODY987654321.SIGN987654321",
+      "secret": "eyJ987654321.BODY987654321.SIGN987654321",
+      "rule": "jwt"
+    },
+    {
+      "name": "긴 가상 부분",
+      "input": "시험 토큰 eyJEXAMPLE123.EXAMPLEBODY123.EXAMPLESIGN123",
+      "secret": "eyJEXAMPLE123.EXAMPLEBODY123.EXAMPLESIGN123",
+      "rule": "jwt"
+    },
+    {
+      "name": "봇 모양 토큰",
+      "input": "가상 토큰 xoxb-KOREADEMO1234",
+      "secret": "xoxb-KOREADEMO1234",
+      "rule": "slack-token"
+    },
+    {
+      "name": "앱 모양 토큰",
+      "input": "예시 토큰 xoxa-KOREAEXAMPLE12",
+      "secret": "xoxa-KOREAEXAMPLE12",
+      "rule": "slack-token"
+    },
+    {
+      "name": "사용자 모양 토큰",
+      "input": "샘플 토큰 xoxp-KOREANOTREAL12",
+      "secret": "xoxp-KOREANOTREAL12",
+      "rule": "slack-token"
+    },
+    {
+      "name": "갱신 모양 토큰",
+      "input": "시험 토큰 xoxr-KOREAFAKE12345",
+      "secret": "xoxr-KOREAFAKE12345",
+      "rule": "slack-token"
+    },
+    {
+      "name": "sk 모양 키",
+      "input": "가상 키 sk_proj_EEEEEEEEEEEEEEEEEEEEEEEE",
+      "secret": "sk_proj_EEEEEEEEEEEEEEEEEEEEEEEE",
+      "rule": "api-key"
+    },
+    {
+      "name": "rk 모양 키",
+      "input": "예시 키 rk\u005ftest_FFFFFFFFFFFFFFFFFFFFFFFF",
+      "secret": "rk\u005ftest_FFFFFFFFFFFFFFFFFFFFFFFF",
+      "rule": "api-key"
+    },
+    {
+      "name": "GitHub 모양 키",
+      "input": "샘플 키 gho_GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+      "secret": "gho_GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+      "rule": "api-key"
+    },
+    {
+      "name": "Google 모양 키",
+      "input": "시험 키 AIzaHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",
+      "secret": "AIzaHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",
+      "rule": "api-key"
+    },
+    {
+      "name": "비밀번호 라벨",
+      "input": "비밀번호: 가짜값",
+      "secret": "비밀번호: 가짜값",
+      "rule": "labeled-secret"
+    },
+    {
+      "name": "토큰 라벨",
+      "input": "토큰=예시값",
+      "secret": "토큰=예시값",
+      "rule": "labeled-secret"
+    },
+    {
+      "name": "영문 secret 라벨",
+      "input": "secret: SAMPLE_ONLY",
+      "secret": "secret: SAMPLE_ONLY",
+      "rule": "labeled-secret"
+    },
+    {
+      "name": "영문 passwd 라벨",
+      "input": "passwd=DEMO_ONLY",
+      "secret": "passwd=DEMO_ONLY",
+      "rule": "labeled-secret"
+    },
+    {
+      "name": "인증 문맥",
+      "input": "인증 번호 444444",
+      "secret": "444444",
+      "rule": "otp-numeric"
+    },
+    {
+      "name": "OTP 문맥",
+      "input": "otp: 555555",
+      "secret": "555555",
+      "rule": "otp-numeric"
+    },
+    {
+      "name": "인증 코드 문맥",
+      "input": "인증 코드: 666666",
+      "secret": "666666",
+      "rule": "otp-numeric"
+    },
+    {
+      "name": "영문 코드 문맥",
+      "input": "code: 777777",
+      "secret": "777777",
+      "rule": "otp-numeric"
+    },
+    {
+      "name": "Visa 공개 시험번호",
+      "input": "시험 카드 4000 0000 0000 0002",
+      "secret": "4000 0000 0000 0002",
+      "rule": "card-number"
+    },
+    {
+      "name": "Mastercard 공개 시험번호",
+      "input": "시험 카드 5105-1051-0510-5100",
+      "secret": "5105-1051-0510-5100",
+      "rule": "card-number"
+    },
+    {
+      "name": "JCB 공개 시험번호",
+      "input": "시험 카드 3530111333300000",
+      "secret": "3530111333300000",
+      "rule": "card-number"
+    },
+    {
+      "name": "13자리 공개 시험번호",
+      "input": "시험 카드 4222222222222",
+      "secret": "4222222222222",
+      "rule": "card-number"
+    }
+  ],
+  "negative": [
+    {
+      "name": "일반 날짜",
+      "input": "회의 날짜 2026-09-24"
+    },
+    {
+      "name": "일반 시간",
+      "input": "작업 시간 09:15:30"
+    },
+    {
+      "name": "일반 여덟 자리 숫자",
+      "input": "문서 번호 87654321"
+    },
+    {
+      "name": "일반 열 자리 숫자",
+      "input": "주문 참조 1234567890"
+    },
+    {
+      "name": "ISBN-13 도서번호",
+      "input": "도서 ISBN 978-3-16-148410-0"
+    },
+    {
+      "name": "ISBN-10 도서번호",
+      "input": "도서 ISBN 0-306-40615-2"
+    },
+    {
+      "name": "Luhn 실패 13자리",
+      "input": "참조 1234567890123"
+    },
+    {
+      "name": "Luhn 실패 16자리",
+      "input": "참조 5555 5555 5555 4445"
+    },
+    {
+      "name": "Luhn 실패 16자리 둘",
+      "input": "참조 4000 0000 0000 0003"
+    },
+    {
+      "name": "일반 소수",
+      "input": "예산 1234567.89"
+    },
+    {
+      "name": "짧은 AWS 모양",
+      "input": "AKIAABCDEFGHIJKLMNO"
+    },
+    {
+      "name": "소문자 AWS 모양",
+      "input": "asiaABCDEFGHIJKLMNOP"
+    },
+    {
+      "name": "짧은 Slack 모양",
+      "input": "xoxp-short"
+    },
+    {
+      "name": "짧은 JWT 모양",
+      "input": "eyJsmall.part.short"
+    },
+    {
+      "name": "짧은 sk 모양",
+      "input": "sk_live_SHORT"
+    },
+    {
+      "name": "짧은 gh 모양",
+      "input": "ghu_ABCDEF"
+    },
+    {
+      "name": "짧은 AIza 모양",
+      "input": "AIzaSHORT"
+    },
+    {
+      "name": "라벨 없는 안내",
+      "input": "비밀번호 변경 안내"
+    },
+    {
+      "name": "일반 영문 부분 문자열",
+      "input": "pinning 설명"
+    },
+    {
+      "name": "버전과 연도",
+      "input": "버전 1.2.3, 출시 2026"
+    }
+  ]
+}

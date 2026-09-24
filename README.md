@@ -1,0 +1,71 @@
+# Side
+
+Side는 macOS에서 브라우저와 앱 활동을 로컬에 기록하고, 그날의 요약과 출처를 에이전트가 다시 찾게 하는 메뉴바 앱이다. Aside Context Awareness의 macOS 동작을 독립적으로 구현한다. Aside 설치나 Max 플랜은 필요하지 않다.
+
+Side is an open-source macOS menu bar app that records browser and app activity locally, then helps you and connected agents find daily summaries with their sources. Build it on your own Mac from source; a prebuilt app is not currently distributed.
+
+소스코드는 [MIT License](LICENSE)로 공개한다. 처음 쓰는 사람은 [한국어 HTML 설명서](docs/side-for-beginners.html)에서 기록·검색 흐름과 설치 예를 볼 수 있다.
+
+[Side 소개 페이지 / Landing page (한국어 · English)](https://chris-chai-minjae.github.io/side-context-awareness/)에서 제품 소개와 소스 빌드 절차를 볼 수 있다.
+
+현재 저장소는 개발 중이다. 배포 방식은 GitHub 소스 공개와 사용자별 로컬 빌드다. 미리 빌드한 앱의 Developer ID 서명·공증은 이 배포 방식에 포함되지 않는다. 실기기 장시간 검증과 릴리스 게이트의 남은 항목은 `docs/qa/`에 구분해 기록한다.
+
+공개 저장소는 검증한 소스의 단일 시작 스냅샷이다. 과거 QA 보고서의 개발 커밋 ID가 공개 Git 이력에서 조회되지 않는 이유는 [공개 이력 설명](docs/qa/publication-history.md)에 기록했다.
+
+## 설치와 시작
+
+macOS 14 이상이 필요하다. 소스 빌드에는 Bun, Xcode Command Line Tools, FTS5와 확장 로딩을 지원하는 SQLite dylib가 필요하다. 빌드 스크립트는 Homebrew SQLite 경로를 찾으며, 다른 빌드 경로의 dylib는 `SIDE_SQLITE_LIBRARY`로 지정할 수 있다. MiniLM 모델은 빌드할 때 내려받아 앱에 동봉한다. 이미 채운 캐시가 있다면 `SIDE_MODEL_CACHE_SOURCE`로 지정할 수 있다. 실행할 Mac에는 Homebrew가 필요하지 않다.
+
+```sh
+bun install --frozen-lockfile
+bun run build
+```
+
+빌드된 앱을 `/Applications/Side.app`에 복사해서 실행한다. 같은 이름의 앱이 이미 실행 중이면 먼저 종료한다.
+
+```sh
+ditto apps/side-mac/.build/release/Side.app /Applications/Side.app
+open /Applications/Side.app
+```
+
+Side는 Dock 대신 메뉴바에 표시된다. 첫 실행 온보딩에서 캡처 권한을 부여하고 상황 인식을 켠다. 요약 provider 설정은 건너뛸 수 있으며, 이 경우 캡처는 가능하지만 요약은 대기한다. 메뉴바의 설정에서 보존 기간, 제외 앱·웹사이트, 요약 모델과 에이전트 연결을 관리한다. 화면 언어는 설정에서 한국어 또는 English로 선택할 수 있다.
+
+로컬 빌드는 임시 서명(ad hoc signing)을 사용한다. 다시 빌드해 앱을 교체하면 macOS가 기존 Accessibility·Input Monitoring·Screen Recording 권한을 새 빌드에 적용하지 않을 수 있다. 그때는 시스템 설정 → 개인정보 보호 및 보안의 해당 권한 목록에서 이전 `Side` 항목을 제거하고 `/Applications/Side.app`을 다시 추가한다. 사전 빌드 앱을 제3자에게 배포할 때 필요한 Developer ID·공증은 별도 게이트로 남겨 둔다. 현재 상태는 `docs/qa/` 보고서와 `docs/planning/06-tasks.md`의 체크박스에서 확인한다.
+
+## macOS 권한
+
+| 권한 | Side에서 쓰는 용도 |
+|---|---|
+| Accessibility | 활성 창의 제목, 접근성 텍스트와 선택 영역 읽기 |
+| Input Monitoring | 입력된 문장을 구성하기 위한 입력 이벤트 관찰. 비밀번호 필드와 개별 키 입력은 저장하지 않음 |
+| Screen Recording | 읽을 수 있는 접근성 텍스트가 없을 때 화면 글자를 온디바이스 OCR로 읽기. 이미지는 저장하지 않음 |
+| Automation | 지원 브라우저의 현재 탭 URL 읽기 |
+
+Screen Recording은 선택 사항이다. macOS의 권한 창에서 Side를 승인해야 해당 관찰 기능이 작동한다. 권한 상태와 진단은 메뉴바 **Settings…** 및 아래 명령으로 확인한다.
+
+```sh
+"/Applications/Side.app/Contents/Resources/side" doctor
+```
+
+## 데이터와 프라이버시
+
+데이터 루트는 `~/Library/Application Support/Side/`이며 `SIDE_DATA_DIR`로 개발용 경로를 지정할 수 있다. `context-awareness/ledger.db`에는 원본 이벤트, `memory/episodic/`에는 날짜별 요약, `index.db`에는 검색 색인이 있다. 원본의 제목·URL·본문 등 민감 컬럼은 저장 전에 알려진 패턴에 따라 마스킹하고 AES-256-GCM으로 암호화한다. 규칙 기반 마스킹은 모든 민감 정보를 찾는다는 보장이 없다. 마스터 키와 provider API 키는 macOS Keychain에 보관한다. 요약과 날짜별 페이지는 로컬 파일에 평문으로 남는다.
+
+원본 캡처의 기본 보존 기간은 14일이며 설정에서 1·3·7·14·30일 중 선택할 수 있다. 요약은 별도로 남는다. Side는 원본 캡처를 클라우드로 동기화하지 않는다. 요약 provider에 **Send evidence to this provider**를 켠 경우에만 마스킹한 10분 창 briefing과 6시간 rollup briefing을 표시된 provider host로 보낸다. 이 설정은 기본적으로 꺼져 있다. 연결한 에이전트가 MCP 결과를 자신의 모델에 전달할 수 있으므로 해당 에이전트의 데이터 정책도 확인해야 한다. 같은 macOS 사용자 권한으로 실행되는 다른 프로세스의 MCP 접근은 완전히 차단할 수 없다.
+
+## 일시정지와 삭제
+
+메뉴바에서 15분·30분·1시간·재개할 때까지 캡처를 멈출 수 있다. 설정의 **Denylist**에는 관찰하지 않을 앱이나 웹사이트를 추가한다. **Disable Context Awareness**는 새 캡처를 중단하지만 기존 이력은 보존 기간 또는 직접 삭제 시점까지 남는다.
+
+설정의 **Clear history**에서 최근 10분, 지난 1시간, 오늘, 전체 이력을 삭제할 수 있다. CLI에서도 다음처럼 실행한다.
+
+```sh
+"/Applications/Side.app/Contents/Resources/side" clear today
+"/Applications/Side.app/Contents/Resources/side" clear all
+```
+
+`clear all`은 대화형 확인 후 Side 이벤트·요약·날짜 페이지·검색 색인을 지우고 마스터 키를 교체한다. `--yes`를 붙이면 대화형 확인을 건너뛴다. 이 명령은 브라우저 자체의 방문 기록을 지우지 않는다. 설정과 provider Keychain 항목은 이 이력 삭제와 별개다. 앱을 완전히 제거하려면 먼저 Side를 종료하고 이력을 삭제한 뒤 앱과 Side 데이터 디렉터리를 제거한다. Keychain Access에서 `local-context-awareness-ledger` 및 `side-provider-api-key` 서비스 항목도 별도로 확인한다.
+
+## 에이전트 연결
+
+Side.app이 실행 중일 때 `"/Applications/Side.app/Contents/Resources/side" mcp`가 `history_search`, `history_read`, `memory_search`를 제공한다. Claude Code, Codex, Cursor, Aside 등록 명령과 사용 예는 [docs/agents.md](docs/agents.md)에 있다. 데몬이 꺼져 있어도 MCP 서버는 시작되지만 도구 호출 시 `Side is not running. Open Side.app.`를 반환한다.

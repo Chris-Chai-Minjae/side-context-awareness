@@ -1,0 +1,128 @@
+version: "2.0"
+# 출처: docs/planning/06-screens.md S2 + S3/S4/S5(overlay). 원본 문구 1:1(Aside→Side)
+screen:
+  name: 설정 — Context Awareness
+  route: /settings/context-awareness     # 데몬 웹 UI, Side.app WKWebView 안에서만 열림
+  layout: full-width
+  auth: true                              # Bearer 토큰(앱이 주입)
+
+data_requirements:
+  - resource: capture_status
+    needs: [enabled, state, paused_until, banner, health, stop_reason]
+  - resource: permissions
+    needs: [accessibility, input_monitoring, screen_recording, automation]
+  - resource: settings
+    needs: [enabled, capture_typed_text, screen_ocr, aside_adapter, retention_days, rules, summary_model, providers]
+  - resource: summary_model_default
+    needs: [model, source]
+  - resource: providers
+    needs: [id, base_url, host, models, supports_tool_choice, allow_evidence, has_key, test_result]
+  - resource: applications
+    needs: [bundle_id, name, icon_png_base64, denied]
+  - resource: history_status
+    needs: [store_bytes, average_bytes_per_day, days_with_summaries]
+  - resource: history_summaries
+    needs: [id, kind, window_from, window_to, title, description, status]
+    filters: { from: "?day 00:00", to: "?day 24:00", kind: "10min" }
+  - resource: clear_operation
+    needs: [deleted_events]
+  - resource: mcp_usage
+    needs: [client_name, calls]
+  - resource: agent_connection
+    needs: [claude_code_command, mcp_json_snippet]
+
+components:
+  - id: header
+    type: detail
+    position: header
+    function: '"Let Side remember your day" + "Side captures what you do in your browser and apps so agents can recall it later."'
+    events: [{ on: load, do: status·settings·permissions 병렬 조회, 5s마다 status 폴링 }]
+  - id: permission_banner
+    type: detail
+    position: header
+    function: shared permission_banner
+    data_source: { resource: capture_status }
+    events: [{ on: click:allow, do: requestPermissions(누락 kinds) }]
+  - id: capture_section
+    type: form
+    position: main
+    function: "Enable Context Awareness · Pause capturing · Capture typed text · Allow Screen Recording · Use Aside Browser page content(+)"
+    data_source: { resource: settings }
+    events:
+      - { on: toggle:enable_off, do: disable_dialog 열기 }
+      - { on: toggle:enable_on, do: "settings.patch({enabled:true}) → pausedUntil 해제, 누락 권한 자동 요청" }
+      - { on: toggle:screen_ocr_on, do: "settings.patch 후 Screen Recording 권한 요청" }
+      - { on: select:pause, do: "pause({durationMs}) 또는 pause({until:PAUSE_INDEFINITE})" }
+  - id: denylist_section
+    type: list
+    position: main
+    function: '"Side never captures what you do in these apps and websites." 규칙 목록 + 삭제 + Add'
+    data_source: { resource: settings }
+    events:
+      - { on: click:add, do: never_observe_dialog 열기 }
+      - { on: click:remove, do: "settings.patch(rules − 항목)" }
+  - id: summaries_section
+    type: form
+    position: main
+    function: "Summary model 드롭다운 · Model providers(+) 목록/편집/모델 조회/테스트 · Retention(1/3/7/14/30, 'Side deletes raw captures after this many days. Summaries stay.')"
+    data_source: { resource: providers }
+    events:
+      - { on: toggle:allow_evidence_on, do: '경고 "Summaries send redacted activity from each 10-minute window to <host>." 확인 후 patch' }
+      - { on: submit:provider_key, do: "providers.setKey → 입력란 즉시 비움" }
+      - { on: click:list_models, do: "providers.listModels({providerId}) → 성공 시 Model IDs 편집란에 제안, 사용자가 저장; unavailable이면 이유 표시하고 수동 입력 유지" }
+      - { on: click:add_provider_preset, do: "MiMo 2.6 Pro(supportsToolChoice=false) → MiniMax M3(supportsToolChoice=true) → OpenAI API(모델은 조회·선택) 순서의 Base URL·Model ID 입력 프리셋; 키는 사용자가 입력하고 Keychain에 저장" }
+      - { on: click:add_claude_code, do: "기존 Claude Code 로그인으로 사용하는 claude-code-cli provider를 추가한다. 사용자가 명시적 Model ID를 입력하고 증거 전송을 별도로 허용한다. 임의 명령·경로·API 키 입력은 받지 않는다" }
+      - { on: click:test, do: providers.test 결과 인라인 표시 }
+  - id: history_section
+    type: list
+    position: main
+    function: "day picker + 그날 요약 목록 + History storage usage(툴팁 'Storage used' / 'Average usage: … / day') + Clear history"
+    data_source: { resource: history_summaries }
+    events:
+      - { on: click:summary, do: "/history/:date#s:<id>로 이동" }
+      - { on: click:clear, do: clear_dialog 열기 }
+  - id: connect_agents_section
+    type: detail
+    position: main
+    function: "(+) Claude Code/Codex/Cursor/Aside 연결 스니펫 + 복사 + 최근 24h 호출 수"
+    data_source: { resource: mcp_usage }
+    events: [{ on: click:copy, do: 클립보드 복사 }]
+  - id: never_observe_dialog
+    type: form
+    position: overlay
+    function: '"Never observe" — Source(Application|Website), 앱 검색(denied 제외) 또는 bundle id / 도메인 입력(스킴·경로 제거, 소문자화)'
+    data_source: { resource: applications }
+    events: [{ on: submit, do: "settings.patch(rules + {scope, behavior:'do_not_observe', …})" }]
+  - id: clear_dialog
+    type: form
+    position: overlay
+    function: "Last 10 minutes / Last hour / Today / All history. All이면 'Clear all Context Awareness?' 확인"
+    events: [{ on: submit, do: 'clear({target}) → 토스트 "Cleared N events." → history 재조회' }]
+  - id: disable_dialog
+    type: form
+    position: overlay
+    function: '"Disable Context Awareness?" / "Side will stop capturing your activity. Existing history stays on this device until it expires or you delete it."'
+    events: [{ on: confirm, do: "settings.patch({enabled:false})" }]
+
+connections:
+  navigations:
+    - { from: history_section, to: "/history/:date" }
+  shared_components: [permission_banner, pause_control, confirm_dialog]
+  external: [side-app-keychain-bridge]
+
+tests:
+  - name: 권한 누락 배너
+    when: Input Monitoring 미부여 상태로 접속
+    then: ["'Permissions needed' 배너와 Allow 표시", "Allow 클릭 시 requestPermissions(['inputMonitoring']) 호출"]
+  - name: 비활성화 확인
+    when: Enable 스위치 끔
+    then: [disable_dialog 표시, 확인 전에는 settings.patch 미호출, "확인 후 enabled=false이고 history는 유지"]
+  - name: denylist 추가
+    when: Website로 "https://Mail.Example.com/inbox" 입력 후 Add
+    then: ["규칙 {scope:url, urlDomain:'mail.example.com', behavior:'do_not_observe'} 저장"]
+  - name: 반출 경고
+    when: provider의 Send evidence를 켬
+    then: [host가 들어간 경고 표시, 취소하면 allow_evidence=false 유지]
+  - name: API 키 비노출
+    when: provider 키 저장 후 settings.get 재조회
+    then: ["응답에 키 원문 없음, has_key=true", 입력란이 비어 있음]

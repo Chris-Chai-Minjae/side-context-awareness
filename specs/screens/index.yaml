@@ -1,0 +1,6 @@
+version: "2.0"
+screens:
+  - { id: settings-context-awareness, name: "설정 — Context Awareness", route: /settings/context-awareness, source: "06-screens S2,S3,S4,S5", platform: web(WKWebView) }
+  - { id: day-view, name: Day view, route: "/history/:date", source: "06-screens S6", platform: web(WKWebView) }
+  - { id: menubar, name: 메뉴바 메뉴, route: "native://menubar", source: "06-screens S1", platform: SwiftUI }
+  - { id: onboarding, name: 첫 실행 온보딩, route: "native://onboarding", source: "06-screens S7", platform: SwiftUI }

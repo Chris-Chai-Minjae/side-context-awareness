@@ -1,0 +1,20 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`Given done window and rollup summaries, when rendered, then the v3 page has overview, cited section and digest timestamps 1`] = `
+"---
+render: '3'
+updated_at: <local timestamp>
+---
+# Context awareness — 2026-09-24
+
+_Captured by Side from on-device activity. Summaries only; raw captures expire after 14 days._
+
+## Day overview
+- Morning work — Reviewed two articles.  s:<id>
+
+### 09:10 – 09:20 — Read SQLite docs  s:<id>
+Looked at the SQLite extension guide.
+
+Sources: [Guide](https://fixture.invalid/guide) — e:<id>
+"
+`;
