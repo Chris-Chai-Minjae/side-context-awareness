@@ -25,7 +25,7 @@ Side records the working context of your day on-device: browser tabs, text in Ma
 
 ## Why it is different
 
-| | |
+| Area | What it means |
 |---|---|
 | No subscription | The same context tracking without an expensive proprietary plan such as Aside Max, as free open source. |
 | Privacy (fully local) | Capture data is stored on this Mac and is not automatically sent to the cloud. Sensitive values are masked and encrypted before storage. |
