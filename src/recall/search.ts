@@ -8,7 +8,7 @@ import {
 } from "../constants"
 import { deriveSubkey, open } from "../crypto/index"
 import { readBlobContent } from "../ledger/frames"
-import { normalizePageUrl } from "../policy"
+import { normalizePageUrl } from "../policy/url"
 import { selectPassages } from "./passages"
 import {
   type EventCandidate,

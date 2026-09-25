@@ -2,6 +2,72 @@
   "language": "en",
   "positive": [
     {
+      "name": "Anthropic API shaped dummy",
+      "input": "Token \u0073k-ant-api03-AAAAAAAAAAAAAAAAAAAAAAAA",
+      "secret": "\u0073k-ant-api03-AAAAAAAAAAAAAAAAAAAAAAAA",
+      "rule": "api-key"
+    },
+    {
+      "name": "project key with dash and underscore",
+      "input": "Token \u0073k-proj-AAAA_BBBB_CCCC_DDDD_EEEE",
+      "secret": "\u0073k-proj-AAAA_BBBB_CCCC_DDDD_EEEE",
+      "rule": "api-key"
+    },
+    {
+      "name": "GitHub fine grained shaped dummy",
+      "input": "Token \u0067ithub_pat_AAAAAAAAAAAAAAAAAAAAAAAA",
+      "secret": "\u0067ithub_pat_AAAAAAAAAAAAAAAAAAAAAAAA",
+      "rule": "api-key"
+    },
+    {
+      "name": "GitLab shaped dummy",
+      "input": "Token \u0067lpat-AAAAAAAAAAAAAAAAAAAAAAAA",
+      "secret": "\u0067lpat-AAAAAAAAAAAAAAAAAAAAAAAA",
+      "rule": "api-key"
+    },
+    {
+      "name": "Google OAuth shaped dummy",
+      "input": "Token \u0079a29.AAAAAAAAAAAAAAAAAAAAAAAA",
+      "secret": "\u0079a29.AAAAAAAAAAAAAAAAAAAAAAAA",
+      "rule": "api-key"
+    },
+    {
+      "name": "xAI shaped dummy",
+      "input": "Token \u0078ai-AAAAAAAAAAAAAAAAAAAAAAAA",
+      "secret": "\u0078ai-AAAAAAAAAAAAAAAAAAAAAAAA",
+      "rule": "api-key"
+    },
+    {
+      "name": "Hugging Face shaped dummy",
+      "input": "Token \u0068f_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "secret": "\u0068f_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "rule": "api-key"
+    },
+    {
+      "name": "Authorization Bearer header",
+      "input": "Header Authorization: Bearer DEMO.AAAA_BBBB-CCCC_DDDD",
+      "secret": "Authorization: Bearer DEMO.AAAA_BBBB-CCCC_DDDD",
+      "rule": "bearer-token"
+    },
+    {
+      "name": "Korean RRN shaped dummy",
+      "input": "ID \u003900101-1234567",
+      "secret": "\u003900101-1234567",
+      "rule": "kr-rrn"
+    },
+    {
+      "name": "English password is label",
+      "input": "password is FAKE_VALUE",
+      "secret": "password is FAKE_VALUE",
+      "rule": "labeled-secret"
+    },
+    {
+      "name": "Korean token topic label",
+      "input": "토큰은 가상값",
+      "secret": "토큰은 가상값",
+      "rule": "labeled-secret"
+    },
+    {
       "name": "plain private key block",
       "input": "Example:\n-----BEGIN PRIVATE KEY-----\nSYNTHETIC_NOT_A_KEY\n-----END PRIVATE KEY-----",
       "secret": "-----BEGIN PRIVATE KEY-----\nSYNTHETIC_NOT_A_KEY\n-----END PRIVATE KEY-----",
@@ -195,6 +261,11 @@
     }
   ],
   "negative": [
+    { "name": "new ordinary date", "input": "2026-09-25" },
+    { "name": "phone number", "input": "010-1234-5678" },
+    { "name": "nine digit order", "input": "order 123456789" },
+    { "name": "Bearer ordinary prose", "input": "Bearer of bad news" },
+    { "name": "short sk word", "input": "sk-short" },
     {
       "name": "calendar date",
       "input": "Meeting date 2026-09-24"

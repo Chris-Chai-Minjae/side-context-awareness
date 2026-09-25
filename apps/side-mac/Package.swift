@@ -10,7 +10,7 @@ let package = Package(
         .executable(name: "Side", targets: ["Side"]),
     ],
     targets: [
-        .target(name: "SideCaptureKit"),
+        .target(name: "SideCaptureKit", resources: [.process("Resources")]),
         .executableTarget(name: "Side", dependencies: ["SideCaptureKit"]),
         .testTarget(name: "SideCaptureKitTests", dependencies: ["SideCaptureKit", "Side"]),
         .testTarget(name: "SideAppTests", dependencies: ["Side"]),

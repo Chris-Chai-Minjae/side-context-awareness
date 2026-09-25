@@ -10,6 +10,9 @@ const canaries = [
   "4111111111111111",
   "password: hunter2",
   "900101-1234567",
+  ["sk", "ant", "api03", "A".repeat(24)].join("-"),
+  ["github", "pat", "B".repeat(24)].join("_"),
+  `Bearer ${"C".repeat(24)}`,
 ] as const
 
 const script = join(import.meta.dir, "..", "..", "scripts", "gates", "g1-canary.ts")
@@ -44,6 +47,9 @@ test("Given fixed canaries in selected binary and nested files, when scanned, th
       Buffer.concat([
         Buffer.alloc(65_535, 0),
         Buffer.from(canaries[0]),
+        Buffer.from(canaries[5]),
+        Buffer.from(canaries[6]),
+        Buffer.from(canaries[7]),
         Buffer.from([0xff, 0x00]),
         Buffer.from(canaries[0]),
       ]),
@@ -58,9 +64,9 @@ test("Given fixed canaries in selected binary and nested files, when scanned, th
 
     const result = await scanG1Canaries(root)
 
-    expect(result.totalMatches).toBe(9)
+    expect(result.totalMatches).toBe(12)
     expect(Object.fromEntries(result.files.map((file) => [file.path, file.matches]))).toEqual({
-      "context-awareness/ledger.db": 2,
+      "context-awareness/ledger.db": 5,
       "context-awareness/ledger.db-wal": 1,
       "context-awareness/ledger.db-shm": 1,
       "index.db": 1,

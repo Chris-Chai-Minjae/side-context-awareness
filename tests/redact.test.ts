@@ -1,23 +1,9 @@
 import { expect, test } from "bun:test"
-import { redactSecrets } from "../src/redact"
 import { type CaptureField, sensitiveFieldRule, shouldBlockField } from "../src/redact/fields"
 import { redact } from "../src/redact/index"
 import sharedFieldLabels from "./fixtures/field-labels.json"
 import enCorpus from "./fixtures/redaction-corpus.en.json"
 import koCorpus from "./fixtures/redaction-corpus.ko.json"
-
-test("Given synthetic credentials and a valid card number, when redacted, then none remains", () => {
-  const input = "api_key=synthetic-secret AKIAABCDEFGHIJKLMNOP 4111 1111 1111 1111"
-  const result = redactSecrets(input)
-  expect(result).not.toContain("synthetic-secret")
-  expect(result).not.toContain("AKIAABCDEFGHIJKLMNOP")
-  expect(result).not.toContain("4111 1111 1111 1111")
-  expect(result).toContain("[redacted:capture]")
-})
-
-test("Given a non-card number, when redacted, then it remains searchable", () => {
-  expect(redactSecrets("reference 1234567890123")).toBe("reference 1234567890123")
-})
 
 const MASK = "[redacted:capture]"
 const corpora = [koCorpus, enCorpus]

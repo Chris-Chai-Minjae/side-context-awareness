@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import { suppressAriaFields } from "../../src/capture/aria-fields"
 import { AsideDomAdapter, resolveAsideExecutable } from "../../src/capture/aside-adapter"
 
 const asideBundleId = "at.studio.AsideBrowser"
@@ -7,6 +8,74 @@ const validOutput =
   'Aside REPL banner\nSIDE_ASIDE_SNAPSHOT {"kind":"snapshot","content":"synthetic ARIA tree","beforeTabId":"tab-1","beforeUrl":"https://allowed.example/page?view=1","afterTabId":"tab-1","afterUrl":"https://allowed.example/page?view=1","attachedUrl":"https://allowed.example/page?view=1"}\n'
 
 describe("AsideDomAdapter", () => {
+  test("Given Playwright quoted input keys and input descendants, when sanitized, then no value survives", () => {
+    const tree = [
+      "- 'textbox \"Security: answer\"': SYNTHETIC_PRIVATE_VALUE",
+      '- combobox "Choice":',
+      '  - option "SYNTHETIC_SELECTION" [selected]',
+      '- textbox "Password":',
+      "  - text: SYNTHETIC_NESTED_VALUE",
+      '- heading "Public heading" [level=1]',
+      '- link "Guide": /guide',
+    ].join("\n")
+
+    const safe = suppressAriaFields(tree)
+
+    expect(safe.tree).not.toContain("SYNTHETIC_PRIVATE_VALUE")
+    expect(safe.tree).not.toContain("SYNTHETIC_SELECTION")
+    expect(safe.tree).not.toContain("SYNTHETIC_NESTED_VALUE")
+    expect(safe.tree).toContain('- heading "Public heading" [level=1]')
+    expect(safe.tree).toContain('- link "Guide": /guide')
+    expect(safe.suppressed).toBe(3)
+  })
+
+  test("Given input values in an ARIA snapshot, when captured, then every input value is removed while page text remains", async () => {
+    const tree = [
+      '- heading "Project plan"',
+      '- link "Guide": /guide',
+      '- textbox "Password": FAKE_PASSWORD_VALUE',
+      '- textbox "OTP": 123456',
+      '- textbox "Card Number": 4111111111111111',
+      '- textbox "Notes": private draft text',
+      "- searchbox: private search term",
+      '- combobox "Choice": private option',
+    ].join("\n")
+    const output = `SIDE_ASIDE_SNAPSHOT ${JSON.stringify({
+      kind: "snapshot",
+      content: tree,
+      beforeTabId: "tab-1",
+      beforeUrl: "https://allowed.example/page",
+      afterTabId: "tab-1",
+      afterUrl: "https://allowed.example/page",
+      attachedUrl: "https://allowed.example/page",
+    })}\n`
+    const adapter = new AsideDomAdapter(async () => output)
+
+    const result = await adapter.capture({
+      enabled: true,
+      foregroundBundleId: asideBundleId,
+      expectedNormalizedUrl: "https://allowed.example/page",
+      captureAx: async () => axSnapshot,
+    })
+
+    expect(result).toEqual({
+      source: "aside_dom",
+      shape: "aria",
+      rawUrl: "https://allowed.example/page",
+      suppressedFields: 6,
+      content: [
+        '- heading "Project plan"',
+        '- link "Guide": /guide',
+        '- textbox "Password": [redacted:field]',
+        '- textbox "OTP": [redacted:field]',
+        '- textbox "Card Number": [redacted:field]',
+        '- textbox "Notes"',
+        "- searchbox",
+        '- combobox "Choice"',
+      ].join("\n"),
+    })
+  })
+
   test("resolves Aside from absolute user or system paths with the app's restricted PATH", () => {
     const home = "/Users/example"
     expect(resolveAsideExecutable(home, (path) => path === `${home}/.local/bin/aside`)).toBe(

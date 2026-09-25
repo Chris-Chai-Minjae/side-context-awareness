@@ -31,6 +31,22 @@ private final class FakeMenuService: MenuBarServicing {
 
 @MainActor
 final class MenuStateTests: XCTestCase {
+    func testUnlockKeychainActionOnlyAppearsWhileLocked() {
+        XCTAssertEqual(SupervisorState.keychainLocked.unlockKeychainTitle(language: .en), "Unlock Keychain…")
+        XCTAssertEqual(SupervisorState.keychainLocked.unlockKeychainTitle(language: .ko), "Keychain 허용…")
+        for state: SupervisorState in [.stopped, .starting, .running, .waitingToRestart(1), .captureNotRunning] {
+            XCTAssertNil(state.unlockKeychainTitle(language: .en))
+        }
+    }
+
+    func testMenuKoreanMatchesWebCopy() {
+        let paused = MenuCaptureStatus(enabled: true, state: .paused, pausedUntil: 9_007_199_254_740_991, banner: .none)
+        XCTAssertEqual(MenuDisplay(status: paused, language: .ko).text, "직접 재개할 때까지 일시정지됨")
+        XCTAssertEqual(MenuPauseOption.untilIResume.title(language: .ko), "직접 재개할 때까지")
+        XCTAssertEqual(MenuBarView.pauseTitle(language: .ko), "일시정지")
+        XCTAssertEqual(MenuBarView.resumeTitle(language: .ko), "재개")
+    }
+
     func testFiveStatusStringsAndThreeIconsWhenCaptureStateChanges() {
         // Given five approved capture states at a fixed local time.
         let timezone = TimeZone(secondsFromGMT: 0)!

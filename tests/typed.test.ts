@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { DRAFT_IDLE_MS, TYPED_FIELD_VALUE_MAX_CHARS, TYPED_RUN_BYTES } from "../src/constants"
-import { TypedSentenceTracker } from "../src/typed"
+import { TypedSentenceTracker } from "../src/typed/index"
 
 test("Given an existing field value, when monitoring starts, then it is not copied as typed text", () => {
   const tracker = new TypedSentenceTracker()

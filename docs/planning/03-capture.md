@@ -104,6 +104,7 @@ function schedule(t: Target, trigger: Trigger, now: number) {
 | `api-key` | `\bsk-ant-(?:api|admin)\d{2}-[A-Za-z0-9_-]{20,}`, `\b(?:sk|pk|rk)[-_](?:live|test|proj)?[-_]?[A-Za-z0-9_-]{20,}`, `\bgithub_pat_[A-Za-z0-9_]{22,}`, `\bgh[pousr]_[A-Za-z0-9]{36,}\b`, `\bglpat-[A-Za-z0-9_-]{20,}`, `\bya29\.[A-Za-z0-9_-]{20,}`, `\bAIza[0-9A-Za-z_-]{35}\b`, `\bxai-[A-Za-z0-9]{20,}`, `\bhf_[A-Za-z0-9]{30,}` |
 | `bearer-token` | `\b(?:Authorization\s*:\s*)?Bearer\s+[A-Za-z0-9._~+/=-]{16,}` (대소문자 무시) |
 | `kr-rrn` | `\b\d{6}-?[1-4]\d{6}\b`; YYMMDD의 월 01–12, 일 01–31 검증 |
+| `field` | ARIA 입력 필드의 값을 저장 전에 제거한 건수. payload `masks`와 오늘 `masks`에 합산 |
 | `labeled-secret` | 영문 `(api[_ -]?key|access[_ -]?token|secret|password|passwd)\s*(?:[:=]|\s+is|\s+=)\s*\S+`, 한국어 `(?:토큰|비밀번호|암호|인증번호)\s*(?:[:=]|은|는)\s*\S+` |
 | `otp-numeric` | OTP·인증 문맥(`otp|code|인증`) 뒤 40자 이내의 `\b\d{4,8}\b` |
 | `card-number` | `\b(?:\d[ -]?){12,18}\d\b` + Luhn 통과 시(13–19자리) |

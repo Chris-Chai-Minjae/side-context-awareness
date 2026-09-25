@@ -14,7 +14,7 @@
 - **요약 모델은 선택 사항입니다.** 모델을 연결하지 않아도 기록과 로컬 검색을 쓸 수 있습니다. 모델을 쓰면 해당 제공자의 사용량과 요금이 적용될 수 있습니다.
 - **무엇을 기억할지는 내가 정합니다.** 비밀번호 입력 필드는 원천 제외, 앱·사이트 제외 목록, 일시정지, 기간별·전체 삭제를 설정에서 직접 제어합니다.
 
-> **소스코드로 배포합니다.** 내려받아 바로 실행하는 앱 파일은 아직 제공하지 않습니다. 각자 자기 Mac에서 빌드해 사용합니다. → [설치하기](#설치하기)
+> **소스코드로 배포합니다.** 사전 빌드 앱은 제공하지 않습니다. 각자 자기 Mac에서 빌드해 사용합니다. → [설치하기](#설치하기)
 
 **바로가기** · [처음 쓰는 분을 위한 안내서](https://chris-chai-minjae.github.io/side-work-memory/side-for-beginners.html) · [상세 설명서](docs/manual.md) · [소개 페이지 (한국어 · English)](https://chris-chai-minjae.github.io/side-work-memory/) · [에이전트 연결 안내](docs/agents.md) · [MIT License](LICENSE)
 
@@ -62,9 +62,9 @@ Side는 화면을 녹화해 두는 방식이 아닙니다. 권한이 없는 창,
 
 ## 설치하기
 
-Side는 **소스코드로만 배포합니다.** 설치 파일을 받아 바로 쓰는 방식이 아니며, 각자 자기 Mac에서 빌드합니다. 사전 빌드 앱의 Developer ID 서명·공증과 장시간 실기기 검증은 아직 남아 있습니다([개발 현황](docs/qa/)).
+Side는 **소스코드로만 배포합니다.** 소스 배포 정책상 사전 빌드 앱은 제공하지 않으며, 각자 자기 Mac에서 빌드합니다.
 
-필요한 것: macOS 14 이상, Bun, Xcode Command Line Tools, FTS5와 확장 로딩을 지원하는 SQLite dylib. 빌드할 때 MiniLM 모델을 내려받아 앱에 넣습니다. 실행할 Mac에는 Homebrew가 필요하지 않습니다.
+필요한 것: macOS 14 이상, Bun, Xcode Command Line Tools, FTS5와 확장 로딩을 지원하는 SQLite dylib. 빌드 Mac에서는 `brew install sqlite`를 실행하거나 `SIDE_SQLITE_LIBRARY`에 해당 dylib의 절대 경로를 지정하세요. 빌드할 때 MiniLM 모델을 내려받아 앱에 넣습니다. 실행하는 Mac에는 Homebrew가 필요하지 않습니다.
 
 ```sh
 git clone https://github.com/Chris-Chai-Minjae/side-work-memory.git
@@ -96,7 +96,7 @@ Screen Recording은 선택 사항입니다. 메뉴바 **설정 → 권한**에�
 
 ## 프라이버시
 
-Side는 이 Mac 안에서 동작합니다. 브라우저와 앱에서 읽은 기록, 요약, 검색 색인은 모두 이 Mac의 `~/Library/Application Support/Side/`에 저장됩니다. 원본 기록의 제목·주소·본문처럼 민감한 값은 저장 전에 알려진 패턴으로 가린 뒤 암호화하고, 암호화 키와 모델 API 키는 macOS Keychain에 별도로 보관합니다. 원본 기록을 클라우드로 동기화하지 않습니다. **요약과 날짜별 페이지는 로컬 파일에 읽을 수 있는 글로 남습니다.**
+Side는 이 Mac 안에서 동작합니다. 브라우저와 앱에서 읽은 기록, 요약, 검색 색인은 모두 이 Mac의 `~/Library/Application Support/Side/`에 저장됩니다. 원본 기록의 제목·주소·본문처럼 민감한 값은 저장 전에 알려진 패턴으로 가린 뒤 암호화하고, 암호화 키와 모델 API 키는 macOS Keychain에 별도로 보관합니다. 원본 기록을 클라우드로 동기화하지 않습니다. **요약·날짜별 페이지(인용된 제목·주소 포함)와 검색 색인(`index.db`)은 암호화되지 않은 로컬 파생 파일입니다.** 원본 보관 기간(기본 14일)이 지나도 요약·색인에는 내용이 남을 수 있으며, 전체 삭제로 제거합니다.
 
 남길 범위와 기간은 직접 정합니다.
 

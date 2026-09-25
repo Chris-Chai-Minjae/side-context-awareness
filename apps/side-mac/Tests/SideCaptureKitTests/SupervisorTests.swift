@@ -346,6 +346,32 @@ final class SupervisorTests: XCTestCase {
     }
 
     @MainActor
+    func testRetryKeychainOnlyAfterFailureStartsDaemon() async throws {
+        let (directory, daemon) = try makeDaemonScript { _ in
+            "IFS= read -r hello\nwhile :; do sleep 1; done\n"
+        }
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = FakeKeyStore()
+        store.failMasterKey = true
+        let supervisor = DaemonSupervisor(daemonURL: daemon, appVersion: "test", keyStore: store)
+        supervisor.start()
+        defer { supervisor.stop() }
+        try await waitForState(.keychainLocked, in: supervisor)
+        try await Task.sleep(nanoseconds: 100_000_000)
+        XCTAssertEqual(store.masterKeyReads, 1)
+
+        store.failMasterKey = false
+        supervisor.retryKeychain()
+        supervisor.retryKeychain()
+        try await waitForState(.running, in: supervisor)
+        let runningPID = supervisor.daemonPID
+        supervisor.retryKeychain()
+
+        XCTAssertEqual(store.masterKeyReads, 2)
+        XCTAssertEqual(supervisor.daemonPID, runningPID)
+    }
+
+    @MainActor
     func testDaemonProtocolErrorIsNotEchoed() {
         // Given a protocol-error sent by the daemon after repeated timeouts.
         let supervisor = DaemonSupervisor(
@@ -648,6 +674,7 @@ final class SupervisorTests: XCTestCase {
 private final class FakeKeyStore: SideKeyStore, @unchecked Sendable {
     private var providerKeys: [String: String] = [:]
     var failMasterKey = false
+    var masterKeyReads = 0
     var failRotation = false
     var rotations = 0
     var accessible = true
@@ -655,6 +682,7 @@ private final class FakeKeyStore: SideKeyStore, @unchecked Sendable {
     var onMasterKeyRead: (@Sendable (Bool) -> Void)?
 
     func masterKey() throws -> Data {
+        masterKeyReads += 1
         onMasterKeyRead?(Thread.isMainThread)
         if failMasterKey { throw NSError(domain: "SyntheticKeychain", code: 1) }
         return Data(repeating: 0x42, count: 32)

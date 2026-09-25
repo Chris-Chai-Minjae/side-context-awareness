@@ -72,6 +72,12 @@ private final class FakeRouterServices: CommandRouterServices {
 
 @MainActor
 final class CommandRouterTests: XCTestCase {
+    func testSensitiveApplicationsAreHardDeniedByCommandRouter() {
+        for bundleID in ["com.apple.Passwords", "com.bitwarden.desktop", "org.keepassxc.keepassxc"] {
+            XCTAssertTrue(LiveCommandRouterServices.isHardDenied(bundleID: bundleID), bundleID)
+        }
+    }
+
     private func reply(_ router: CommandRouter, _ command: String) async throws -> [String: Any] {
         let response = await router.reply(for: Data(command.utf8))
         let line = try XCTUnwrap(response)

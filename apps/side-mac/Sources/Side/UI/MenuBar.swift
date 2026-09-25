@@ -63,7 +63,7 @@ struct MenuDisplay {
             }
             if until == 9_007_199_254_740_991 {
                 self.init(
-                    text: language.localized("Paused until you resume", "다시 시작할 때까지 일시 중지"),
+                    text: language.localized("Paused until you resume", "직접 재개할 때까지 일시정지됨"),
                     systemImage: "pause.circle.fill", isPaused: true
                 )
             } else {
@@ -96,7 +96,7 @@ enum MenuPauseOption: CaseIterable {
         case .fifteenMinutes: return language.localized("15 minutes", "15분")
         case .thirtyMinutes: return language.localized("30 minutes", "30분")
         case .oneHour: return language.localized("1 hour", "1시간")
-        case .untilIResume: return language.localized("Until I resume", "직접 다시 시작할 때까지")
+        case .untilIResume: return language.localized("Until I resume", "직접 재개할 때까지")
         }
     }
 
@@ -222,23 +222,36 @@ final class MenuBarState: ObservableObject {
 }
 
 struct MenuBarView: View {
+    @ObservedObject private var runtime = SideRuntime.shared
     @ObservedObject var state: MenuBarState
     @ObservedObject var loginItem: LoginItemState
     let settingsWindow: SettingsWindowController
     let quit: () -> Void
 
+    static func pauseTitle(language: SideLanguage) -> String {
+        language.localized("Pause", "일시정지")
+    }
+
+    static func resumeTitle(language: SideLanguage) -> String {
+        language.localized("Resume", "재개")
+    }
+
     var body: some View {
         Group {
-            Text(state.display.text)
+            Text(runtime.supervisorState == .keychainLocked
+                ? MenuDisplay.notRunning(language: state.language).text : state.display.text)
+            if let title = runtime.supervisorState.unlockKeychainTitle(language: state.language) {
+                Button(title) { runtime.supervisor.retryKeychain() }
+            }
             Divider()
-            Menu(state.language.localized("Pause", "일시 중지")) {
+            Menu(Self.pauseTitle(language: state.language)) {
                 ForEach(MenuPauseOption.allCases, id: \.self) { option in
                     Button(option.title(language: state.language)) { Task { await state.pause(option) } }
                 }
             }
             .disabled(state.isWorking)
             if state.display.isPaused {
-                Button(state.language.localized("Resume", "다시 시작")) {
+                Button(Self.resumeTitle(language: state.language)) {
                     Task { await state.resume() }
                 }
                     .disabled(state.isWorking)

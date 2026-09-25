@@ -45,8 +45,8 @@ import { openIndexDb } from "../memory/index-db"
 import { renderContextAwarenessDayPage } from "../memory/render"
 import { bundledResourcePath } from "../memory/sqlite"
 import { createMemoryIndexSyncScheduler, syncMemoryIndex } from "../memory/sync"
-import { normalizePageUrl } from "../policy"
 import { isDeniedApp, isDeniedHost } from "../policy/index"
+import { normalizePageUrl } from "../policy/url"
 import { createBrowserHistoryProvider } from "../recall/browser-history"
 import { Reconciler } from "./reconcile"
 
@@ -90,6 +90,7 @@ const ObservationSchema = z.object({
   triggerAt: z.number().int().nonnegative().nullish(),
   text: z.string().nullish(),
   content: z.string().nullish(),
+  suppressedFields: z.number().int().nonnegative().optional(),
 })
 
 type Observation = z.infer<typeof ObservationSchema>
@@ -136,11 +137,25 @@ function toLedgerEvent(event: Observation, sessionId: string | null): LedgerEven
     ...(event.appName == null ? {} : { appName: event.appName }),
     ...(event.bundleId == null ? {} : { bundleId: event.bundleId }),
     ...(event.windowTitle == null ? {} : { windowTitle: event.windowTitle }),
+    ...(event.suppressedFields == null ? {} : { fieldSuppressions: event.suppressedFields }),
     ...(event.url == null ? {} : { url: event.url }),
     ...(Object.keys(target).length === 0 ? {} : { target }),
     ...(Object.keys(payload).length === 0 ? {} : { payload }),
     ...(content == null ? {} : { content }),
   }
+}
+
+function countSuppression(db: Database, occurredAt: number): void {
+  const day = new Intl.DateTimeFormat("sv-SE", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(occurredAt)
+  db.query(`
+    INSERT INTO side_day_counters (day, events, blobs, raw_bytes, suppressions, masks)
+    VALUES (?, 0, 0, 0, 1, 0)
+    ON CONFLICT(day) DO UPDATE SET suppressions = COALESCE(suppressions, 0) + 1
+  `).run(day)
 }
 
 function suppress(
@@ -154,21 +169,12 @@ function suppress(
   const hash = keyedHash(value, termsKey)
   termsKey.fill(0)
   const bucket = Math.floor(event.occurredAt / SUPPRESSION_BUCKET_MS) * SUPPRESSION_BUCKET_MS
-  const day = new Intl.DateTimeFormat("sv-SE", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(event.occurredAt)
   db.transaction(() => {
     db.query(`
       INSERT INTO side_suppressions (bucket_start, scope, key_hash, count) VALUES (?, ?, ?, 1)
       ON CONFLICT(bucket_start, scope, key_hash) DO UPDATE SET count = count + 1
     `).run(bucket, scope, hash)
-    db.query(`
-      INSERT INTO side_day_counters (day, events, blobs, raw_bytes, suppressions, masks)
-      VALUES (?, 0, 0, 0, 1, 0)
-      ON CONFLICT(day) DO UPDATE SET suppressions = COALESCE(suppressions, 0) + 1
-    `).run(day)
+    countSuppression(db, event.occurredAt)
   })()
 }
 
@@ -314,8 +320,10 @@ async function runPrivateDaemon<TimerId>(options: DaemonOptions<TimerId>): Promi
         event.kind === "selection.changed" ||
         event.kind === "content.snapshot" ||
         event.kind === "screen.ocr")
-    )
+    ) {
+      countSuppression(db, event.occurredAt)
       return null
+    }
     const key = helper.getMasterKey()
     if (key === null) throw new HelperUnavailableError()
     try {
@@ -523,6 +531,9 @@ async function runPrivateDaemon<TimerId>(options: DaemonOptions<TimerId>): Promi
                 windowId: target.windowId,
                 url: result.rawUrl,
                 content: result.content,
+                ...(result.suppressedFields === undefined
+                  ? {}
+                  : { suppressedFields: result.suppressedFields }),
                 shape: result.shape,
                 trigger,
               },

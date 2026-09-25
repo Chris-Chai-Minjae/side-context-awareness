@@ -2,6 +2,72 @@
   "language": "ko",
   "positive": [
     {
+      "name": "Anthropic admin 모양 키",
+      "input": "가상 키 \u0073k-ant-admin03-BBBBBBBBBBBBBBBBBBBBBBBB",
+      "secret": "\u0073k-ant-admin03-BBBBBBBBBBBBBBBBBBBBBBBB",
+      "rule": "api-key"
+    },
+    {
+      "name": "프로젝트 키 밑줄 포함",
+      "input": "가상 키 \u0073k_proj_BBBB_CCCC_DDDD_EEEE_FFFF",
+      "secret": "\u0073k_proj_BBBB_CCCC_DDDD_EEEE_FFFF",
+      "rule": "api-key"
+    },
+    {
+      "name": "GitHub 세분화 키 모양",
+      "input": "가상 키 \u0067ithub_pat_BBBBBBBBBBBBBBBBBBBBBBBB",
+      "secret": "\u0067ithub_pat_BBBBBBBBBBBBBBBBBBBBBBBB",
+      "rule": "api-key"
+    },
+    {
+      "name": "GitLab 키 모양",
+      "input": "가상 키 \u0067lpat-BBBBBBBBBBBBBBBBBBBBBBBB",
+      "secret": "\u0067lpat-BBBBBBBBBBBBBBBBBBBBBBBB",
+      "rule": "api-key"
+    },
+    {
+      "name": "Google OAuth 키 모양",
+      "input": "가상 키 \u0079a29.BBBBBBBBBBBBBBBBBBBBBBBB",
+      "secret": "\u0079a29.BBBBBBBBBBBBBBBBBBBBBBBB",
+      "rule": "api-key"
+    },
+    {
+      "name": "xAI 키 모양",
+      "input": "가상 키 \u0078ai-BBBBBBBBBBBBBBBBBBBBBBBB",
+      "secret": "\u0078ai-BBBBBBBBBBBBBBBBBBBBBBBB",
+      "rule": "api-key"
+    },
+    {
+      "name": "Hugging Face 키 모양",
+      "input": "가상 키 \u0068f_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+      "secret": "\u0068f_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+      "rule": "api-key"
+    },
+    {
+      "name": "Bearer 인증 헤더",
+      "input": "인증 bearer CCCC.DDDD_EEEE-FFFF_GGGG",
+      "secret": "bearer CCCC.DDDD_EEEE-FFFF_GGGG",
+      "rule": "bearer-token"
+    },
+    {
+      "name": "주민번호 모양 가상 값",
+      "input": "가상 번호 \u003991231-4234567",
+      "secret": "\u003991231-4234567",
+      "rule": "kr-rrn"
+    },
+    {
+      "name": "영문 password is 표현",
+      "input": "password is DEMO_ONLY",
+      "secret": "password is DEMO_ONLY",
+      "rule": "labeled-secret"
+    },
+    {
+      "name": "한국어 비밀번호 조사",
+      "input": "비밀번호는 예시값",
+      "secret": "비밀번호는 예시값",
+      "rule": "labeled-secret"
+    },
+    {
       "name": "일반 개인키 블록",
       "input": "예시:\n-----BEGIN PRIVATE KEY-----\n가짜_키_내용\n-----END PRIVATE KEY-----",
       "secret": "-----BEGIN PRIVATE KEY-----\n가짜_키_내용\n-----END PRIVATE KEY-----",
@@ -195,6 +261,11 @@
     }
   ],
   "negative": [
+    { "name": "월이 잘못된 번호", "input": "가상 번호 901301-1234567" },
+    { "name": "날짜 문자열", "input": "2026-09-25" },
+    { "name": "전화번호", "input": "010-1234-5678" },
+    { "name": "주문번호 9자리", "input": "주문 123456789" },
+    { "name": "짧은 키 단어", "input": "sk-short" },
     {
       "name": "일반 날짜",
       "input": "회의 날짜 2026-09-24"

@@ -6,6 +6,14 @@ import XCTest
 import SideCaptureKit
 
 final class ObserverTests: XCTestCase {
+    func testSensitiveApplicationsAreHardBlockedWithoutUserRules() {
+        let stream = CaptureStream(output: { _ in }, secureInputEnabled: { false })
+        stream.configure(deniedBundleIds: [], captureTypedText: true, paused: false)
+        for bundleID in ["com.apple.Passwords", "com.bitwarden.desktop", "org.keepassxc.keepassxc"] {
+            XCTAssertTrue(stream.isExcluded(bundleID: bundleID), bundleID)
+        }
+    }
+
     func testAXCreationFailureIsCountedUntilSuccessfulRegistration() {
         var failCreation = true
         let stream = CaptureStream(output: { _ in }, secureInputEnabled: { false })

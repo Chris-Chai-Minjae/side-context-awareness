@@ -4,6 +4,7 @@ import { chmodSync, copyFileSync, lstatSync, mkdtempSync, readdirSync, rmSync } 
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { z } from "zod"
+import { neutralizePromptInjectionText } from "../comprehension/neutralize"
 import {
   MS_PER_DAY,
   PRIVATE_DIRECTORY_MODE,
@@ -11,8 +12,9 @@ import {
   RECALL_CANDIDATE_LIMIT,
   WEBKIT_EPOCH_OFFSET_MS,
 } from "../constants"
-import { normalizePageUrl } from "../policy"
 import { type DenyRule, isDeniedHost } from "../policy/index"
+import { normalizePageUrl } from "../policy/url"
+import { redact } from "../redact/index"
 import type { BrowserHistoryEntry } from "./search"
 
 const browserRoots = [
@@ -177,7 +179,7 @@ function readProfile(
             id: `${profile.key}-${row.id}`,
             occurredAt: row.occurredAt,
             app: profile.app,
-            title: row.title,
+            title: neutralizePromptInjectionText(redact(row.title).text),
             url,
             domain,
           },

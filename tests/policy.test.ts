@@ -1,10 +1,13 @@
 import { describe, expect, test } from "bun:test"
-import { isDeniedApp, isDeniedHost, normalizePageUrl, shouldCapture } from "../src/policy"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import {
+  HARD_BLOCKED_BUNDLE_IDS,
   isDeniedApp as isDeniedAppV2,
   isDeniedHost as isDeniedHostV2,
   shouldCapture as shouldCaptureV2,
 } from "../src/policy/index"
+import { normalizePageUrl } from "../src/policy/url"
 
 describe("capture policy", () => {
   test("Given an HTTPS URL with query and fragment, when normalized, then only its page path remains", () => {
@@ -15,35 +18,6 @@ describe("capture policy", () => {
 
   test("Given a browser-internal URL, when normalized, then capture is rejected", () => {
     expect(normalizePageUrl("chrome://settings/passwords")).toBeNull()
-  })
-
-  test("Given a website denylist, when matching, then only exact hosts and subdomains are excluded", () => {
-    expect(isDeniedHost("docs.example.com", ["example.com"])).toBe(true)
-    expect(isDeniedHost("notexample.com", ["example.com"])).toBe(false)
-    expect(isDeniedHost("example.com.evil.test", ["example.com"])).toBe(false)
-    expect(isDeniedHost("example.com", [])).toBe(false)
-  })
-
-  test("Given an app denylist, when matching, then only the exact bundle ID is excluded", () => {
-    expect(isDeniedApp("at.studio.AsideBrowser", ["at.studio.AsideBrowser"])).toBe(true)
-    expect(isDeniedApp("com.google.Chrome", ["at.studio.AsideBrowser"])).toBe(false)
-  })
-
-  test("Given disabled, paused, or denied activity, when checked, then it is not captured", () => {
-    const policy = {
-      enabled: true,
-      pausedUntil: null,
-      deniedApps: ["app.private"],
-      deniedWebsites: ["private.test"],
-    }
-    expect(shouldCapture({ ...policy, enabled: false }, "app.work", null, 100)).toBe(false)
-    expect(shouldCapture({ ...policy, pausedUntil: "indefinite" }, "app.work", null, 100)).toBe(
-      false,
-    )
-    expect(shouldCapture({ ...policy, pausedUntil: 200 }, "app.work", null, 100)).toBe(false)
-    expect(shouldCapture(policy, "app.private", null, 100)).toBe(false)
-    expect(shouldCapture(policy, "app.browser", "https://private.test/path", 100)).toBe(false)
-    expect(shouldCapture(policy, "app.work", null, 100)).toBe(true)
   })
 })
 
@@ -57,6 +31,9 @@ describe("v2 deny rules", () => {
     ["com.agilebits.onepassword7"],
     ["com.apple.keychainaccess"],
     ["com.apple.systempreferences"],
+    ["com.apple.Passwords"],
+    ["com.bitwarden.desktop"],
+    ["org.keepassxc.keepassxc"],
   ] as const
 
   test.each([
@@ -104,6 +81,32 @@ describe("v2 deny rules", () => {
       expect(isDeniedAppV2(bundleId, [])).toBe(true)
     },
   )
+
+  test("Given the canonical hard block list, when TS and bundled Swift copies are compared, then every ID is identical", () => {
+    const canonical = JSON.parse(
+      readFileSync(
+        join(import.meta.dir, "..", "specs", "shared", "hard-blocked-bundle-ids.json"),
+        "utf8",
+      ),
+    )
+    const swift = JSON.parse(
+      readFileSync(
+        join(
+          import.meta.dir,
+          "..",
+          "apps",
+          "side-mac",
+          "Sources",
+          "SideCaptureKit",
+          "Resources",
+          "hard-blocked-bundle-ids.json",
+        ),
+        "utf8",
+      ),
+    )
+    expect([...HARD_BLOCKED_BUNDLE_IDS]).toEqual(canonical)
+    expect(swift).toEqual(canonical)
+  })
 
   test.each(hardBlocked)(
     "Given an observe rule for hard-blocked %s, when checked, then it remains denied",

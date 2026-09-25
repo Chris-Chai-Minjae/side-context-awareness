@@ -34,12 +34,6 @@ struct CaptureEvent: Encodable {
 }
 
 final class CaptureStream {
-    private static let hardDeniedBundleIDs: Set<String> = [
-        "com.minjaechai.Side",
-        "com.agilebits.onepassword7", "com.1password.1password",
-        "com.apple.keychainaccess", "com.apple.systempreferences",
-    ]
-
     private let output: (CaptureEvent) -> Void
     private let secureInputEnabled: () -> Bool
     private let browserPrivacyAllowed: (String) -> Bool
@@ -86,7 +80,7 @@ final class CaptureStream {
     }
 
     func isExcluded(bundleID: String) -> Bool {
-        deniedBundleIDs.contains(bundleID) || Self.hardDeniedBundleIDs.contains(bundleID) ||
+        deniedBundleIDs.contains(bundleID) || HardBlockedBundleIDs.all.contains(bundleID) ||
             bundleID == Bundle.main.bundleIdentifier
     }
 

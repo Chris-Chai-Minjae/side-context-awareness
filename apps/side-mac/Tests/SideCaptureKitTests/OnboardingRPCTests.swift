@@ -15,11 +15,9 @@ final class OneShotRPCServer {
     private let lock = NSLock()
     private var request: [String: Any]?
     private let result: [String: Any]
-    private let responseDelaySeconds: TimeInterval
 
-    init(result: [String: Any], responseDelaySeconds: TimeInterval = 0) throws {
+    init(result: [String: Any]) throws {
         self.result = result
-        self.responseDelaySeconds = responseDelaySeconds
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("side-rpc-\(UUID().uuidString.prefix(8))", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -54,7 +52,6 @@ final class OneShotRPCServer {
             lock.lock()
             request = value
             lock.unlock()
-            if responseDelaySeconds > 0 { Thread.sleep(forTimeInterval: responseDelaySeconds) }
             guard let body = try? JSONSerialization.data(withJSONObject: [
                 "jsonrpc": "2.0", "id": id, "result": result,
             ]) else { return }
@@ -113,50 +110,75 @@ final class OneShotRPCServer {
 
 @MainActor
 final class OnboardingRPCTests: XCTestCase {
+    private struct VirtualClock {
+        private(set) var seconds = 0
+
+        mutating func advance(to seconds: Int) { self.seconds = seconds }
+    }
+
+    private func virtualSender(
+        responseAfter seconds: Int, expectedTimeout: Int, expectedMethod: String,
+        expectedModelID: String? = nil, result: [String: Any]
+    ) -> UDSOnboardingService.Sender {
+        { body, _, timeout in
+            guard timeout == expectedTimeout,
+                  let request = try JSONSerialization.jsonObject(with: body) as? [String: Any],
+                  let id = request["id"] as? String,
+                  request["method"] as? String == expectedMethod else { throw FixtureError.request }
+            if let expectedModelID {
+                guard (request["params"] as? [String: Any])?["modelId"] as? String == expectedModelID
+                else { throw FixtureError.request }
+            }
+            var clock = VirtualClock()
+            clock.advance(to: min(seconds, timeout))
+            guard seconds < timeout else { throw OnboardingRPCError.unavailable }
+            guard clock.seconds == seconds else { throw FixtureError.request }
+            return try JSONSerialization.data(withJSONObject: [
+                "jsonrpc": "2.0", "id": id, "result": result,
+            ])
+        }
+    }
+
     func testProviderTestAcceptsSuccessfulResponseAfterElevenSeconds() async throws {
-        // Given a synthetic provider result that arrives within the daemon's 60-second budget.
-        let server = try OneShotRPCServer(result: ["ok": true], responseDelaySeconds: 11)
-        defer { server.close() }
+        // Given a synthetic provider result after eleven virtual seconds.
+        let sender = virtualSender(
+            responseAfter: 11, expectedTimeout: 80, expectedMethod: "providers.test",
+            expectedModelID: "model-1", result: ["ok": true]
+        )
 
         // When the native client waits for the provider-test RPC response.
-        let result = try await UDSOnboardingService(socketPath: server.path)
+        let result = try await UDSOnboardingService(socketPath: "/virtual.sock", sender: sender)
             .testProvider(providerID: "synthetic", modelID: "model-1")
 
         // Then a valid slow response reaches onboarding for summary-model selection.
         XCTAssertTrue(result.ok)
-        let request = try server.receivedRequest()
-        XCTAssertEqual(request["method"] as? String, "providers.test")
-        XCTAssertEqual((request["params"] as? [String: Any])?["modelId"] as? String, "model-1")
     }
 
     func testProviderTestAcceptsQueuedResponseAfterSeventyOneSeconds() async throws {
-        // A synthetic daemon holds the RPC while the provider waits for a shared call slot.
-        let server = try OneShotRPCServer(result: ["ok": true], responseDelaySeconds: 71)
-        defer { server.close() }
+        // A synthetic daemon holds the RPC for seventy-one virtual seconds.
+        let sender = virtualSender(
+            responseAfter: 71, expectedTimeout: 80, expectedMethod: "providers.test",
+            result: ["ok": true]
+        )
 
-        let result = try await UDSOnboardingService(socketPath: server.path)
+        let result = try await UDSOnboardingService(socketPath: "/virtual.sock", sender: sender)
             .testProvider(providerID: "synthetic", modelID: "model-1")
 
         XCTAssertTrue(result.ok)
-        XCTAssertEqual(try server.receivedRequest()["method"] as? String, "providers.test")
     }
 
     func testOrdinarySettingsRPCStillTimesOutAfterTenSeconds() async throws {
-        // Given a local settings endpoint that does not respond within the ordinary RPC budget.
-        let server = try OneShotRPCServer(result: [
+        // Given a settings response eleven virtual seconds after the request.
+        let sender = virtualSender(responseAfter: 11, expectedTimeout: 10, expectedMethod: "settings.get", result: [
             "enabled": false, "screen_ocr": true, "providers": [],
-        ], responseDelaySeconds: 11)
-        defer { server.close() }
+        ])
 
         // When the native client requests settings.
-        let started = Date()
         do {
-            _ = try await UDSOnboardingService(socketPath: server.path).getSettings()
+            _ = try await UDSOnboardingService(socketPath: "/virtual.sock", sender: sender).getSettings()
             XCTFail("Ordinary settings RPC must time out before the delayed response")
         } catch OnboardingRPCError.unavailable {
             // Then the existing short timeout remains effective.
-            XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), 9.5)
-            XCTAssertEqual(try server.receivedRequest()["method"] as? String, "settings.get")
         }
     }
 

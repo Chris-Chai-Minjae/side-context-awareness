@@ -22,8 +22,8 @@
 | 항목 | 내용 |
 |---|---|
 | OS | macOS 14 이상 |
-| 빌드 도구 | Bun, Xcode Command Line Tools |
-| SQLite | FTS5와 확장 로딩을 지원하는 dylib (검색 인덱스와 벡터 검색에 사용) |
+| 빌드 도구 | Bun, Xcode Command Line Tools. 개발 중 `swift test` 실행에는 전체 Xcode가 필요합니다. |
+| SQLite | 빌드 Mac에서 `brew install sqlite`를 실행하거나 FTS5와 확장 로딩을 지원하는 dylib의 절대 경로를 `SIDE_SQLITE_LIBRARY`에 지정합니다. |
 | 네트워크 | 첫 빌드에서 MiniLM 모델을 내려받습니다. 실행하는 Mac에는 Homebrew가 필요하지 않습니다. |
 
 ## 2. 빌드와 설치
@@ -39,10 +39,10 @@ open /Applications/Side.app
 ```
 
 - 빌드 결과물은 `apps/side-mac/.build/release/Side.app`입니다. 같은 이름의 앱이 이미 실행 중이면 복사하기 전에 먼저 종료하세요.
-- 빌드 스크립트는 Homebrew SQLite 경로를 먼저 찾습니다. 다른 위치의 dylib를 쓰려면 `SIDE_SQLITE_LIBRARY`에 절대 경로를 지정합니다.
+- 빌드 스크립트는 Homebrew SQLite 경로를 먼저 찾습니다. `brew install sqlite`를 실행하거나 다른 위치의 dylib를 쓰려면 `SIDE_SQLITE_LIBRARY`에 절대 경로를 지정합니다.
 - 이미 채운 MiniLM 캐시가 있으면 `SIDE_MODEL_CACHE_SOURCE`로 지정해 다시 내려받지 않게 할 수 있습니다.
 - 개발 중 데이터 경로를 바꾸려면 `SIDE_DATA_DIR`를 사용합니다.
-- 로컬 빌드는 **임시 서명(ad hoc signing)** 입니다. 본인 Mac에서 쓰는 용도이며, 다른 사람에게 앱을 배포하려면 Developer ID 서명과 공증이 필요합니다(아직 미완료).
+- 소스 배포 정책상 사전 빌드 앱은 제공하지 않습니다. 로컬 빌드는 **임시 서명(ad hoc signing)** 이며, 재빌드하면 권한을 다시 허용해야 할 수 있습니다.
 
 ## 3. 첫 실행과 설정
 
@@ -78,6 +78,8 @@ open /Applications/Side.app
 ```
 
 `doctor`의 제공자 연결 검사는 실제 활동 대신 합성 문장을 사용합니다.
+
+제공자 줄에서 `PASS`는 선택한 요약 제공자의 합성 연결 검사 성공, `SKIP`은 요약 제공자가 없거나 선택하지 않은 제공자에 모델 ID·API 키가 없어 검사를 생략한 상태, `WARN`은 선택하지 않은 제공자의 합성 연결 검사 실패를 뜻합니다. 선택한 제공자의 검사 실패는 `FAIL`입니다.
 
 ### 다시 빌드한 뒤 권한이 잡히지 않을 때
 
@@ -122,6 +124,7 @@ open /Applications/Side.app
 - 원본의 제목·URL·본문 등 민감한 컬럼은 저장 전에 알려진 패턴으로 마스킹하고 AES-256-GCM으로 암호화합니다. 규칙 기반 마스킹은 모든 민감 정보를 찾는다는 보장이 없습니다.
 - 마스터 키와 provider API 키는 macOS Keychain에 보관합니다(`local-context-awareness-ledger`, `side-provider-api-key`).
 - 원본 캡처의 기본 보관 기간은 14일이며 설정에서 1·3·7·14·30일 중 고를 수 있습니다. 요약은 별도로 남습니다.
+- 날짜별 페이지(인용된 제목·주소 포함)와 검색 색인(`index.db`)은 암호화되지 않은 로컬 파생 파일입니다. 원본 보관 기간이 지나도 요약·색인에 내용이 남을 수 있으며, 전체 삭제로 제거합니다.
 - Side는 원본 캡처를 클라우드로 동기화하지 않습니다.
 
 ## 8. 일시정지·삭제·완전 제거
@@ -179,8 +182,7 @@ Side.app이 실행 중일 때 `"/Applications/Side.app/Contents/Resources/side" 
 
 **아직 남은 것**
 
-- 릴리스 게이트 판정은 **BLOCKED**입니다([`docs/qa/gates-2026-09-24.md`](qa/gates-2026-09-24.md)). G0·G3~G11은 통과했지만, G1(카나리아 유출 스캔)과 G2(제외 앱·도메인 10분 관찰)는 실제 캡처 증거가 없어 미완입니다.
-- Developer ID 서명·공증과 Hardened Runtime이 없습니다. 배포용 앱이 아닌 로컬 임시 서명 빌드입니다.
+- 과거 실기기 게이트 판정은 **BLOCKED**입니다([`docs/qa/gates-2026-09-24.md`](qa/gates-2026-09-24.md)). G1·G2에는 실제 캡처 증거가 없습니다. 사용자가 정한 MIT 소스 배포 범위에는 이 실기기 검증이 포함되지 않습니다.
 - NFR 8개 항목(CPU·메모리·지연·디스크)은 대부분 실측되지 않았습니다([`docs/qa/nfr-report.md`](qa/nfr-report.md)).
 - 번들 앱에서 로그인 항목을 켜고 재부팅해 앱과 데몬이 자동 기동하는지, 메뉴바·온보딩이 실제 화면에서 어떻게 그려지는지는 수동 검증이 필요합니다.
 - Grok Build에서 Side 도구를 호출하는 경로와 Grok Build 로그인으로 요약을 만드는 경로는 검증되지 않았습니다.

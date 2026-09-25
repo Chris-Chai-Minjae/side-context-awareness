@@ -127,13 +127,16 @@ enum OnboardingRPCError: Error {
 
 @MainActor
 final class UDSOnboardingService: OnboardingService {
+    typealias Sender = @Sendable (Data, String, Int) throws -> Data
     nonisolated private static let requestTimeoutSeconds = 10
     // 10s shared-slot wait + 60s provider request + 10s RPC overhead = 80s.
     nonisolated private static let providerTestTimeoutSeconds = 10 + 60 + requestTimeoutSeconds
     private let socketPath: String
+    private let sender: Sender
 
-    init(socketPath: String = UDSOnboardingService.defaultSocketPath()) {
+    init(socketPath: String = UDSOnboardingService.defaultSocketPath(), sender: Sender? = nil) {
         self.socketPath = socketPath
+        self.sender = sender ?? { body, path, timeout in try Self.send(body, path, timeout) }
     }
 
     func getSettings() async throws -> OnboardingSettings {
@@ -225,8 +228,9 @@ final class UDSOnboardingService: OnboardingService {
         if let params { request["params"] = params }
         let body = try JSONSerialization.data(withJSONObject: request)
         let path = socketPath
+        let sender = sender
         let data = try await Task.detached(priority: .userInitiated) {
-            try Self.send(body, socketPath: path, timeoutSeconds: timeoutSeconds ?? Self.requestTimeoutSeconds)
+            try sender(body, path, timeoutSeconds ?? Self.requestTimeoutSeconds)
         }.value
         let reply = try JSONDecoder().decode(RPCReply<Value>.self, from: data)
         guard reply.jsonrpc == "2.0", reply.id == id else { throw OnboardingRPCError.invalidResponse }
@@ -242,7 +246,7 @@ final class UDSOnboardingService: OnboardingService {
         return directory.appendingPathComponent("run/daemon.sock").path
     }
 
-    nonisolated private static func send(_ body: Data, socketPath: String, timeoutSeconds: Int) throws -> Data {
+    nonisolated private static func send(_ body: Data, _ socketPath: String, _ timeoutSeconds: Int) throws -> Data {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
         process.arguments = [

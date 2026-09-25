@@ -14,7 +14,7 @@ Side keeps readable text, titles, and addresses from allowed browser tabs and Ma
 - **Summaries are optional.** Capture and local search work without a model. A model provider may charge for usage when you enable summaries.
 - **You decide what is remembered.** Password fields are excluded at the source, and you control the exclusion list, pausing, retention, and deletion from settings.
 
-> **Distributed as source code.** There is no ready-to-run app download yet. Each user builds Side on their own Mac. → [Install](#install)
+> **Distributed as source code.** No prebuilt app is provided. Each user builds Side on their own Mac. → [Install](#install)
 
 **Quick links** · [Beginner's guide](https://chris-chai-minjae.github.io/side-work-memory/side-for-beginners.en.html) · [Detailed manual](docs/manual.en.md) · [Landing page (한국어 · English)](https://chris-chai-minjae.github.io/side-work-memory/) · [Agent connection guide](docs/agents.en.md) · [MIT License](LICENSE)
 
@@ -62,9 +62,9 @@ Side does not record your screen continuously. Windows without permission, exclu
 
 ## Install
 
-Side is **distributed as source code only.** You do not download a finished app; each user builds it on their own Mac. Developer ID signing and notarization for a prebuilt app, plus long-duration device testing, are still pending ([development status](docs/qa/)).
+Side is **distributed as source code only.** No prebuilt app is provided under this distribution policy; each user builds it on their own Mac.
 
-Requirements: macOS 14 or later, Bun, Xcode Command Line Tools, and a SQLite dylib with FTS5 and extension loading. The build downloads and bundles the MiniLM model. Homebrew is not required on the Mac that runs the app.
+Requirements: macOS 14 or later, Bun, Xcode Command Line Tools, and a SQLite dylib with FTS5 and extension loading. On the build Mac, run `brew install sqlite` or set `SIDE_SQLITE_LIBRARY` to that dylib's absolute path. The build downloads and bundles the MiniLM model. Homebrew is not required on the Mac that runs the app.
 
 ```sh
 git clone https://github.com/Chris-Chai-Minjae/side-work-memory.git
@@ -96,7 +96,7 @@ For summaries, you can set MiMo 2.6 Pro as primary and MiniMax M3 as fallback. I
 
 ## Privacy
 
-Side runs on this Mac. Captured records, summaries, and the search index are all stored in `~/Library/Application Support/Side/`. Sensitive raw values such as titles, URLs, and body text are masked using known patterns and then encrypted, and the encryption key and model API keys are separate items in macOS Keychain. Raw captures are not synced to the cloud. **Summaries and daily pages remain readable text in local files.**
+Side runs on this Mac. Captured records, summaries, and the search index are all stored in `~/Library/Application Support/Side/`. Sensitive raw values such as titles, URLs, and body text are masked using known patterns and then encrypted, and the encryption key and model API keys are separate items in macOS Keychain. Raw captures are not synced to the cloud. **Summaries, daily pages (including quoted titles and addresses), and the search index (`index.db`) are unencrypted local derivatives.** Content can remain in summaries and the index after the raw-record retention period (14 days by default); clearing all history removes them.
 
 You choose what is kept and for how long.
 

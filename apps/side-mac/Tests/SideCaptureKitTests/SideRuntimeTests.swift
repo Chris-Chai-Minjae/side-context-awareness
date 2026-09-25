@@ -20,8 +20,55 @@ private struct RuntimeKeyStore: SideKeyStore {
     func authorizeProviderKey(ref: String) throws -> Bool { false }
 }
 
+private final class RecoveringRuntimeKeyStore: SideKeyStore, @unchecked Sendable {
+    private let lock = NSLock()
+    private var reads = 0
+
+    var readCount: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return reads
+    }
+
+    func masterKey() throws -> Data {
+        lock.lock()
+        reads += 1
+        let shouldFail = reads == 1
+        lock.unlock()
+        if shouldFail { throw NSError(domain: "SyntheticKeychain", code: 1) }
+        return Data(repeating: 0x42, count: 32)
+    }
+    func rotateMasterKey() throws -> Data { Data(repeating: 0x43, count: 32) }
+    func setProviderKey(ref: String, secret: String) throws {}
+    func providerKey(ref: String) throws -> String? { nil }
+    func providerKeyStatus(ref: String) throws -> (stored: Bool, accessible: Bool) { (false, false) }
+    func authorizeProviderKey(ref: String) throws -> Bool { false }
+}
+
 @MainActor
 final class SideRuntimeTests: XCTestCase {
+    func testScreenUnlockRetriesFailedKeychainReadOnce() async throws {
+        let (directory, daemon) = try makeDaemonScript { _ in
+            "IFS= read -r hello\nwhile :; do sleep 1; done\n"
+        }
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = RecoveringRuntimeKeyStore()
+        let supervisor = DaemonSupervisor(daemonURL: daemon, appVersion: "test", keyStore: store)
+        let runtime = SideRuntime(supervisor: supervisor, permissionProbe: RuntimePermissionProbe(), defaults: defaults())
+        runtime.start()
+        defer { runtime.stop() }
+        try await waitForSupervisorState(.keychainLocked, in: runtime)
+        XCTAssertEqual(runtime.supervisorState, .keychainLocked)
+
+        DistributedNotificationCenter.default().post(name: .init("com.apple.screenIsUnlocked"), object: nil)
+        try await waitForSupervisorState(.running, in: runtime)
+        DistributedNotificationCenter.default().post(name: .init("com.apple.screenIsUnlocked"), object: nil)
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertEqual(store.readCount, 2)
+        XCTAssertEqual(runtime.supervisorState, .running)
+    }
+
     func testHealthFrameReportsAXFailureAndClearsAfterRecovery() async throws {
         let (directory, daemon) = try makeDaemonScript { directory in
             let output = directory.appendingPathComponent("health").path
@@ -170,6 +217,14 @@ final class SideRuntimeTests: XCTestCase {
 
     private func defaults() -> UserDefaults {
         UserDefaults(suiteName: "SideRuntimeTests.\(UUID().uuidString)")!
+    }
+
+    private func waitForSupervisorState(_ state: SupervisorState, in runtime: SideRuntime) async throws {
+        for _ in 0..<200 {
+            if runtime.supervisorState == state { return }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTFail("runtime did not reach \(state); current state: \(runtime.supervisorState)")
     }
 
     private func makeDaemonScript(_ body: (URL) -> String) throws -> (URL, URL) {

@@ -89,10 +89,25 @@ struct OnboardingView: View {
 
     private var language: SideLanguage { flow.language }
 
+    static func introTitle(language: SideLanguage) -> String {
+        language.localized("Let Side remember your day", "Side가 하루를 기억하도록")
+    }
+
+    static func headerTitle(step: OnboardingStep, language: SideLanguage) -> String {
+        step == .intro ? introTitle(language: language) : language.localized("Set up Side", "Side 설정")
+    }
+
+    static func introSubtitle(language: SideLanguage) -> String {
+        language.localized(
+            "Everything stays on this Mac unless you choose a summary provider.",
+            "요약 제공자를 선택하지 않으면 모든 정보는 이 Mac에만 저장됩니다."
+        )
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             HStack {
-                Text(language.localized("Set up Side", "Side 설정"))
+                Text(Self.headerTitle(step: flow.step, language: language))
                     .font(.largeTitle.bold())
                 Spacer()
                 Picker(language.localized("Language", "언어"), selection: Binding(
@@ -135,10 +150,7 @@ struct OnboardingView: View {
     private var stepContent: some View {
         switch flow.step {
         case .intro:
-            Text(language.localized(
-                "Everything stays on this Mac unless you choose a summary provider.",
-                "요약 제공자를 선택하지 않으면 모든 정보는 이 Mac에만 저장됩니다."
-            ))
+            Text(Self.introSubtitle(language: language))
                 .font(.title3)
             Button(language.localized("Continue", "계속")) { flow.continueFromIntro() }
                 .buttonStyle(.borderedProminent)

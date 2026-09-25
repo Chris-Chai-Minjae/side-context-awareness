@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { createProviderHandlers } from "../../src/api/resources/providers"
 import type { Briefing } from "../../src/comprehension/briefing"
 import {
@@ -45,7 +45,8 @@ const trace = process.env.SIDE_CODEX_STUB_TRACE
 if (args[0] === "login") {
   const authPath = process.env.CODEX_HOME + "/auth.json"
   appendFileSync(trace, JSON.stringify({ kind: "login", args, cwd: process.cwd(), home: process.env.HOME, codexHome: process.env.CODEX_HOME, authLinked: lstatSync(authPath).isSymbolicLink(), authLinkTarget: readlinkSync(authPath), apiKey: Boolean(process.env.OPENAI_API_KEY), codexKey: Boolean(process.env.CODEX_API_KEY) }) + "\\n")
-  if (mode === "replace-auth-link") { unlinkSync(authPath); writeFileSync(authPath, "SYNTHETIC_REPLACEMENT") }
+  if (mode === "replace-auth-link") { unlinkSync(authPath); writeFileSync(authPath, JSON.stringify({ token: "SYNTHETIC_REPLACEMENT" }), { mode: 0o600 }) }
+  if (mode === "replace-auth-link-invalid-json") { unlinkSync(authPath); writeFileSync(authPath, "NOT_JSON", { mode: 0o600 }) }
   process.stderr.write(mode === "api-auth" ? "Logged in using an API key\\n" : "Logged in using ChatGPT\\n")
   process.exit(0)
 }
@@ -284,6 +285,29 @@ test("Codex fails closed if login replaces the auth symlink", async () => {
       "all permitted summary providers failed",
     )
     expect(traceRows(trace).map((row) => row["kind"])).toEqual(["login"])
+    expect(readFileSync(join(process.env["CODEX_HOME"] ?? "", "auth.json"), "utf8")).toBe(
+      JSON.stringify({ token: "SYNTHETIC_REPLACEMENT" }),
+    )
+  })
+})
+
+test("Codex keeps an invalid replacement for recovery", async () => {
+  await withStub("replace-auth-link-invalid-json", async (trace) => {
+    await expect(summarizeBriefing({ settings: settings(true), briefing })).rejects.toThrow(
+      "all permitted summary providers failed",
+    )
+    const rows = traceRows(trace)
+    expect(rows.map((row) => row["kind"])).toEqual(["login"])
+    const temporaryHome = rows[0]?.["codexHome"]
+    if (typeof temporaryHome !== "string") throw new Error("missing synthetic temporary home")
+    try {
+      expect(readFileSync(join(temporaryHome, "auth.json"), "utf8")).toBe("NOT_JSON")
+      expect(readFileSync(join(process.env["CODEX_HOME"] ?? "", "auth.json"), "utf8")).toBe(
+        "SYNTHETIC_AUTH_NOT_REAL",
+      )
+    } finally {
+      rmSync(dirname(temporaryHome), { recursive: true, force: true })
+    }
   })
 })
 

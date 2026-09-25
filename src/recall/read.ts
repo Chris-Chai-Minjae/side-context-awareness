@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite"
 import { randomBytes } from "node:crypto"
 import { decodeTime } from "ulid"
 import { z } from "zod"
+import { neutralizePromptInjectionText } from "../comprehension/neutralize"
 import {
   READ_CALL_BYTES,
   READ_DEFAULT_CONTEXT_LINES,
@@ -183,18 +184,6 @@ function summaryDraft(context: HistoryReadContext, request: HistoryReadRequest):
   }
 }
 
-function neutralize(value: string): string {
-  return value
-    .replace(/<\/?untrusted-[^>]*>/giu, "")
-    .replace(/\b(system|assistant)\s*:/giu, (_match, role: string) => `${role}：`)
-    .replace(/<\|im_start\|>/giu, "⟦im_start⟧")
-    .replace(/\[INST\]/giu, "⟦INST⟧")
-    .replace(/<\/?tool_call>/giu, "⟦tool_call⟧")
-    .replace(/function_call/giu, "function＿call")
-    .replace(/\{\s*"name"\s*:\s*"record_summary"/giu, "⟦record_summary call⟧")
-    .replace(/record_summary/giu, "record＿summary")
-}
-
 const responseBytes = (result: HistoryReadResult): number =>
   Buffer.byteLength(JSON.stringify(result), "utf8")
 
@@ -219,8 +208,8 @@ function boundedResult(draft: ReadDraft): HistoryReadResult {
   let result: HistoryReadResult = {
     id: draft.id,
     occurred_at: draft.occurred_at,
-    app: neutralize(draft.app),
-    title: neutralize(draft.title),
+    app: neutralizePromptInjectionText(draft.app),
+    title: neutralizePromptInjectionText(draft.title),
     url: draft.url,
     expired: draft.expired,
     text: `${opening}${truncated}${closing}`,
@@ -231,7 +220,7 @@ function boundedResult(draft: ReadDraft): HistoryReadResult {
 
   const characters: string[] = []
   let hasMore = false
-  for (const character of neutralize(draft.content)) {
+  for (const character of neutralizePromptInjectionText(draft.content)) {
     if (characters.length === READ_CALL_BYTES) {
       hasMore = true
       break

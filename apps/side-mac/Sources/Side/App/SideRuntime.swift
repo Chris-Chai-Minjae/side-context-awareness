@@ -22,9 +22,12 @@ final class SideRuntime: ObservableObject {
     let services: LiveCommandRouterServices
     let router: CommandRouter
 
+    @Published private(set) var supervisorState: SupervisorState = .stopped
+
     private let mode: CaptureMode
     private var started = false
     private var healthStarted = false
+    private var unlockObserver: NSObjectProtocol?
 
     init(
         supervisor providedSupervisor: DaemonSupervisor? = nil,
@@ -112,6 +115,7 @@ final class SideRuntime: ObservableObject {
         self.services = services
         self.router = CommandRouter(services: services)
         self.mode = mode
+        self.supervisorState = supervisor.state
 
         supervisor.onOtherCommand = { [weak self] line in
             await self?.route(line)
@@ -126,6 +130,11 @@ final class SideRuntime: ObservableObject {
 
     func start() {
         guard !started else { return }
+        unlockObserver = DistributedNotificationCenter.default().addObserver(
+            forName: .init("com.apple.screenIsUnlocked"), object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.supervisor.retryKeychain() }
+        }
         supervisor.start()
         started = true
         if supervisor.state == .running {
@@ -137,6 +146,7 @@ final class SideRuntime: ObservableObject {
     func stop() {
         guard started else { return }
         started = false
+        removeUnlockObserver()
         healthMonitor.stop()
         healthStarted = false
         pauseCapture()
@@ -146,6 +156,7 @@ final class SideRuntime: ObservableObject {
     func quit() async {
         guard started else { return }
         started = false
+        removeUnlockObserver()
         healthMonitor.stop()
         healthStarted = false
         pauseCapture()
@@ -167,6 +178,7 @@ final class SideRuntime: ObservableObject {
     }
 
     private func supervisorChanged(_ state: SupervisorState) {
+        supervisorState = state
         guard started else { return }
         if state == .running {
             if !healthStarted {
@@ -179,6 +191,13 @@ final class SideRuntime: ObservableObject {
             healthMonitor.stop()
             healthStarted = false
             pauseCapture()
+        }
+    }
+
+    private func removeUnlockObserver() {
+        if let unlockObserver {
+            DistributedNotificationCenter.default().removeObserver(unlockObserver)
+            self.unlockObserver = nil
         }
     }
 

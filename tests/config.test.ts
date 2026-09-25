@@ -1,45 +1,33 @@
 import { expect, test } from "bun:test"
-import { mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { ZodError } from "zod"
-import { loadConfig, saveConfig } from "../src/config"
 import { loadSettings, saveSettings, dataDirectory as sideDataDirectory } from "../src/config/index"
 
-test("Given a new data directory, when initialized, then capture is off and files are private", async () => {
-  const root = await mkdtemp(join(tmpdir(), "context-config-"))
-  const directory = join(root, "data")
-  try {
-    const config = await loadConfig(directory)
-    expect(config.enabled).toBe(false)
-    expect(config.deniedApps).toEqual([])
-    expect(config.deniedWebsites).toEqual([])
-    expect(config.screenOcr).toBe(false)
-    expect(config.captureTypedText).toBe(false)
-    expect((await stat(directory)).mode & 0o777).toBe(0o700)
-    expect((await stat(join(directory, "config.json"))).mode & 0o777).toBe(0o600)
-  } finally {
-    await rm(root, { recursive: true, force: true })
-  }
-})
-
-test("Given a saved denylist, when loaded again, then the local setting is retained", async () => {
-  const root = await mkdtemp(join(tmpdir(), "context-config-"))
-  const directory = join(root, "data")
-  try {
-    const config = await loadConfig(directory)
-    await saveConfig(directory, {
-      ...config,
-      deniedApps: ["at.studio.AsideBrowser"],
-      deniedWebsites: ["example.com"],
-    })
-    expect((await loadConfig(directory)).deniedApps).toEqual(["at.studio.AsideBrowser"])
-    expect((await loadConfig(directory)).deniedWebsites).toEqual(["example.com"])
-    expect(JSON.parse(await readFile(join(directory, "config.json"), "utf8")).version).toBe(1)
-  } finally {
-    await rm(root, { recursive: true, force: true })
-  }
-})
+async function writeLegacyConfig(
+  directory: string,
+  overrides: Record<string, unknown> = {},
+): Promise<void> {
+  await mkdir(directory, { recursive: true })
+  await writeFile(
+    join(directory, "config.json"),
+    JSON.stringify({
+      version: 1,
+      enabled: false,
+      pausedUntil: null,
+      deniedApps: [],
+      deniedWebsites: [],
+      screenOcr: false,
+      captureTypedText: false,
+      summaryModel: null,
+      embeddingModel: null,
+      retentionDays: 14,
+      intervalSeconds: 15,
+      ...overrides,
+    }),
+  )
+}
 
 test("Given legacy and Side directory overrides, when resolving the write path, then Side wins", () => {
   const previousSide = process.env["SIDE_DATA_DIR"]
@@ -85,9 +73,7 @@ test("Given a v1 config, when loaded, then rules and indefinite pause migrate to
   const legacyDirectory = join(root, "legacy")
   const directory = join(root, "Side")
   try {
-    const legacy = await loadConfig(legacyDirectory)
-    await saveConfig(legacyDirectory, {
-      ...legacy,
+    await writeLegacyConfig(legacyDirectory, {
       enabled: true,
       pausedUntil: "indefinite",
       deniedApps: ["com.example.Private"],
@@ -126,8 +112,7 @@ test("Given LCA_DATA_DIR, when Side first loads, then it reads legacy without wr
   const directory = join(root, "Side")
   const previousLegacy = process.env["LCA_DATA_DIR"]
   try {
-    const legacy = await loadConfig(legacyDirectory)
-    await saveConfig(legacyDirectory, { ...legacy, deniedApps: ["com.example.Hidden"] })
+    await writeLegacyConfig(legacyDirectory, { deniedApps: ["com.example.Hidden"] })
     const oldBytes = await readFile(join(legacyDirectory, "config.json"), "utf8")
     process.env["LCA_DATA_DIR"] = legacyDirectory
     expect((await loadSettings(directory)).contextAwareness.rules).toEqual([
@@ -146,8 +131,7 @@ test("Given a v1 summary model name, when migrated, then no provider is invented
   const legacyDirectory = join(root, "legacy")
   const directory = join(root, "Side")
   try {
-    const legacy = await loadConfig(legacyDirectory)
-    await saveConfig(legacyDirectory, { ...legacy, summaryModel: "local-summary-model" })
+    await writeLegacyConfig(legacyDirectory, { summaryModel: "local-summary-model" })
     const oldBytes = await readFile(join(legacyDirectory, "config.json"), "utf8")
     const migrated = await loadSettings(directory, legacyDirectory)
     expect(migrated.contextAwareness.summaryModel).toBeUndefined()
@@ -168,7 +152,7 @@ test("Given an existing v2 file and a v1 config, when loaded, then v2 remains au
       ...settings,
       contextAwareness: { ...settings.contextAwareness, enabled: true },
     })
-    await loadConfig(legacyDirectory)
+    await writeLegacyConfig(legacyDirectory)
     expect((await loadSettings(directory, legacyDirectory)).contextAwareness.enabled).toBe(true)
   } finally {
     await rm(root, { recursive: true, force: true })

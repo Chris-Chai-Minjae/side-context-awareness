@@ -5,7 +5,8 @@ import { join } from "node:path"
 import { promisify } from "node:util"
 import { z } from "zod"
 import { ASIDE_ADAPTER_FAILURE_LIMIT, ASIDE_REPL_TIMEOUT_MS } from "../constants"
-import { normalizePageUrl } from "../policy"
+import { normalizePageUrl } from "../policy/url"
+import { suppressAriaFields } from "./aria-fields"
 
 const ASIDE_BUNDLE_ID = "at.studio.AsideBrowser"
 const OUTPUT_MARKER = "SIDE_ASIDE_SNAPSHOT "
@@ -40,6 +41,7 @@ export type AsideSnapshot = {
   readonly shape: "aria"
   readonly content: string
   readonly rawUrl: string
+  readonly suppressedFields?: number
 }
 
 export type AsideCommandRunner = (
@@ -113,11 +115,13 @@ function parseSnapshot(stdout: string, expectedNormalizedUrl: string): AsideSnap
     snapshot.attachedUrl !== snapshot.beforeUrl
   )
     throw new AsideOutputError()
+  const safe = suppressAriaFields(snapshot.content)
   return {
     source: "aside_dom",
     shape: "aria",
-    content: snapshot.content,
+    content: safe.tree,
     rawUrl: snapshot.beforeUrl,
+    ...(safe.suppressed > 0 ? { suppressedFields: safe.suppressed } : {}),
   }
 }
 

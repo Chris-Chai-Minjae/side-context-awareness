@@ -2,7 +2,9 @@ import {
   lstatSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   readlinkSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -125,6 +127,28 @@ function parseEvents(stdout: string): {
   return { argumentsValue, inputTokens, outputTokens }
 }
 
+function restoreAuthReplacement(authLink: string, accountAuth: string): void {
+  const replacement = lstatSync(authLink, { throwIfNoEntry: false })
+  if (!replacement || (replacement.isSymbolicLink() && readlinkSync(authLink) === accountAuth))
+    return
+  if (
+    !replacement.isFile() ||
+    replacement.uid !== process.getuid?.() ||
+    (replacement.mode & 0o077) !== 0
+  )
+    throw new CodexCliUnavailableError()
+  let auth: unknown
+  try {
+    auth = JSON.parse(readFileSync(authLink, "utf8"))
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error
+    throw new CodexCliUnavailableError()
+  }
+  if (auth === null || typeof auth !== "object" || Array.isArray(auth))
+    throw new CodexCliUnavailableError()
+  renameSync(authLink, accountAuth)
+}
+
 export async function callCodexCliSummary(
   messages: readonly SummaryMessage[],
   modelId: string,
@@ -154,6 +178,7 @@ export async function callCodexCliSummary(
   const authLink = join(codexHome, "auth.json")
   const cwd = join(directory, "work")
   const schemaPath = join(directory, "summary-schema.json")
+  let removeDirectory = true
   try {
     mkdirSync(home, { mode: 0o700 })
     mkdirSync(codexHome, { mode: 0o700 })
@@ -245,6 +270,12 @@ export async function callCodexCliSummary(
       throw new CodexCliUnavailableError()
     return { ...parseEvents(response.stdout), responseBytes: response.responseBytes }
   } finally {
-    rmSync(directory, { recursive: true, force: true })
+    try {
+      removeDirectory = false
+      restoreAuthReplacement(authLink, accountAuth)
+      removeDirectory = true
+    } finally {
+      if (removeDirectory) rmSync(directory, { recursive: true, force: true })
+    }
   }
 }

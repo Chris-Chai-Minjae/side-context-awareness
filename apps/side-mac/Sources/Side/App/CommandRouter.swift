@@ -46,11 +46,6 @@ protocol CommandRouterServices: AnyObject {
 
 @MainActor
 final class LiveCommandRouterServices: CommandRouterServices {
-    private static let hardDeniedBundleIDs: Set<String> = [
-        "com.minjaechai.Side", "com.agilebits.onepassword7", "com.1password.1password",
-        "com.apple.keychainaccess", "com.apple.systempreferences",
-    ]
-
     private let stream: CaptureStream
     private let observerHub: AXObserverHub
     private let workspaceObserver: WorkspaceObserver
@@ -176,8 +171,12 @@ final class LiveCommandRouterServices: CommandRouterServices {
         return bitmap.representation(using: .png, properties: [:])?.base64EncodedString()
     }
 
+    static func isHardDenied(bundleID: String) -> Bool {
+        HardBlockedBundleIDs.all.contains(bundleID)
+    }
+
     func isDenied(bundleID: String) -> Bool {
-        deniedBundleIDs.contains(bundleID) || Self.hardDeniedBundleIDs.contains(bundleID) ||
+        deniedBundleIDs.contains(bundleID) || Self.isHardDenied(bundleID: bundleID) ||
             bundleID == Bundle.main.bundleIdentifier
     }
 

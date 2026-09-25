@@ -3,7 +3,7 @@ import { ulid } from "ulid"
 import { recordCommittedEventForSummary } from "../comprehension/queue"
 import { INLINE_TEXT_BYTES, TERM_SOURCE_CHARS } from "../constants"
 import { deriveSubkey, keyedHash, seal } from "../crypto/index"
-import { normalizePageUrl } from "../policy"
+import { normalizePageUrl } from "../policy/url"
 import { type RedactionRule, redact } from "../redact/index"
 import { indexTerms } from "./terms"
 
@@ -41,6 +41,7 @@ export type LedgerEventInput = {
     readonly reason?: string
   }
   readonly content?: string | null
+  readonly fieldSuppressions?: number
   readonly sessionId?: string | null
 }
 
@@ -80,6 +81,12 @@ export function writeLedgerEvent(
   input: LedgerEventInput,
 ): LedgerWriteResult {
   if (!Number.isSafeInteger(input.occurredAt) || input.occurredAt < 0) {
+    throw new LedgerWriteInputError()
+  }
+  if (
+    input.fieldSuppressions !== undefined &&
+    (!Number.isSafeInteger(input.fieldSuppressions) || input.fieldSuppressions < 0)
+  ) {
     throw new LedgerWriteInputError()
   }
 
@@ -135,6 +142,9 @@ export function writeLedgerEvent(
     payload["inlineText"] = limitUtf8(payload["inlineText"])
   }
   const content = input.content == null ? "" : safeText(input.content)
+  if (input.fieldSuppressions !== undefined && input.fieldSuppressions > 0) {
+    maskCounts.set("field", input.fieldSuppressions)
+  }
   const masks = [...maskCounts].map(([rule, count]) => ({ rule, count }))
   payload["masks"] = masks
   const maskTotal = masks.reduce((sum, mask) => sum + mask.count, 0)
@@ -212,7 +222,7 @@ export function writeLedgerEvent(
         raw_bytes = COALESCE(raw_bytes, 0) + excluded.raw_bytes,
         suppressions = COALESCE(suppressions, 0) + excluded.suppressions,
         masks = COALESCE(masks, 0) + excluded.masks
-    `).run(localDay(input.occurredAt), newBlobs, newBlobBytes, maskTotal, maskTotal)
+    `).run(localDay(input.occurredAt), newBlobs, newBlobBytes, 0, maskTotal)
 
     recordCommittedEventForSummary(db, input.occurredAt)
 

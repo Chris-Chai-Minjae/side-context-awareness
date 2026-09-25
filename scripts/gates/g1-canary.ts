@@ -9,6 +9,9 @@ const CANARIES = [
   "4111111111111111",
   "password: hunter2",
   "900101-1234567",
+  ["sk", "ant", "api03", "A".repeat(24)].join("-"),
+  ["github", "pat", "B".repeat(24)].join("_"),
+  `Bearer ${"C".repeat(24)}`,
 ] as const
 
 const CANARY_BYTES = CANARIES.map((canary) => Buffer.from(canary, "utf8"))

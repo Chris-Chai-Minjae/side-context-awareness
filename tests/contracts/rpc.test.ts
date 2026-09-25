@@ -3,37 +3,21 @@ import { join } from "node:path"
 import { z } from "zod"
 import { RpcMethods, RpcResourceFieldSchemas } from "../../src/contracts/rpc"
 
-const expectedMethods = [
-  "status",
-  "permissions",
-  "requestPermissions",
-  "events",
-  "search",
-  "read",
-  "memorySearch",
-  "pause",
-  "resume",
-  "clear",
-  "historyList",
-  "historyStatus",
-  "summaries.retryFailedToday",
-  "listApplications",
-  "appIcons",
-  "summaryModelDefault",
-  "settings.get",
-  "settings.patch",
-  "digest",
-  "day.get",
-  "providers.setKey",
-  "providers.keyStatus",
-  "providers.authorizeKey",
-  "providers.listModels",
-  "providers.test",
-  "mcp.usage",
-]
-
-test("Given the approved architecture API, when methods are listed, then the contract has exactly those methods", () => {
-  expect(Object.keys(RpcMethods).sort()).toEqual(expectedMethods.sort())
+test("Given the architecture API table, when methods are listed, then the contract has exactly those methods", async () => {
+  const path = join(import.meta.dir, "..", "..", "docs", "planning", "02-architecture.md")
+  const lines = (await Bun.file(path).text()).split("\n")
+  const start = lines.findIndex((line) => line.startsWith("| 메서드 |"))
+  expect(start).toBeGreaterThanOrEqual(0)
+  const documented: string[] = []
+  for (const line of lines.slice(start + 2)) {
+    if (!line.startsWith("|")) break
+    const firstCell = line.split("|")[1] ?? ""
+    for (const match of firstCell.matchAll(/`([^`]+)`/gu)) {
+      if (match[1]) documented.push(match[1])
+    }
+  }
+  expect(new Set(documented).size).toBe(documented.length)
+  expect(Object.keys(RpcMethods).sort()).toEqual(documented.sort())
 })
 
 test("Given every resources.yaml field, when RPC output shapes are inspected, then each field is present", async () => {
@@ -55,17 +39,15 @@ test("Given every resources.yaml field, when RPC output shapes are inspected, th
 })
 
 test("Given approved screen needs, when resource contracts are inspected, then every requested field exists", async () => {
-  const screens = [
-    "settings-context-awareness.yaml",
-    "day-view.yaml",
-    "menubar.yaml",
-    "onboarding.yaml",
-  ]
+  const indexPath = join(import.meta.dir, "..", "..", "specs", "screens", "index.yaml")
+  const index = z
+    .object({ screens: z.array(z.object({ id: z.string() })) })
+    .parse(Bun.YAML.parse(await Bun.file(indexPath).text()))
   const schema = z.object({
     data_requirements: z.array(z.object({ resource: z.string(), needs: z.array(z.string()) })),
   })
-  for (const screen of screens) {
-    const path = join(import.meta.dir, "..", "..", "specs", "screens", screen)
+  for (const screen of index.screens) {
+    const path = join(import.meta.dir, "..", "..", "specs", "screens", `${screen.id}.yaml`)
     const spec = schema.parse(Bun.YAML.parse(await Bun.file(path).text()))
     for (const { resource, needs } of spec.data_requirements) {
       const outputs = RpcResourceFieldSchemas[resource]

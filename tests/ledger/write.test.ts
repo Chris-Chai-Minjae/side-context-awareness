@@ -214,7 +214,40 @@ describe("ledger write", () => {
             "SELECT masks, suppressions FROM side_day_counters",
           )
           .get(),
-      ).toEqual({ masks: 4, suppressions: 4 })
+      ).toEqual({ masks: 4, suppressions: 0 })
+    })
+  })
+
+  test("Given values removed from ARIA input fields, when written, then field masks are counted without storing values", () => {
+    withLedger((db) => {
+      const written = writeLedgerEvent(
+        db,
+        masterKey,
+        event(firstTime, {
+          source: "aside_dom",
+          content: '- textbox "Password": [redacted:field]',
+          fieldSuppressions: 3,
+        }),
+      )
+      const row = db
+        .query<{ payload: string }, [string]>(
+          "SELECT payload FROM context_awareness_events WHERE id = ?",
+        )
+        .get(written.id)
+      if (!row) throw new Error("Synthetic event missing")
+      const payload = open<{ masks: readonly { rule: string; count: number }[] }>(
+        row.payload,
+        deriveSubkey(masterKey, "evidence"),
+        `context_awareness_events:payload:${written.id}`,
+      )
+      expect(payload.masks).toContainEqual({ rule: "field", count: 3 })
+      expect(
+        db
+          .query<{ masks: number; suppressions: number }, []>(
+            "SELECT masks, suppressions FROM side_day_counters",
+          )
+          .get(),
+      ).toEqual({ masks: 3, suppressions: 0 })
     })
   })
 
@@ -226,14 +259,17 @@ describe("ledger write", () => {
         "4111111111111111",
         "password: hunter2",
         "900101-1234567",
+        ["sk", "ant", "api03", "A".repeat(24)].join("-"),
+        ["github", "pat", "B".repeat(24)].join("_"),
+        `Bearer ${"C".repeat(24)}`,
       ] as const
       writeLedgerEvent(
         db,
         masterKey,
         event(firstTime, {
-          windowTitle: `${title} ${canaries[0]}`,
-          target: { label: canaries[1] },
-          payload: { inlineText: `${canaries[2]} ${canaries[3]}` },
+          windowTitle: `${title} ${canaries[0]} ${canaries[5]}`,
+          target: { label: `${canaries[1]} ${canaries[6]}` },
+          payload: { inlineText: `${canaries[2]} ${canaries[3]} ${canaries[7]}` },
           content: `${body} ${canaries[4]}`,
         }),
       )

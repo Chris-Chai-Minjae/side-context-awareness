@@ -158,7 +158,7 @@ test("P4-S2-T2: an evidence link reads once and keeps script-like content as tex
       { method: "read", params: { id: fixture.sourceRef } },
     ])
     expect(await page.locator(".untrusted-text").textContent()).toContain(
-      "<script>window.__evidenceExecuted = true</script>",
+      "&lt;script&gt;window.__evidenceExecuted = true&lt;/script&gt;",
     )
     expect(await page.locator(".untrusted-text script").count()).toBe(0)
     expect(

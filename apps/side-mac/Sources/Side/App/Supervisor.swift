@@ -39,6 +39,11 @@ enum SupervisorState: Equatable {
         }
         return nil
     }
+
+    func unlockKeychainTitle(language: SideLanguage) -> String? {
+        guard self == .keychainLocked else { return nil }
+        return language.localized("Unlock Keychain…", "Keychain 허용…")
+    }
 }
 
 enum SupervisorTransportError: Error, Equatable {
@@ -87,6 +92,11 @@ final class DaemonSupervisor {
         restartTask?.cancel()
         restartTask = nil
         policy = RestartPolicy()
+        launch()
+    }
+
+    func retryKeychain() {
+        guard state == .keychainLocked else { return }
         launch()
     }
 

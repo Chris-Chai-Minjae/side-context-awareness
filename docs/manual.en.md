@@ -22,8 +22,8 @@ This is the technical manual for the details that were moved out of the [README]
 | Item | Detail |
 |---|---|
 | OS | macOS 14 or later |
-| Build tools | Bun, Xcode Command Line Tools |
-| SQLite | A dylib with FTS5 and extension loading (search index and vector search) |
+| Build tools | Bun, Xcode Command Line Tools. Running `swift test` during development requires full Xcode. |
+| SQLite | On the build Mac, run `brew install sqlite` or set `SIDE_SQLITE_LIBRARY` to the absolute path of a dylib with FTS5 and extension loading. |
 | Network | The first build downloads the MiniLM model. Homebrew is not required on the Mac that runs the app. |
 
 ## 2. Build and install
@@ -39,10 +39,10 @@ open /Applications/Side.app
 ```
 
 - The build output is `apps/side-mac/.build/release/Side.app`. Quit any running app with the same name before copying.
-- The build script looks for Homebrew SQLite paths first. To use a dylib elsewhere, set `SIDE_SQLITE_LIBRARY` to its absolute path.
+- The build script looks for Homebrew SQLite paths first. Run `brew install sqlite`, or set `SIDE_SQLITE_LIBRARY` to the absolute path of a dylib elsewhere.
 - If you already have a populated MiniLM cache, point `SIDE_MODEL_CACHE_SOURCE` at it to skip the download.
 - For development, `SIDE_DATA_DIR` changes the data path.
-- Local builds use **ad hoc signing**. That is fine for your own Mac; distributing the app to others requires Developer ID signing and notarization (not done yet).
+- No prebuilt app is provided under the source distribution policy. Local builds use **ad hoc signing**; a rebuild may require permissions to be granted again.
 
 ## 3. First launch and settings
 
@@ -78,6 +78,8 @@ open /Applications/Side.app
 ```
 
 The provider connection check in `doctor` uses a synthetic sentence instead of your activity.
+
+For provider rows, `PASS` means the selected summary provider passed the synthetic connection check. `SKIP` means no summary provider is configured, or an unselected provider lacks a model ID or API key. `WARN` means an unselected provider failed its synthetic check. A failed check for the selected provider is `FAIL`.
 
 ### Permissions are missing after a rebuild
 
@@ -122,6 +124,7 @@ The data root is `~/Library/Application Support/Side/`; `SIDE_DATA_DIR` override
 - Sensitive columns in the raw events, including titles, URLs, and body text, are masked using known patterns before storage and encrypted with AES-256-GCM. Pattern-based masking cannot guarantee that it finds every sensitive item.
 - The master key and provider API keys are stored in macOS Keychain (`local-context-awareness-ledger`, `side-provider-api-key`).
 - Raw captures are retained for 14 days by default; choose 1, 3, 7, 14, or 30 days in settings. Summaries remain separately.
+- Daily pages (including quoted titles and addresses) and the search index (`index.db`) are unencrypted local derivatives. Content can remain in summaries and the index after raw-record retention expires; clearing all history removes them.
 - Side does not sync raw captures to the cloud.
 
 ## 8. Pause, delete, and full removal
@@ -179,8 +182,7 @@ Status as of 2026-09-25, based on the repository's QA reports.
 
 **Still open**
 
-- The release gate verdict is **BLOCKED** ([`docs/qa/gates-2026-09-24.md`](qa/gates-2026-09-24.md)). G0 and G3 to G11 pass, but G1 (canary leak scan) and G2 (a ten-minute observation of denied apps and domains) lack physical capture evidence.
-- No Developer ID signing, notarization, or Hardened Runtime. Builds are ad hoc signed for local use.
+- The earlier physical-device gate verdict is **BLOCKED** ([`docs/qa/gates-2026-09-24.md`](qa/gates-2026-09-24.md)). G1 and G2 lack real capture evidence. These device checks are outside the user-selected MIT source distribution scope.
 - The eight NFR metrics (CPU, memory, latency, disk) are mostly unmeasured ([`docs/qa/nfr-report.md`](qa/nfr-report.md)).
 - Manual checks remain for the login item starting the app and daemon after a reboot in a bundled build, and for the real rendering of the menu bar and onboarding.
 - Calling Side tools from Grok Build, and creating summaries from a Grok Build login, are unverified.

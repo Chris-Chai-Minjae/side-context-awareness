@@ -5,7 +5,7 @@ import { join } from "node:path"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 
-test("Given an absent daemon, when the legacy MCP entrypoint connects, then it serves the approved tools", async () => {
+test("Given an absent daemon, when the MCP entrypoint connects, then it serves the approved tools", async () => {
   const directory = await mkdtemp(join(tmpdir(), "context-mcp-"))
   const client = new Client({ name: "local-context-smoke", version: "0.1.0" })
   const transport = new StdioClientTransport({

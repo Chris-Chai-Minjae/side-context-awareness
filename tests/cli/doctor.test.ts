@@ -41,6 +41,7 @@ test("Given connected helper, permissions, cache, SQLite, vec0 and a synthetic p
       if (method === "settings.get")
         return {
           screen_ocr: true,
+          summary_model: { provider: "synthetic", modelId: "probe-model" },
           providers: [{ id: "synthetic", has_key: true, models: ["probe-model"] }],
         }
       if (method === "providers.test") {
@@ -53,6 +54,95 @@ test("Given connected helper, permissions, cache, SQLite, vec0 and a synthetic p
   expect(result).toBe(0)
   expect(calls).toEqual(["status", "settings.get", "permissions", "providers.test"])
   expect(lines.filter((line) => line.startsWith("PASS"))).toHaveLength(6)
+})
+
+test("Given a selected Codex CLI login provider, when its synthetic probe succeeds, then doctor passes without a Keychain key", async () => {
+  const lines: string[] = []
+  const calls: string[] = []
+  const result = await runDoctor({
+    write: (line) => lines.push(line),
+    checkCustomSqlite: () => true,
+    checkVec0: () => true,
+    checkModelCache: () => true,
+    async rpc(method, params) {
+      calls.push(method)
+      if (method === "status") return { health: { pid: 10 }, stop_reason: null }
+      if (method === "permissions") return { accessibility: true, input_monitoring: true }
+      if (method === "settings.get")
+        return {
+          screen_ocr: false,
+          summary_model: { provider: "codex", modelId: "gpt-test" },
+          providers: [{ id: "codex", kind: "codex-cli", has_key: false, models: ["gpt-test"] }],
+        }
+      if (method === "providers.test") {
+        expect(params).toEqual({ providerId: "codex", modelId: "gpt-test" })
+        return { ok: true }
+      }
+      throw new TypeError(`Unexpected ${method}`)
+    },
+  })
+  expect(result).toBe(0)
+  expect(calls).toContain("providers.test")
+  expect(lines.join("\n")).toContain("PASS provider connection")
+})
+
+test("Given a working selected provider and an unset fallback key, when checked, then fallback is skipped without failing doctor", async () => {
+  const lines: string[] = []
+  const calls: string[] = []
+  const result = await runDoctor({
+    write: (line) => lines.push(line),
+    checkCustomSqlite: () => true,
+    checkVec0: () => true,
+    checkModelCache: () => true,
+    async rpc(method) {
+      calls.push(method)
+      if (method === "status") return { health: { pid: 10 }, stop_reason: null }
+      if (method === "permissions") return { accessibility: true, input_monitoring: true }
+      if (method === "settings.get")
+        return {
+          screen_ocr: false,
+          summary_model: { provider: "primary", modelId: "test-model" },
+          providers: [
+            { id: "primary", kind: "openai-compatible", has_key: true, models: ["test-model"] },
+            { id: "fallback", kind: "openai-compatible", has_key: false, models: ["other"] },
+          ],
+        }
+      if (method === "providers.test") return { ok: true }
+      throw new TypeError(`Unexpected ${method}`)
+    },
+  })
+  expect(result).toBe(0)
+  expect(calls.filter((method) => method === "providers.test")).toHaveLength(1)
+  expect(lines.join("\n")).toContain("SKIP provider fallback (openai-compatible): API key not set")
+  expect(lines.join("\n")).toContain("PASS provider connection")
+})
+
+test("Given a selected provider whose synthetic probe fails, when checked, then doctor fails without printing the response", async () => {
+  const lines: string[] = []
+  const result = await runDoctor({
+    write: (line) => lines.push(line),
+    checkCustomSqlite: () => true,
+    checkVec0: () => true,
+    checkModelCache: () => true,
+    async rpc(method) {
+      if (method === "status") return { health: { pid: 10 }, stop_reason: null }
+      if (method === "permissions") return { accessibility: true, input_monitoring: true }
+      if (method === "settings.get")
+        return {
+          screen_ocr: false,
+          default_model: { provider: "primary", modelId: "test-model" },
+          providers: [
+            { id: "primary", kind: "openai-compatible", has_key: true, models: ["test-model"] },
+          ],
+        }
+      if (method === "providers.test")
+        return { ok: false, error: "synthetic-secret-should-not-appear" }
+      throw new TypeError(`Unexpected ${method}`)
+    },
+  })
+  expect(result).toBe(1)
+  expect(lines.join("\n")).toContain("FAIL provider connection")
+  expect(lines.join("\n")).not.toContain("synthetic-secret-should-not-appear")
 })
 
 test("Given missing required TCC permissions, doctor fails without requesting them", async () => {

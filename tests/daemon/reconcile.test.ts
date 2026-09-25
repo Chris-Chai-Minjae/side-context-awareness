@@ -1439,6 +1439,10 @@ test("Given a capture in flight, when secure input activates before its response
           .query<{ count: number }, []>("SELECT COUNT(*) AS count FROM context_awareness_events")
           .get()?.count,
       ).toBe(1)
+      expect(
+        db.query<{ suppressions: number }, []>("SELECT suppressions FROM side_day_counters").get()
+          ?.suppressions,
+      ).toBe(1)
     } finally {
       db.close()
     }

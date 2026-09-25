@@ -13,7 +13,7 @@ type DoctorEnvironment = {
   readonly checkModelCache?: () => boolean
 }
 
-type DoctorResult = "PASS" | "FAIL" | "SKIP"
+type DoctorResult = "PASS" | "FAIL" | "SKIP" | "WARN"
 
 function checkCustomSqlite(): boolean {
   try {
@@ -113,36 +113,56 @@ export async function runDoctor(environment: DoctorEnvironment): Promise<number>
   )
 
   const providers = settings?.["providers"]
+  const selected = asRecord(settings?.["summary_model"]) ?? asRecord(settings?.["default_model"])
+  const selectedId = selected?.["provider"]
+  const selectedModelId = selected?.["modelId"]
   if (!Array.isArray(providers)) {
     report("FAIL", "provider connection", "Start Side.app to inspect configured providers")
-  } else if (providers.length === 0) {
+  } else if (providers.length === 0 || typeof selectedId !== "string") {
     report("SKIP", "provider connection", "No summary provider is configured")
   } else {
-    let allPassed = true
+    let selectedPassed = false
+    let selectedFound = false
+    let selectedKind = "openai-compatible"
     for (const item of providers) {
       const provider = asRecord(item)
-      const modelId = Array.isArray(provider?.["models"]) ? provider["models"][0] : undefined
-      if (
-        typeof provider?.["id"] !== "string" ||
-        typeof modelId !== "string" ||
-        provider["has_key"] !== true
-      ) {
-        allPassed = false
+      const id = provider?.["id"]
+      if (typeof id !== "string") continue
+      const kind = typeof provider?.["kind"] === "string" ? provider["kind"] : "openai-compatible"
+      const isSelected = id === selectedId
+      if (isSelected) {
+        selectedFound = true
+        selectedKind = kind
+      }
+      const modelId = isSelected
+        ? selectedModelId
+        : Array.isArray(provider?.["models"])
+          ? provider["models"][0]
+          : undefined
+      if (typeof modelId !== "string") {
+        if (!isSelected) report("SKIP", `provider ${id} (${kind})`, "Model ID not set")
+        continue
+      }
+      const isCli = kind === "claude-code-cli" || kind === "codex-cli"
+      if (!isCli && provider?.["has_key"] !== true) {
+        report("SKIP", `provider ${id} (${kind})`, "API key not set")
         continue
       }
       try {
         const result = asRecord(
-          await environment.rpc("providers.test", { providerId: provider["id"], modelId }),
+          await environment.rpc("providers.test", { providerId: id, modelId }),
         )
-        if (result?.["ok"] !== true) allPassed = false
+        if (isSelected) selectedPassed = result?.["ok"] === true
+        else if (result?.["ok"] !== true)
+          report("WARN", `provider ${id} (${kind})`, "Synthetic connection failed")
       } catch {
-        allPassed = false
+        if (!isSelected) report("WARN", `provider ${id} (${kind})`, "Synthetic connection failed")
       }
     }
     report(
-      allPassed ? "PASS" : "FAIL",
+      selectedFound && selectedPassed ? "PASS" : "FAIL",
       "provider connection",
-      "Each configured provider receives one synthetic record_summary probe without user evidence",
+      `${selectedId} (${selectedKind}); synthetic probe without user evidence`,
     )
   }
   return failed ? 1 : 0

@@ -1,4 +1,5 @@
 import type { z } from "zod"
+import hardBlockedBundleIds from "../../specs/shared/hard-blocked-bundle-ids.json"
 import { PAUSE_INDEFINITE } from "../constants"
 import type { RuleSchema } from "../contracts/settings"
 
@@ -10,13 +11,7 @@ export type CapturePolicy = {
   readonly rules: readonly DenyRule[]
 }
 
-export const HARD_BLOCKED_BUNDLE_IDS = [
-  "com.minjaechai.Side",
-  "com.1password.1password",
-  "com.agilebits.onepassword7",
-  "com.apple.keychainaccess",
-  "com.apple.systempreferences",
-] as const
+export const HARD_BLOCKED_BUNDLE_IDS: readonly string[] = hardBlockedBundleIds
 
 export function isDeniedHost(hostname: string, rules: readonly DenyRule[]): boolean {
   const host = hostname.toLowerCase()

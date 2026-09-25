@@ -4,6 +4,9 @@ export type RedactionRule =
   | "jwt"
   | "slack-token"
   | "api-key"
+  | "bearer-token"
+  | "kr-rrn"
+  | "field"
   | "labeled-secret"
   | "otp-numeric"
   | "card-number"
@@ -33,12 +36,17 @@ const PATTERNS = [
   {
     rule: "api-key",
     pattern:
-      /\b(?:sk|pk|rk)[-_](?:live|test|proj)?[-_]?[A-Za-z0-9]{20,}\b|\bgh[pousr]_[A-Za-z0-9]{36,}\b|\bAIza[0-9A-Za-z_-]{35}\b/gu,
+      /\bsk-ant-(?:api|admin)\d{2}-[A-Za-z0-9_-]{20,}|\b(?:sk|pk|rk)[-_](?:live|test|proj)?[-_]?[A-Za-z0-9_-]{20,}|\bgithub_pat_[A-Za-z0-9_]{22,}|\bgh[pousr]_[A-Za-z0-9]{36,}\b|\bglpat-[A-Za-z0-9_-]{20,}|\bya29\.[A-Za-z0-9_-]{20,}|\bAIza[0-9A-Za-z_-]{35}\b|\bxai-[A-Za-z0-9]{20,}|\bhf_[A-Za-z0-9]{30,}/gu,
   },
+  {
+    rule: "bearer-token",
+    pattern: /\b(?:Authorization\s*:\s*)?Bearer\s+[A-Za-z0-9._~+/=-]{16,}/giu,
+  },
+  { rule: "kr-rrn", pattern: /\b\d{6}-?[1-4]\d{6}\b/gu },
   {
     rule: "labeled-secret",
     pattern:
-      /\b(?:api[_ -]?key|access[_ -]?token|secret|password|passwd)\s*[:=]\s*\S+|(?:토큰|비밀번호)\s*[:=]\s*\S+/giu,
+      /\b(?:api[_ -]?key|access[_ -]?token|secret|password|passwd)(?:\s*[:=]\s*|\s+is\s+)\S+|(?:토큰|비밀번호|암호|인증번호)\s*(?:[:=]|은|는)\s*\S+/giu,
   },
   { rule: "card-number", pattern: /\b(?:\d[ -]?){12,18}\d\b/gu },
 ] as const satisfies ReadonlyArray<{ readonly rule: RedactionRule; readonly pattern: RegExp }>
@@ -61,11 +69,19 @@ function validCard(candidate: string): boolean {
   return sum % 10 === 0
 }
 
+function validRrn(candidate: string): boolean {
+  const digits = candidate.replace("-", "")
+  const month = Number(digits.slice(2, 4))
+  const day = Number(digits.slice(4, 6))
+  return month >= 1 && month <= 12 && day >= 1 && day <= 31
+}
+
 function collectMatches(text: string): Match[] {
   const matches: Match[] = []
   for (const { rule, pattern } of PATTERNS) {
     for (const match of text.matchAll(pattern)) {
       if (rule === "card-number" && !validCard(match[0])) continue
+      if (rule === "kr-rrn" && !validRrn(match[0])) continue
       matches.push({ start: match.index, end: match.index + match[0].length, rule })
     }
   }

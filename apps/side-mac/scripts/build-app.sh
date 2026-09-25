@@ -12,6 +12,12 @@ resources="$app_dir/Contents/Resources"
 rm -rf "$app_dir"
 mkdir -p "$app_dir/Contents/MacOS" "$resources/lib" "$resources/web" "$resources/models"
 cp "$bin_dir/Side" "$app_dir/Contents/MacOS/Side"
+resource_bundle="$bin_dir/SideCaptureKit_SideCaptureKit.bundle"
+if [ ! -s "$resource_bundle/Contents/Resources/hard-blocked-bundle-ids.json" ]; then
+  printf '%s\n' 'Missing hard-blocked bundle ID resource' >&2
+  exit 1
+fi
+cp -R "$resource_bundle" "$resources/"
 cp "$package_dir/Info.plist" "$app_dir/Contents/Info.plist"
 cp "$package_dir/Assets/AppIcon.icns" "$resources/AppIcon.icns"
 cp "$package_dir/Assets/MenuBarTemplate.png" "$resources/MenuBarTemplate.png"
