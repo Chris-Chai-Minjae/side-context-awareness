@@ -1,8 +1,10 @@
-# 에이전트에서 Side 기억 사용하기
+# Side Work Memory를 에이전트에서 사용하기
 
-[한국어](agents.md) · [English](agents.en.md)
+[한국어](agents.md) · [English](agents.en.md) · [처음 쓰는 분을 위한 쉬운 안내서](side-for-beginners.html)
 
 먼저 `Side.app`을 실행하고 메뉴바에서 **Enable Context Awareness**를 켜세요. 아래 예시는 앱을 `/Applications/Side.app`에 설치했을 때의 경로입니다. 다른 위치에 설치했다면 실행 파일의 절대 경로로 바꾸세요. 에이전트마다 `"/Applications/Side.app/Contents/Resources/side" mcp`를 등록하면 Side의 로컬 stdio MCP 서버에 연결됩니다. Aside에도 이 서버를 등록하면 Aside 에이전트가 Side에 기록된 활동을 검색할 수 있습니다.
+
+**요약 모델 로그인은 아래 MCP 등록과 별개입니다.** Side에서 OpenAI 또는 Claude Code를 요약 제공자로 쓰려면 각 공식 CLI에서 `codex login` 또는 `claude auth login`을 마친 뒤 Side에서 해당 제공자를 선택하세요. Codex 로그인이 Keychain에만 저장된 환경은 현재 이 요약 옵션을 사용할 수 없습니다. CLI 로그인을 Side 요약에 사용할 때는 서비스 약관과 사용량 제한을 직접 확인하고 본인 책임으로 사용하세요. 실제 활동은 **이 제공자에게 증거 전송**을 켠 뒤에만 요약 모델로 보냅니다.
 
 ## 등록
 

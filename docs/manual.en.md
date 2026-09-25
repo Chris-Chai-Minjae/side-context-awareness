@@ -1,4 +1,4 @@
-# Side detailed manual
+# Side Work Memory detailed manual
 
 [한국어](manual.md) · [English](manual.en.md) · [Back to README](../README.en.md) · [Beginner's guide](side-for-beginners.en.html)
 
@@ -29,8 +29,8 @@ This is the technical manual for the details that were moved out of the [README]
 ## 2. Build and install
 
 ```sh
-git clone https://github.com/Chris-Chai-Minjae/side-context-awareness.git
-cd side-context-awareness
+git clone https://github.com/Chris-Chai-Minjae/side-work-memory.git
+cd side-work-memory
 bun install --frozen-lockfile
 bun run build
 
@@ -63,6 +63,10 @@ open /Applications/Side.app
 - **Screen Recording is optional.** You must approve Side in the macOS permission dialog for that observation feature to work.
 - Menu bar **Settings → Permissions** shows the current state of each permission separately, requests access, or opens the matching macOS settings pane.
 - The same page shows each summary provider's configured Keychain reference. If access confirmation is needed, click **Authorize Keychain**. The access state shows as unchecked until you explicitly approve it.
+
+**Browser Automation** lets Side ask a supported browser for the current tab URL. macOS grants it per browser. A browser that is already allowed does not show a second approval dialog. If Side shows **Allowed**, no further action is needed. Change access under **System Settings → Privacy & Security → Automation** ([Apple guide](https://support.apple.com/en-md/guide/mac-help/mchl108e1718/mac)).
+
+**Authorize Keychain** checks whether Side can read an API-provider key saved in Side settings. **Key reference configured** means an item was registered; **Keychain access not checked** means Side has not yet tested reading its value. A Keychain prompt may let you approve access; when already approved, the check may finish without a new prompt. Side's raw-record encryption key (`local-context-awareness-ledger`) is separate from provider API keys. Codex and Claude Code CLI logins do not use this button ([Apple guide](https://support.apple.com/en-mt/guide/mac-help/kychn002/mac)).
 
 ## 5. Diagnostics and troubleshooting
 
@@ -98,9 +102,11 @@ Open **Keychain Access → login → Passwords**, open the `local-context-awaren
 ## 6. Summary models and cost
 
 - Summaries use a model for active 10-minute windows and six-hour rollups.
-- You choose the provider. Entering a MiMo, MiniMax, or OpenAI API key in Side settings stores it in macOS Keychain. An existing Claude Code login can be used as a provider as well.
+- You choose the provider. Side stores keys for MiMo, MiniMax, and other OpenAI-compatible APIs in macOS Keychain. For OpenAI, install Codex CLI and run `codex login` in Terminal with your ChatGPT account, then choose **OpenAI (Codex login)** in Side. For Claude Code, run `claude auth login` and choose **Claude Code login**. Side does not read or copy the contents of either CLI's login-token files. The Codex option currently supports only a CLI login stored in a file; a Keychain-only login fails closed. Side runs the CLI in a temporary isolated folder so personal Codex instructions are not included in the summary request.
+- Use a CLI login for Side summaries at your own risk; check each service's terms and usage limits yourself. CLI login for summaries is separate from registering Side's MCP tools in Codex or Claude Code.
 - Even after registering a provider, you must enable **Send evidence to this provider** in settings before Side builds summaries from your activity. It is off by default, and turning it off stops new summaries.
 - Usage varies widely with activity, briefing length, and retries; continuous use can reach millions of input tokens in a day. There is no daily token cap yet. Check your provider usage, and pause capture or turn the setting off to limit cost.
+- One Codex CLI smoke test with a short fictional activity sentence reported 21,412 input and 123 output tokens. This is one observed call, not a prediction of daily usage.
 - Creating Side summaries from a Grok Build login is unverified and is not connected as a summary provider.
 
 ## 7. Data storage layout
@@ -167,7 +173,7 @@ Status as of 2026-09-25, based on the repository's QA reports.
 
 **Verified**
 
-- Automated tests: `bun test` 841 pass, `swift test` 199 (175 capture-kit + 24 app), with `npx tsc --noEmit` and `npx biome check .` clean.
+- Automated tests: `bun test` 863 pass, `swift test` 204 (179 capture-kit + 25 app), with `npx tsc --noEmit` and `npx biome check .` clean.
 - The capture pipeline (accessibility, typed sentences, OCR, browser URLs), masking/encryption/retention, 10-minute and six-hour summaries with retry, day pages and the day view, the three MCP tools with injection boundaries, and CLI diagnostics and deletion.
 - Evidence: [`docs/qa/permission-recovery-2026-09-25.md`](qa/permission-recovery-2026-09-25.md)
 

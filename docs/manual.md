@@ -1,4 +1,4 @@
-# Side 상세 설명서
+# Side Work Memory 상세 설명서
 
 [한국어](manual.md) · [English](manual.en.md) · [README로 돌아가기](../README.md) · [처음 쓰는 분을 위한 쉬운 안내서](side-for-beginners.html)
 
@@ -29,8 +29,8 @@
 ## 2. 빌드와 설치
 
 ```sh
-git clone https://github.com/Chris-Chai-Minjae/side-context-awareness.git
-cd side-context-awareness
+git clone https://github.com/Chris-Chai-Minjae/side-work-memory.git
+cd side-work-memory
 bun install --frozen-lockfile
 bun run build
 
@@ -64,6 +64,10 @@ open /Applications/Side.app
 - 메뉴바 **설정 → 권한**에서 각 권한의 현재 상태를 따로 확인하고, 권한을 요청하거나 해당 macOS 설정 화면을 바로 열 수 있습니다.
 - 같은 화면에서 요약 제공자의 Keychain 키 참조를 확인하고, 접근 확인이 필요하면 **Keychain 권한 허용**을 누릅니다. 접근 상태는 명시적으로 승인하기 전까지 **미확인**으로 표시됩니다.
 
+**브라우저 자동화**는 Side가 지원 브라우저에 현재 탭 URL을 물을 때 쓰는 macOS 권한입니다. 브라우저마다 따로 허용되며, 이미 허용된 브라우저에는 다시 요청해도 승인 창이 뜨지 않습니다. Side에서 **허용됨**이라고 표시되면 추가 조치가 필요 없습니다. 상태를 바꾸려면 **시스템 설정 → 개인정보 보호 및 보안 → 자동화**를 여세요([Apple 안내](https://support.apple.com/ko-kr/guide/mac-help/mchl108e1718/mac)).
+
+**Keychain 권한 허용**은 Side 설정에 저장한 API 제공자의 키를 읽을 수 있는지 확인합니다. **키 참조 설정됨**은 항목이 등록됐다는 뜻이고, **Keychain 접근 확인 전**은 값을 읽는 검사를 아직 하지 않았다는 뜻입니다. Keychain 창이 뜨면 Side의 접근을 선택할 수 있습니다. 이미 허용된 경우 새 창 없이 확인이 끝날 수 있습니다. Side 원본 기록을 여는 데 필요한 암호화 키(`local-context-awareness-ledger`)는 제공자 API 키와 별개입니다. Codex·Claude Code CLI 로그인에도 이 버튼을 사용하지 않습니다([Apple 안내](https://support.apple.com/ko-kr/guide/mac-help/kychn002/mac)).
+
 ## 5. 진단과 문제 해결
 
 ### 진단 명령
@@ -86,7 +90,7 @@ open /Applications/Side.app
 
 ### Keychain 허용 창이 보이지 않고 데몬이 시작되지 않을 때
 
-**Keychain Access → login → Passwords**에서 `local-context-awareness-ledger` 항목의 **Access Control**을 열어 `/Applications/Side.app`을 개별 앱으로 추가한 뒤 저장하고, Side를 다시 시작합니다. 암호 표시나 모든 앱 허용은 필요하지 않습니다. 자세한 내용은 [Apple의 앱별 Keychain 접근 안내](https://support.apple.com/en-mt/guide/mac-help/kychn002/mac)를 보세요.
+**Keychain Access → login → Passwords**에서 `local-context-awareness-ledger` 항목의 **Access Control**을 열어 `/Applications/Side.app`을 개별 앱으로 추가한 뒤 저장하고, Side를 다시 시작합니다. 암호 표시나 모든 앱 허용은 필요하지 않습니다. 자세한 내용은 [Apple의 앱별 Keychain 접근 안내](https://support.apple.com/ko-kr/guide/mac-help/kychn002/mac)를 보세요.
 
 ### 요약이 비어 있거나 실패할 때
 
@@ -98,9 +102,11 @@ open /Applications/Side.app
 ## 6. 요약 모델과 비용
 
 - 요약은 활동이 있는 10분 구간과 6시간 롤업에 모델을 사용합니다.
-- 제공자는 직접 고릅니다. MiMo, MiniMax, OpenAI 등의 API 키를 Side 설정에 입력하면 macOS Keychain에 보관됩니다. 이미 로그인해 둔 Claude Code를 제공자로 선택하는 방법도 있습니다.
+- 제공자는 직접 고릅니다. MiMo·MiniMax 및 기타 OpenAI 호환 API의 키를 Side 설정에 입력하면 macOS Keychain에 보관됩니다. OpenAI는 Codex CLI를 설치해 터미널에서 `codex login`으로 ChatGPT 계정에 로그인한 뒤, Side에서 **OpenAI (Codex login)**을 선택할 수 있습니다. Claude Code는 `claude auth login` 후 **Claude Code login**을 선택합니다. Side는 두 CLI의 로그인 토큰 내용을 읽거나 복사하지 않습니다. Codex 연동은 현재 CLI가 파일에 저장한 로그인만 지원하며, Keychain에만 저장한 로그인은 연결 실패로 처리합니다. Side는 개인 Codex 지침이 요약 요청에 섞이지 않도록 임시 격리 폴더에서 CLI를 실행합니다.
+- CLI 로그인을 Side의 요약 호출에 사용하는 경우 각 서비스의 약관과 사용량 제한을 직접 확인하고 본인 책임으로 사용하세요. CLI 로그인은 Side MCP 도구를 Codex·Claude Code에 등록하는 과정과 별개입니다.
 - 제공자를 등록한 뒤에도 설정에서 **이 제공자에게 증거 전송**을 켜야 실제 활동으로 요약을 만듭니다. 이 항목은 기본적으로 꺼져 있고, 끄면 새 요약이 만들어지지 않습니다.
 - 사용량은 활동량·입력 길이·재시도에 따라 크게 달라지며, 하루 종일 사용하면 수백만 입력 토큰에 이를 수 있습니다. 현재 일일 토큰 한도 기능은 없습니다. 제공자 사용량을 확인하고, 비용을 제한하려면 캡처를 일시정지하거나 위 항목을 끄세요.
+- Codex CLI 연결을 허구의 짧은 활동 문장으로 한 번 시험했을 때 CLI가 입력 21,412토큰·출력 123토큰을 보고했습니다. 단일 호출의 관측치이며 실제 하루 사용량을 예측하는 값은 아닙니다.
 - Grok Build 로그인으로 Side 요약을 만드는 경로는 아직 검증되지 않았으며 요약 제공자로 연결되어 있지 않습니다.
 
 ## 7. 데이터 저장 구조
@@ -167,7 +173,7 @@ Side.app이 실행 중일 때 `"/Applications/Side.app/Contents/Resources/side" 
 
 **검증된 것**
 
-- 자동 테스트: `bun test` 841개 통과, `swift test` 199개(캡처 키트 175 + 앱 24) 통과, `npx tsc --noEmit`·`npx biome check .` 청결.
+- 자동 테스트: `bun test` 863개 통과, `swift test` 204개(캡처 키트 179 + 앱 25) 통과, `npx tsc --noEmit`·`npx biome check .` 청결.
 - 캡처 파이프라인(접근성·입력 문장·OCR·브라우저 URL), 마스킹·암호화·보존 기간, 10분·6시간 요약과 재시도, 날짜 페이지와 날짜 화면, MCP 도구 3종과 인젝션 경계, CLI 진단·삭제.
 - 근거: [`docs/qa/permission-recovery-2026-09-25.md`](qa/permission-recovery-2026-09-25.md)
 

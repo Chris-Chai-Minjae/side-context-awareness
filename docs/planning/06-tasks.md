@@ -32,8 +32,8 @@
 ### [x] P0-T0.2: 상수표 `src/constants.ts`
 - **담당**: backend-specialist
 - **파일**: `tests/constants.test.ts` → `src/constants.ts`
-- **스펙**: PRD 정본 §11 상수 전량(Windows 전용 제외) + Side 정의값(`CAPTURE_DEBOUNCE_MS=500`, `CA_SIBLING_DEMOTION=0.85`, `PAUSE_INDEFINITE`). 각 값에 `[verified]`/`[design]` 주석
-- **수용**: Given PRD 정본 §11 표 / When 대조 테스트 실행 / Then 전 항목 일치, 누락 0
+- **스펙**: `03-capture.md`·`04-data-model.md`·`05-comprehension.md`·`07-recall-index.md`의 상수 계약 + Side 정의값(`CAPTURE_DEBOUNCE_MS=500`, `CA_SIBLING_DEMOTION=0.85`, `PAUSE_INDEFINITE`). 전체 회귀 값은 `tests/constants.test.ts`에 고정하고 각 값에 `[verified]`/`[design]` 주석을 둔다.
+- **수용**: Given 승인된 상수 계약과 회귀 값 / When 대조 테스트 실행 / Then 전 항목 일치, 누락 0
 - **게이트**: G5
 
 ### [x] P0-T0.3: SwiftPM 스켈레톤 `apps/side-mac`

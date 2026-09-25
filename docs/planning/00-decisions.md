@@ -19,7 +19,7 @@ Side = Mac에서의 작업 맥락을 로컬에 기록하고, 나중에 출처와
 
 ## ADR-002 스코프 = macOS 전용, 단일 사용자 `[decided]`
 
-- `01-prd.md`의 FR-1~FR-10과 §11 상수표를 구현 대상으로 삼는다.
+- `01-prd.md`의 FR-1~FR-10과 `03-capture.md`·`04-data-model.md`·`05-comprehension.md`·`07-recall-index.md`의 상수 계약을 구현 대상으로 삼는다. 전체 값의 회귀 기준은 `tests/constants.test.ts`에 고정한다.
 - **제외**: Windows(`win32`, `win_uia` source, Windows 전용 문구). 플랜·계정 게이트는 두지 않는다(로컬 단독 실행).
 - 설계 선택과 근거는 각 ADR과 `01-prd.md` §4에 모아 둔다.
 
@@ -50,12 +50,11 @@ Side = Mac에서의 작업 맥락을 로컬에 기록하고, 나중에 출처와
 - 토큰은 앱이 WKWebView에 주입하므로 외부 브라우저로 새지 않는다.
 - 설정 UI의 섹션과 문구는 PRD 정본 FR-7을 따른다.
 
-## ADR-007 프로세스 부모 관계 반전: App → daemon `[design]`
+## ADR-007 프로세스 구조: App → daemon `[design]`
 
-- daemon이 native helper를 spawn하는 구조에서는 TCC responsibility를 disclaim할 수 있다.
-- Side는 반대로 **Side.app이 부모**가 되어 TCC 권한(Accessibility·Input Monitoring·Screen Recording·Automation)의 주체가 되고, `side-daemon`(`bun build --compile` 산출물, `Contents/Resources/`)을 child로 spawn한다.
+- **Side.app이 부모**가 되어 TCC 권한(Accessibility·Input Monitoring·Screen Recording·Automation)의 주체가 되고, `side-daemon`(`bun build --compile` 산출물, `Contents/Resources/`)을 child로 spawn한다.
 - 이유: private API(`responsibility_spawnattrs_setdisclaim`) 없이도 권한이 서명된 .app 번들에 안정적으로 붙는다. 또 AppleScript(브라우저 URL)의 Automation 프롬프트도 "Side"로 뜬다.
-- 프로토콜은 기존 JSON-lines(`health|event|result|protocol-error`)를 쓰고 방향만 바뀐다(`02-architecture.md` §3).
+- 프로토콜은 JSON-lines(`health|event|result|protocol-error`)를 쓴다(`02-architecture.md` §3).
 
 ## ADR-008 저장 스키마 = 정본 DDL + 민감 컬럼 봉인 `[decided]`
 

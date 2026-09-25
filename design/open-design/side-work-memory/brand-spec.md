@@ -1,4 +1,4 @@
-# Side Context Awareness — visual source
+# Side Work Memory — visual source
 
 The supplied Side token values and synthetic Settings/Day screenshots are the visual authority. The prototype keeps the local ink-on-paper character while tightening hierarchy and responsive behavior.
 

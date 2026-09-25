@@ -1,10 +1,12 @@
-# Use Side history from an agent
+# Use Side Work Memory from an agent
 
-[한국어](agents.md) · **English**
+[한국어](agents.md) · **English** · [Beginner guide](side-for-beginners.en.html)
 
 Start `Side.app` and turn on **Enable Context Awareness** in its menu bar settings. The commands below assume the app is installed at `/Applications/Side.app`; replace that path with the absolute path on your Mac if you installed it elsewhere. Each agent connects to the local stdio MCP server with `"/Applications/Side.app/Contents/Resources/side" mcp`.
 
 Registering Side as an MCP server lets that agent search your Side history. It does not automatically sync your history to another device. A connected agent may send search results to its own model, so review that agent's data policy before using it with sensitive activity.
+
+**Summary-provider login is separate from the MCP registration below.** To use OpenAI or Claude Code for Side summaries, run `codex login` or `claude auth login` in the official CLI, then choose that provider in Side. A Codex login stored only in Keychain cannot currently be used for this summary option. Use a CLI login for Side summaries at your own risk; check the service's terms and usage limits. Side sends real activity to a summary model only after you enable **Send evidence to this provider**.
 
 ## Connect an agent
 

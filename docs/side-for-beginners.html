@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Side 사용 설명서 | 처음 쓰는 사람을 위한 안내</title>
+<title>Side Work Memory | 처음 쓰는 사람을 위한 Side 안내</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&amp;display=swap" rel="stylesheet">
@@ -554,9 +554,9 @@
     <a href="side-for-beginners.html" lang="ko" aria-current="page">한국어</a>
     <a href="side-for-beginners.en.html" lang="en">English</a>
   </nav>
-  <div class="kicker">Side · 처음 쓰는 사람을 위한 안내</div>
+  <div class="kicker">Side Work Memory · 앱 이름 Side · 처음 쓰는 사람을 위한 안내</div>
   <h1>오늘 한 일을 기억하는 앱,<br>Side를 이해하고 쓰기</h1>
-  <p class="sub">브라우저와 Mac 앱의 활동이 어떻게 기록되고, 요약되고, 에이전트에게 다시 찾아지는지 쉬운 말로 설명합니다. 설치와 실제 질문 예시도 함께 담았습니다.</p>
+  <p class="sub">Side의 로컬 기록·검색, 선택적 요약, 별도 MCP 에이전트 연결을 쉬운 말로 설명합니다. 설치와 실제 질문 예시도 함께 담았습니다.</p>
 
   <nav class="toc" aria-label="목차">
     <div class="toc-label">목차</div>
@@ -596,7 +596,7 @@
   </div>
 
   <h2 id="s2"><span class="num">2</span>활동이 기억이 되는 과정</h2>
-  <p class="h2-sub">관찰 → 로컬 보관 → 요약 → 회상의 네 단계입니다.</p>
+  <p class="h2-sub">기록과 검색은 로컬에서 동작합니다. 요약과 에이전트 연결은 따로 선택합니다.</p>
   <p>Side가 보는 첫 지점은 현재 활성 창입니다. <em class="t">Accessibility(손쉬운 사용)</em> 권한으로 읽을 수 있는 글과 창 정보를 가져오고, <em class="t">Input Monitoring(입력 모니터링)</em>은 상호작용과 입력 문장 완성 신호를 돕습니다. 읽을 글이 없는 화면에 한해, 사용자가 허용했다면 <em class="t">OCR(Optical Character Recognition, 화면 글자 인식)</em>으로 화면의 글자만 추출합니다. 이미지를 기록으로 남기지는 않습니다.</p>
   <figure class="svg">
     <svg viewBox="0 0 320 410" role="img" aria-label="브라우저와 앱의 글이 Mac 로컬 기록을 거쳐 요약과 에이전트 검색으로 흐르는 네 단계">
@@ -609,7 +609,7 @@
       <line x1="160" y1="287" x2="160" y2="309" stroke="var(--accent)" stroke-width="2" marker-end="url(#side-arrow)"/>
       <rect x="24" y="316" width="272" height="70" rx="9" fill="var(--card)" stroke="var(--line)"/><text x="160" y="345" text-anchor="middle" font-size="17" font-weight="700" fill="var(--ink)">에이전트가 다시 찾기</text><text x="160" y="367" text-anchor="middle" font-size="12" fill="var(--ink-soft)">검색 결과와 출처 번호를 전달</text>
     </svg>
-    <figcaption>요약 모델에 활동 내용을 보내는 단계는 해당 제공자에 대한 전송을 직접 허용했을 때만 실행됩니다. 다른 단계의 데이터는 이 Mac에 저장됩니다.</figcaption>
+    <figcaption>요약 단계를 건너뛰어도 로컬 기록·검색은 가능합니다. 요약은 해당 제공자에 대한 전송을 직접 허용했을 때만 실행되고, 에이전트 검색은 MCP를 별도로 등록해야 합니다.</figcaption>
   </figure>
   <p>원본 기록은 Mac 안의 암호화된 <em class="t">ledger(원장, 시간순 장부)</em>에 들어갑니다. Side는 알려진 비밀번호·토큰·카드 번호 패턴을 먼저 가리지만, 규칙으로 모든 민감한 값을 알아낼 수는 없습니다. 하루 요약 페이지와 검색 색인은 별도 파일로 만듭니다. 원본의 기본 보관 기간은 14일이고, 요약은 직접 지울 때까지 별도로 남습니다.</p>
   <div class="analogy">
@@ -650,32 +650,45 @@
 
   <h2 id="s4"><span class="num">4</span>에이전트에게 어떻게 물어보나요?</h2>
   <p class="h2-sub">Side를 켜고 연결한 에이전트에게 평소 말하듯 물어보세요.</p>
-  <p>Side는 에이전트가 기록을 찾아볼 수 있게 하는 <em class="t">MCP(AI와 도구를 연결하는 방식)</em> 도구를 제공합니다. Claude Code, Codex, Cursor, Grok Build, Aside 등에서 Side 도구를 각각 등록해야 사용할 수 있습니다. Side 앱 설치만으로 자동 연결되지는 않으며, 질문할 때 Side.app이 실행 중이어야 합니다.</p>
-  <p>Aside의 설정 → MCP에도 Side 도구를 등록하면 Aside에서 Side 기록을 찾아달라고 할 수 있습니다. 이 연결은 같은 Mac에서 Side 도구를 호출하는 방식이며, 기록을 다른 기기로 자동 동기화하지 않습니다.</p>
+  <p>Side는 에이전트가 로컬 기록을 검색할 수 있게 하는 <em class="t">MCP(AI와 도구를 연결하는 방식)</em> 도구를 제공합니다. Claude Code, Codex, Cursor, Grok Build, Aside 등에서 Side 도구를 각각 등록해야 사용할 수 있습니다. 앱 설치나 요약 제공자 설정만으로 자동 연결되지는 않으며, 질문할 때 Side.app이 실행 중이어야 합니다.</p>
+  <p>Aside도 Side MCP 도구와 호환되는 클라이언트입니다. Aside의 설정 → MCP에 Side 도구를 등록하면 같은 Mac에서 기록을 찾아달라고 할 수 있습니다. 기록을 다른 기기로 자동 동기화하지 않습니다.</p>
   <div class="card-block">
-    <div class="case-label">질문 예시 1 · 어제 본 페이지</div>
-    <h3>식당 이름이 생각나지 않아요</h3>
-    <div class="prompt-box">“어제 저녁에 봤던 식당 예약 페이지를 찾아주세요. 언제 봤는지와 페이지 제목, 주소를 알려주세요.”</div>
-    <p>본 시각과 기억나는 단어를 말하면 후보를 좁히기 쉽습니다. 브라우저 방문 기록만 찾았다면 방문 시각·제목·주소까지만 확인할 수 있습니다.</p>
+    <div class="case-label">질문 예시 1 · 전에 본 페이지</div>
+    <h3>어제 본 페이지 다시 찾기</h3>
+    <div class="prompt-box">“어제 저녁에 봤던 식당 예약 페이지를 찾아줘. 제목과 주소도 알려줘.”</div>
+    <p>방문 기록만 찾았다면 방문 시각·제목·주소까지만 알 수 있습니다. 본문이 필요하면 원문을 다시 여세요.</p>
   </div>
   <div class="card-block">
-    <div class="case-label">질문 예시 2 · 주제만 기억</div>
-    <h3>환불 규정을 다시 확인하고 싶어요</h3>
-    <div class="prompt-box">“지난주에 읽은 환불 규정 페이지를 찾아주세요. 무료 취소 기간을 확인할 수 있는 원문이나 출처가 있으면 함께 알려주세요.”</div>
-    <p>정확한 제목이 기억나지 않아도 주제와 대략적인 날짜를 알려주면 됩니다. 읽을 수 있는 기록이나 만들어진 요약이 있을 때 내용을 확인할 수 있습니다. 제목과 주소만 나왔다면 규정 내용은 해당 페이지에서 직접 확인하세요.</p>
+    <div class="case-label">질문 예시 2 · 회의 뒤에 이어서 일하기</div>
+    <h3>하던 일로 돌아가기</h3>
+    <div class="prompt-box">“회의 전에 보던 문서가 뭐였지? 어디까지 읽었는지 찾을 단서를 알려줘.”</div>
+    <p>기록된 시간과 문서 제목을 보고 다시 시작할 수 있습니다. Side가 놓친 화면은 답에 포함되지 않습니다.</p>
   </div>
   <div class="card-block">
-    <div class="case-label">질문 예시 3 · Aside에서 묻기</div>
-    <h3>여행 계획을 다시 찾고 싶어요</h3>
-    <div class="prompt-box">“지난주에 살펴본 여행 일정 페이지를 Side에서 찾아주세요. 본 날짜와 페이지 제목, 확인할 수 있는 내용을 알려주세요.”</div>
-    <p>Aside에 Side 도구가 등록되고 Side.app이 실행 중이라면 같은 방식으로 물어볼 수 있습니다. Side에 남은 기록 범위 안에서만 결과가 나오며, 요약은 설정해 두었고 실제로 만들어진 경우에만 볼 수 있습니다.</p>
+    <div class="case-label">질문 예시 3 · 오늘 활동</div>
+    <h3>하루를 돌아보기</h3>
+    <div class="prompt-box">“오늘 오전에 어떤 일을 오갔는지 정리해줘.”</div>
+    <p>시간대별 기록을 찾을 수 있습니다. 날짜별 요약은 제공자를 설정하고 전송에 동의해 실제로 만들어진 경우에만 볼 수 있습니다.</p>
   </div>
+  <div class="card-block">
+    <div class="case-label">질문 예시 4 · 두 문서 비교</div>
+    <h3>읽은 글과 초안 비교하기</h3>
+    <div class="prompt-box">“방금 읽은 안내문과 내가 작성한 초안의 차이를 알려줘.”</div>
+    <p>두 문서의 읽을 수 있는 내용이 Side에 남아 있어야 비교할 수 있습니다. 중요한 차이는 원문 두 개를 다시 열어 확인하세요.</p>
+  </div>
+  <div class="card-block">
+    <div class="case-label">질문 예시 5 · 오류 해결 페이지</div>
+    <h3>해결 방법을 다시 찾기</h3>
+    <div class="prompt-box">“아까 본 오류 해결 페이지 주소를 찾아줘.”</div>
+    <p>개발 중이 아니어도 프린터나 앱의 오류 도움말 페이지를 다시 찾을 때 같은 방식으로 물어볼 수 있습니다.</p>
+  </div>
+  <p>법률 문서의 출처를 찾거나 프로젝트별 작업 시간을 되짚을 때도 사용할 수 있습니다. 판결문 인용, 날짜·금액, OCR로 읽은 숫자와 최종 청구 시간은 원문과 실제 업무 기록에서 확인하세요.</p>
   <div class="codecard">
     <div class="cc-head">Side 도구 등록 · 설치 후 한 번만</div>
     <div class="cc-line"><code>claude mcp add --scope user side -- "/Applications/Side.app/Contents/Resources/side" mcp</code><span class="cc-note">Claude Code에 사용자 범위로 연결</span></div>
     <div class="cc-line"><code>codex mcp add side -- "/Applications/Side.app/Contents/Resources/side" mcp</code><span class="cc-note">Codex에 연결</span></div>
     <div class="cc-line"><code>grok mcp add --scope user side -- "/Applications/Side.app/Contents/Resources/side" mcp</code><span class="cc-note">Grok Build가 Side 기록을 검색하도록 연결</span></div>
-    <div class="cc-foot">명령은 Side가 실행 중일 때 터미널에 복사해 붙여넣으면 됩니다. Grok Build 등록은 요약 모델 설정과 별개이며 실제 도구 호출은 아직 확인하지 않았습니다. Cursor와 Aside의 등록 방법은 <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.md">에이전트 연결 안내</a>에 적혀 있습니다.</div>
+    <div class="cc-foot">명령은 Side가 실행 중일 때 터미널에 복사해 붙여넣으면 됩니다. Grok Build 등록은 요약 모델 설정과 별개이며 실제 도구 호출은 아직 확인하지 않았습니다. Cursor와 Aside의 등록 방법은 <a href="https://github.com/Chris-Chai-Minjae/side-work-memory/blob/main/docs/agents.md">에이전트 연결 안내</a>에 적혀 있습니다.</div>
   </div>
 
   <h2 id="s5"><span class="num">5</span>설치하고 설정하기</h2>
@@ -683,21 +696,23 @@
   <p>Side는 현재 소스코드 배포용이며 내려받아 바로 여는 사전 빌드 앱은 제공하지 않습니다. GitHub에서 소스코드를 받은 뒤 저장소 폴더의 터미널에서 아래 순서로 실행합니다. macOS 14 이상, Bun, Xcode Command Line Tools, FTS5와 확장 로딩을 지원하는 SQLite dylib가 필요합니다. 빌드 스크립트는 Homebrew의 SQLite를 찾고, 다른 위치의 파일은 <code>SIDE_SQLITE_LIBRARY</code>로 지정할 수 있습니다. 빌드할 때 MiniLM 모델도 앱에 넣으므로 처음에는 인터넷이 필요할 수 있습니다.</p>
   <div class="codecard">
     <div class="cc-head">로컬 빌드 · 순서대로 복사</div>
-    <div class="cc-line"><code>git clone https://github.com/Chris-Chai-Minjae/side-context-awareness.git</code><span class="cc-note">GitHub에서 Side 소스 내려받기</span></div>
-    <div class="cc-line"><code>cd side-context-awareness</code><span class="cc-note">내려받은 폴더로 이동</span></div>
+    <div class="cc-line"><code>git clone https://github.com/Chris-Chai-Minjae/side-work-memory.git</code><span class="cc-note">GitHub에서 Side 소스 내려받기</span></div>
+    <div class="cc-line"><code>cd side-work-memory</code><span class="cc-note">내려받은 폴더로 이동</span></div>
     <div class="cc-line"><code>bun install --frozen-lockfile</code><span class="cc-note">필요한 코드 패키지 설치</span></div>
     <div class="cc-line"><code>bun run build</code><span class="cc-note">Mac 앱 만들기</span></div>
     <div class="cc-line"><code>ditto apps/side-mac/.build/release/Side.app /Applications/Side.app</code><span class="cc-note">앱을 Applications에 복사</span></div>
     <div class="cc-line"><code>open /Applications/Side.app</code><span class="cc-note">메뉴바 앱 시작</span></div>
     <div class="cc-foot">한 줄씩 그대로 복사하세요. 이미 Side를 실행 중이면 새 앱을 복사하기 전에 먼저 종료합니다.</div>
   </div>
-  <p>처음 시작하면 손쉬운 사용과 입력 모니터링 권한을 순서대로 안내합니다. 화면 기록은 OCR을 쓸 때 필요하며 건너뛸 수 있습니다. 요약 제공자를 설정하고 싶다면 API 키를 Keychain에 저장하거나, Mac에 Claude Code를 설치하고 로그인해 둔 경우 그 기존 로그인 옵션을 선택할 수 있습니다. 제공자를 등록한 뒤에도 설정에서 <strong>“이 제공자에게 증거 전송”</strong>을 켜야 실제 활동으로 요약을 만듭니다.</p>
-  <p>요약 제공자는 각자 선택할 수 있습니다. 예를 들어 MiMo 2.6 Pro를 먼저 시도하고 MiniMax M3를 다음 제공자로 설정할 수 있습니다. 제공자 연결이 정상이더라도 개별 요약은 모델 응답 오류나 형식 위반으로 실패할 수 있습니다. 기록 화면이 비어 있다면 10분 창이 아직 끝나지 않았는지와 요약 상태를 확인해 보세요. 실패한 작업이 표시되면 모델 연결을 확인한 뒤 기록 화면에서 <strong>실패한 요약 다시 시도</strong>를 누르고, 완료된 뒤 <strong>요약 새로고침</strong>을 눌러 새 결과를 볼 수 있습니다.</p>
+  <p>처음 시작하면 손쉬운 사용과 입력 모니터링 권한을 안내합니다. 화면 기록은 읽을 수 없는 화면에 OCR을 쓸 때 필요한 선택 권한입니다. <strong>브라우저 자동화 (Browser Automation)</strong>는 지원 브라우저의 현재 탭 URL을 읽는 macOS 권한입니다. <strong>이미 허용됨 (Already allowed)</strong>이면 새 승인 창은 뜨지 않습니다.</p>
+  <p>기록과 검색에는 요약 모델이 필요하지 않습니다. 요약을 원하면 API 키 제공자를 설정하거나 공식 Codex CLI에서 <code>codex login</code>으로 ChatGPT에 로그인한 뒤 <strong>OpenAI (Codex login)</strong>을 선택할 수 있습니다. Claude CLI는 <code>claude auth login</code> 뒤 Claude Code 로그인 옵션을 선택합니다. Codex 로그인이 Keychain에만 저장된 환경은 현재 지원하지 않습니다. 이는 요약 제공자 설정이며 MCP 에이전트 등록과 별개입니다. 실제 활동 요약은 해당 제공자의 <strong>“이 제공자에게 증거 전송”</strong>을 켠 뒤에만 만듭니다. CLI 로그인으로 Side 요약을 사용할 때는 각 서비스 약관과 사용량 제한을 확인하고 본인 책임으로 사용하세요.</p>
+  <p>요약 제공자는 각자 선택할 수 있습니다. 예를 들어 MiMo 2.6 Pro를 기본 제공자, MiniMax M3를 대체 제공자로 설정할 수 있습니다. 연결이 정상이더라도 개별 요약은 실패할 수 있습니다. 기록 화면이 비어 있다면 10분 구간이 끝났는지와 요약 상태를 확인해 보세요. 실패한 작업이 표시되면 연결을 확인한 뒤 <strong>실패한 요약 다시 시도</strong>와 <strong>요약 새로고침</strong>을 누르세요.</p>
   <p>활동이 있는 10분 구간과 6시간 묶음에 요약 모델을 호출합니다. 하루 종일 켜 두면 입력 토큰이 수백만 개에 이를 수 있고, 현재 앱에는 일일 토큰 한도가 없습니다. 비용이 걱정되면 모델 제공자의 사용량을 확인하고, 사용하지 않을 때는 캡처를 일시정지하거나 <strong>이 제공자에게 증거 전송</strong>을 끄세요. 전송을 끄면 새 요약도 멈춥니다.</p>
   <div class="danger">
     <div class="label">앱을 다시 빌드했다면</div>
     <div class="name">macOS 권한이 예전 앱을 가리킬 수 있습니다</div>
-    <p>로컬 앱은 임시 서명으로 빌드됩니다. 새 빌드로 교체하면 저장된 암호화 키를 읽기 위한 Keychain 허용 창이 다시 뜰 수 있습니다. Side가 캡처 권한을 못 읽는다면 메뉴바 <strong>설정 → 권한</strong>에서 손쉬운 사용·입력 모니터링·화면 기록의 상태를 하나씩 확인하세요. 각 행의 <strong>시스템 설정 열기</strong>로 해당 macOS 항목에 바로 이동할 수 있습니다. 이전 Side 항목을 제거하고 <code>/Applications/Side.app</code>을 다시 추가해야 할 수 있습니다. 같은 권한 스위치를 반복해서 누르기 전에 앱 경로를 확인하세요. 요약 제공자 키의 접근 상태는 자동으로 읽지 않으며, 필요할 때 <strong>Keychain 권한 허용</strong>을 눌러 확인합니다. 허용 창이 안 보이고 데몬이 시작되지 않으면 <a href="https://support.apple.com/en-mt/guide/mac-help/kychn002/mac">Apple 안내</a>에 따라 Keychain Access의 <code>local-context-awareness-ledger</code> 항목에 새 Side 앱을 개별 허용한 뒤 Side를 다시 시작하세요. 암호를 표시할 필요는 없습니다.</p>
+    <p>로컬 앱은 임시 서명으로 빌드되므로 새 빌드로 바꾸면 macOS 권한이나 별도의 기록 암호화 키에 대한 Keychain 허용 창이 다시 필요할 수 있습니다. 메뉴바 <strong>설정 → 권한</strong>에서 손쉬운 사용·입력 모니터링·화면 기록·브라우저 자동화 상태를 확인하고 필요한 <strong>시스템 설정 열기</strong>를 누르세요. <strong>이미 허용됨</strong>은 브라우저 자동화 권한이 있어서 새 승인 창이 필요 없다는 뜻입니다.</p>
+    <p><strong>Keychain 권한 허용 (Authorize Keychain)</strong>은 Side에 저장한 MiMo·MiniMax 등 요약 제공자의 API 키를 Side가 읽을 수 있는지 확인합니다. 로컬 기록 암호화 키와 Codex·Claude CLI 로그인은 별개입니다. 로그인 토큰 파일을 열어 볼 필요는 없습니다. 새 앱이 암호화 키를 못 읽어 데몬이 시작되지 않는다면 <a href="https://support.apple.com/ko-kr/guide/mac-help/kychn002/mac">Apple 안내</a>에 따라 Keychain Access의 <code>local-context-awareness-ledger</code> 항목에 새 Side 앱을 허용하고 재시작하세요. 암호를 표시할 필요는 없습니다.</p>
   </div>
   <div class="good">
     <div class="label">진단 방법</div>

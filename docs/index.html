@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <link rel="icon" type="image/png" href="assets/side-logo.png">
-  <meta name="description" content="Side는 Mac의 활성 창에서 읽을 수 있는 내용을 기기에 기록하고, 기록과 출처를 검색할 수 있는 오픈 소스 메뉴바 앱입니다.">
-  <title>Side — Mac 활동 기록과 검색</title>
+  <meta name="description" content="Side Work Memory는 Mac의 활성 창에서 읽을 수 있는 내용을 기기에 기록하고, 기록과 출처를 검색할 수 있는 오픈 소스 메뉴바 앱입니다.">
+  <title>Side Work Memory — Mac 활동 기록과 검색</title>
   <style>
     :root {
       color-scheme: light;
@@ -143,10 +143,10 @@
     <div data-locale="ko">
       <div class="shell hero">
         <div>
-          <p class="eyebrow">macOS 메뉴바 앱 · 오픈 소스</p>
+          <p class="eyebrow">Side Work Memory · macOS 메뉴바 앱</p>
           <h1>Mac에서 읽은 내용을<br>출처와 함께 다시 찾으세요.</h1>
           <p class="lead">Side는 브라우저와 Mac 앱의 활성 창에서 읽을 수 있는 내용을 기기에 기록합니다. 기록을 검색하고, 요약 제공자를 설정해 전송에 동의하면 날짜별 요약도 확인할 수 있습니다. 연결한 에이전트에서도 기록을 검색할 수 있습니다.</p>
-          <div class="actions"><a class="button primary" href="#start">Mac에서 빌드하기</a><a class="button" href="side-for-beginners.html">처음 사용하기 전체 안내 ↗</a><a class="button" href="https://github.com/Chris-Chai-Minjae/side-context-awareness">GitHub에서 소스 보기 ↗</a></div>
+          <div class="actions"><a class="button primary" href="#start">Mac에서 빌드하기</a><a class="button" href="side-for-beginners.html">처음 사용하기 전체 안내 ↗</a><a class="button" href="https://github.com/Chris-Chai-Minjae/side-work-memory">GitHub에서 소스 보기 ↗</a></div>
           <p class="hero-note">개발 중 · macOS 14+ · 사전 빌드 앱 미제공</p>
         </div>
         <figure class="preview" aria-label="Side 기록 화면의 합성 예시">
@@ -165,8 +165,8 @@
         <figure class="flow">
           <div class="flow-image"><img src="assets/side-flow.png" width="2103" height="748" loading="lazy" decoding="async" alt="Mac의 활성 창에서 Side가 활동을 기록해 기기에 보관하고, 날짜별 검색을 거쳐 에이전트에서 찾는 네 단계 그림"></div>
           <figcaption>
-            <ol class="flow-stages"><li><span>01</span>활성 창의 내용 읽기</li><li><span>02</span>Mac에 기록 보관</li><li><span>03</span>기록과 요약 검색</li><li><span>04</span>Aside 에이전트에서 찾기</li></ol>
-            <p class="flow-note">Side.app이 실행 중일 때 Side를 Aside의 MCP 서버로 등록하면, Aside 에이전트가 Side에 기록된 활동을 검색할 수 있습니다. <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.md">연결 방법 보기 ↗</a></p>
+            <ol class="flow-stages"><li><span>01</span>활성 창의 내용 읽기</li><li><span>02</span>Mac에 기록 보관</li><li><span>03</span>기록과 요약 검색</li><li><span>04</span>연결한 에이전트에서 찾기</li></ol>
+            <p class="flow-note">예를 들어 “아까 보던 문서 찾아줘”라고 물어보면 연결한 에이전트가 Side 기록과 출처를 검색합니다. Claude Code·Codex·Cursor·Aside에 연결할 수 있습니다. <a href="https://github.com/Chris-Chai-Minjae/side-work-memory/blob/main/docs/agents.md">연결 방법 보기 ↗</a></p>
           </figcaption>
         </figure>
         <div class="steps">
@@ -175,41 +175,51 @@
           <div class="step"><span class="number">03 / RECALL</span><h3>연결한 에이전트에서 검색</h3><p>MCP를 연결하면 <code>history_search</code>, <code>history_read</code>, <code>memory_search</code>로 기록과 요약을 검색하고 출처를 확인할 수 있습니다.</p></div>
         </div>
       </div></section>
+      <section class="section"><div class="shell">
+        <div class="section-head"><p class="kicker">바로 물어보기</p><h2>기억나는 대로 질문해 보세요.</h2><p>Side에 기록이 남아 있다면 연결한 에이전트가 본 시각과 확인 가능한 출처를 찾아줍니다.</p></div>
+        <div class="steps">
+          <div class="step"><span class="number">01 / 찾기</span><h3>아까 본 페이지가 뭐였지?</h3><p>“오늘 오전에 봤던 개인정보 안내 문서의 제목과 주소를 찾아줘.”</p></div>
+          <div class="step"><span class="number">02 / 이어하기</span><h3>회의 전에 뭘 하고 있었지?</h3><p>“회의 들어가기 직전에 읽던 문서와 작성하던 메모를 찾아줘.”</p></div>
+          <div class="step"><span class="number">03 / 정리하기</span><h3>오늘은 무슨 일을 했지?</h3><p>“오늘 오후에 한 일을 시간순으로 정리해줘.” 날짜별 요약을 켰다면 그 내용을 함께 활용할 수 있습니다.</p></div>
+        </div>
+      </div></section>
       <section class="section" id="start"><div class="shell split">
         <div><p class="kicker">시작하기</p><h2>Mac에서 소스를 빌드해 설치하세요.</h2><p>macOS 14+, Bun, Xcode Command Line Tools, FTS5와 확장 로딩을 지원하는 SQLite dylib가 필요합니다. 빌드 과정에서 MiniLM 모델을 내려받습니다.</p><p><a href="side-for-beginners.html">처음 사용하는 분을 위한 안내 ↗</a></p></div>
-        <div><pre class="code-block"><code>git clone https://github.com/Chris-Chai-Minjae/side-context-awareness.git
-cd side-context-awareness
+        <div><pre class="code-block"><code>git clone https://github.com/Chris-Chai-Minjae/side-work-memory.git
+cd side-work-memory
 bun install --frozen-lockfile
 bun run build
 ditto apps/side-mac/.build/release/Side.app /Applications/Side.app
-open /Applications/Side.app</code></pre><p class="detail">앱을 종료한 뒤 새 빌드를 복사하세요. 이 로컬 빌드는 임시 서명되며, 교체 후 macOS 권한과 Keychain 접근을 다시 허용해야 할 수 있습니다. 상세 조건은 <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/manual.md">상세 설명서 ↗</a>를 확인하세요.</p></div>
+open /Applications/Side.app</code></pre><p class="detail">앱을 종료한 뒤 새 빌드를 복사하세요. 이 로컬 빌드는 임시 서명되며, 교체 후 macOS 권한과 Keychain 접근을 다시 허용해야 할 수 있습니다. 상세 조건은 <a href="https://github.com/Chris-Chai-Minjae/side-work-memory/blob/main/docs/manual.md">상세 설명서 ↗</a>를 확인하세요.</p></div>
       </div></section>
       <section class="section"><div class="shell split">
-        <div><p class="kicker">모델과 에이전트</p><h2>요약 제공자와 에이전트 연결은 선택 사항입니다.</h2><p>MiMo, MiniMax, OpenAI API 키는 Side 설정에 직접 입력하며 macOS Keychain에 보관됩니다. 이미 로그인한 Claude Code를 요약 제공자로 선택할 수도 있습니다.</p><p>활동이 많은 날에는 요약에 수백만 입력 토큰이 쓰일 수 있습니다. 현재 일일 한도는 없으므로 제공자 사용량을 확인하고, 필요하면 캡처를 일시정지하세요.</p></div>
+        <div><p class="kicker">모델과 에이전트</p><h2>요약 제공자와 에이전트 연결은 선택 사항입니다.</h2><p>MiMo·MiniMax 같은 API 제공자의 키는 Side 설정에 입력해 macOS Keychain에 보관합니다. OpenAI는 터미널에서 <code>codex login</code>으로 로그인한 뒤 Side에서 <strong>OpenAI (Codex login)</strong>을 고를 수 있습니다. Claude Code도 <code>claude auth login</code> 후 로그인 옵션을 고릅니다. Side는 CLI 로그인 토큰 내용을 직접 읽거나 복사하지 않습니다. Codex 로그인이 Keychain에만 저장된 환경은 현재 지원하지 않습니다.</p><p>CLI 로그인을 Side 요약에 사용하는 경우 각 서비스의 약관과 사용량 제한을 직접 확인하고 본인 책임으로 사용하세요. 실제 활동 브리핑은 해당 제공자의 <strong>증거 전송</strong>을 켠 뒤에만 보냅니다. 활동이 많은 날에는 요약에 수백만 입력 토큰이 쓰일 수 있고 현재 일일 한도는 없습니다.</p></div>
         <div><div class="facts">
           <div class="fact"><strong>요약 제공자</strong><p>요약 제공자를 설정하지 않아도 기록은 할 수 있습니다. 요약 생성에는 제공자 설정과 전송 동의가 필요합니다.</p></div>
           <div class="fact"><strong>MCP 연결</strong><p>Claude Code, Codex, Cursor, Aside 등에서 검색하려면 각 클라이언트에 Side의 로컬 MCP 서버를 등록해야 합니다.</p></div>
-        </div><pre class="code-block"><code>claude mcp add --scope user side -- "/Applications/Side.app/Contents/Resources/side" mcp</code></pre><p class="detail">Side가 실행 중일 때 Claude Code의 사용자 범위에 등록하는 예입니다. 다른 에이전트의 등록 방법은 <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.md">연결 안내 ↗</a>를 참고하세요.</p></div>
+        </div><pre class="code-block"><code>claude mcp add --scope user side -- "/Applications/Side.app/Contents/Resources/side" mcp</code></pre><p class="detail">Side가 실행 중일 때 Claude Code의 사용자 범위에 등록하는 예입니다. 다른 에이전트의 등록 방법은 <a href="https://github.com/Chris-Chai-Minjae/side-work-memory/blob/main/docs/agents.md">연결 안내 ↗</a>를 참고하세요.</p></div>
       </div></section>
       <section class="section" id="privacy"><div class="shell split">
         <div><p class="kicker">프라이버시와 동의</p><h2>무엇을 남기고 언제 지울지 직접 정하세요.</h2><p>Side는 원본 기록을 클라우드에 동기화하지 않습니다. 기록 보존 기간과 제외 목록을 설정하고, 기록을 일시정지하거나 삭제할 수 있습니다.</p></div>
         <div><div class="facts">
-          <div class="fact"><strong>macOS 권한</strong><p>앱의 권한 화면에서 Accessibility, Input Monitoring, Screen Recording 상태를 각각 확인하고 해당 macOS 설정을 열 수 있습니다. Screen Recording은 OCR을 위한 선택 권한이며, 브라우저 URL에는 Automation 권한을 사용합니다.</p></div>
+          <div class="fact"><strong>브라우저 자동화</strong><p>지원 브라우저의 현재 탭 주소를 읽을 때 필요한 macOS 권한입니다. 이미 허용했다면 Side에 <strong>이미 허용됨</strong>이 표시되고 새 승인 창이 뜨지 않습니다. 상태는 시스템 설정 → 개인정보 보호 및 보안 → 자동화에서 확인하세요. <a href="https://support.apple.com/ko-kr/guide/mac-help/mchl108e1718/mac">Apple 안내 ↗</a></p></div>
+          <div class="fact"><strong>Keychain 권한 허용</strong><p>Side에 저장한 MiMo·MiniMax 등의 API 키를 Side가 읽을 수 있는지 확인합니다. “키 참조 설정됨”은 저장됐다는 뜻이며 “접근 확인 전”은 아직 읽기 검사를 하지 않았다는 뜻입니다. 이미 허용했다면 새 승인 창 없이 확인이 끝날 수 있습니다. 기록 암호화 키도 Keychain에 별도로 보관됩니다. Codex·Claude Code CLI 로그인과는 별개입니다. <a href="https://support.apple.com/ko-kr/guide/mac-help/kychn002/mac">Apple 안내 ↗</a></p></div>
+          <div class="fact"><strong>그 밖의 macOS 권한</strong><p>앱의 권한 화면에서 손쉬운 사용, 입력 모니터링, 화면 기록 상태를 각각 확인하고 해당 macOS 설정을 열 수 있습니다. 화면 기록은 글자를 읽을 수 없는 화면에 OCR을 쓰는 선택 권한입니다.</p></div>
           <div class="fact"><strong>저장 방식</strong><p>기록과 요약, 검색 색인은 모두 이 Mac에 저장됩니다. 원본 기록의 민감 정보가 담긴 컬럼은 저장 전에 마스킹 후 암호화하고, 암호화 키는 macOS Keychain에 보관합니다.</p></div>
           <div class="fact"><strong>보관과 삭제</strong><p>원본 보관 기간은 기본 14일이며 1·3·7·14·30일 중 고를 수 있습니다. 최근 10분, 지난 1시간, 오늘, 전체 이력을 언제든 삭제할 수 있고, 전체 삭제는 암호화 키까지 교체합니다.</p></div>
           <div class="fact"><strong>연결 범위</strong><p>Side 도구는 사용자가 직접 등록한 클라이언트에서만 호출됩니다. 비밀번호 입력 필드는 처음부터 기록하지 않습니다.</p></div>
         </div></div>
       </div></section>
-      <section class="section"><div class="shell status"><p class="kicker">현재 상태</p><h2>현재는 소스에서 직접 빌드해야 합니다.</h2><p>Side는 개발 중이며, 각자의 Mac에서 소스를 빌드해 사용해야 합니다. 사전 빌드 앱의 Developer ID 서명·공증과 장시간 실기기 검증은 완료되지 않았습니다. Grok Build 로그인으로 Side 요약을 만드는 경로는 검증되지 않았으며, 요약 제공자로 연결되어 있지 않습니다. 기능별 근거와 남은 검증 항목은 저장소의 <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/tree/main/docs/qa">QA 보고서</a>에서 확인할 수 있습니다.</p></div></section>
+      <section class="section"><div class="shell status"><p class="kicker">현재 상태</p><h2>현재는 소스에서 직접 빌드해야 합니다.</h2><p>Side는 개발 중이며, 각자의 Mac에서 소스를 빌드해 사용해야 합니다. 사전 빌드 앱의 Developer ID 서명·공증과 장시간 실기기 검증은 완료되지 않았습니다. Grok Build 로그인으로 Side 요약을 만드는 경로는 검증되지 않았으며, 요약 제공자로 연결되어 있지 않습니다. 기능별 근거와 남은 검증 항목은 저장소의 <a href="https://github.com/Chris-Chai-Minjae/side-work-memory/tree/main/docs/qa">QA 보고서</a>에서 확인할 수 있습니다.</p></div></section>
     </div>
 
     <div data-locale="en" hidden>
       <div class="shell hero">
         <div>
-          <p class="eyebrow">Open source macOS menu bar app</p>
+          <p class="eyebrow">Side Work Memory · Open source macOS app</p>
           <h1>Find the context<br>behind your day.</h1>
           <p class="lead">Side stores readable content from active browser and Mac app windows on your device. Search it with its sources, or create daily summaries after configuring a provider and consenting to send activity briefings. Connected agents can search that history too.</p>
-          <div class="actions"><a class="button primary" href="#start-en">Build on your Mac</a><a class="button" href="side-for-beginners.en.html">Complete beginner guide ↗</a><a class="button" href="https://github.com/Chris-Chai-Minjae/side-context-awareness">View source ↗</a></div>
+          <div class="actions"><a class="button primary" href="#start-en">Build on your Mac</a><a class="button" href="side-for-beginners.en.html">Complete beginner guide ↗</a><a class="button" href="https://github.com/Chris-Chai-Minjae/side-work-memory">View source ↗</a></div>
           <p class="hero-note">In development · macOS 14+ · source build only</p>
         </div>
         <figure class="preview" aria-label="Illustrative Side history view">
@@ -228,8 +238,8 @@ open /Applications/Side.app</code></pre><p class="detail">앱을 종료한 뒤 �
         <figure class="flow">
           <div class="flow-image"><img src="assets/side-flow.png" width="2103" height="748" loading="lazy" decoding="async" alt="Four linked stages: Side reads active Mac windows, stores activity locally, makes it searchable by date, and connects it to agents"></div>
           <figcaption>
-            <ol class="flow-stages"><li><span>01</span>Read active windows</li><li><span>02</span>Store on your Mac</li><li><span>03</span>Search records and summaries</li><li><span>04</span>Find with Aside agents</li></ol>
-            <p class="flow-note">While Side.app is running, register Side as an MCP server in Aside so Aside agents can search activity recorded by Side. <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.en.md">See connection steps ↗</a></p>
+            <ol class="flow-stages"><li><span>01</span>Read active windows</li><li><span>02</span>Store on your Mac</li><li><span>03</span>Search records and summaries</li><li><span>04</span>Find with a connected agent</li></ol>
+            <p class="flow-note">Ask “Find the document I was just reading,” and a connected agent can search Side's records and show the source. Side works as an MCP tool in Claude Code, Codex, Cursor, and Aside. <a href="https://github.com/Chris-Chai-Minjae/side-work-memory/blob/main/docs/agents.en.md">See connection steps ↗</a></p>
           </figcaption>
         </figure>
         <div class="steps">
@@ -238,44 +248,54 @@ open /Applications/Side.app</code></pre><p class="detail">앱을 종료한 뒤 �
           <div class="step"><span class="number">03 / RECALL</span><h3>Ask an agent</h3><p>Connect MCP to use <code>history_search</code>, <code>history_read</code>, and <code>memory_search</code> and inspect the source.</p></div>
         </div>
       </div></section>
+      <section class="section"><div class="shell">
+        <div class="section-head"><p class="kicker">Try asking</p><h2>Ask in your own words.</h2><p>If Side captured the activity, a connected agent can find when it happened and show a source you can check.</p></div>
+        <div class="steps">
+          <div class="step"><span class="number">01 / FIND</span><h3>What was that page?</h3><p>“Find the title and link of the privacy guide I read this morning.”</p></div>
+          <div class="step"><span class="number">02 / RESUME</span><h3>Where did I leave off?</h3><p>“Find the document I was reading and the note I was writing right before the meeting.”</p></div>
+          <div class="step"><span class="number">03 / RECAP</span><h3>What did I do today?</h3><p>“Put my work this afternoon in time order.” If you enabled daily summaries, the agent can use those too.</p></div>
+        </div>
+      </div></section>
       <section class="section" id="start-en"><div class="shell split">
         <div><p class="kicker">Get started</p><h2>Build it from source.</h2><p>Requires macOS 14+, Bun, Xcode Command Line Tools, and a SQLite dylib with FTS5 and extension loading. The build downloads the MiniLM model.</p><p><a href="side-for-beginners.en.html">Detailed beginner guide ↗</a></p></div>
-        <div><pre class="code-block"><code>git clone https://github.com/Chris-Chai-Minjae/side-context-awareness.git
-cd side-context-awareness
+        <div><pre class="code-block"><code>git clone https://github.com/Chris-Chai-Minjae/side-work-memory.git
+cd side-work-memory
 bun install --frozen-lockfile
 bun run build
 ditto apps/side-mac/.build/release/Side.app /Applications/Side.app
-open /Applications/Side.app</code></pre><p class="detail">Quit Side before copying a new build. Local builds use ad hoc signing, so macOS permissions and Keychain access may need to be granted again after replacement. See the <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/manual.en.md">detailed manual ↗</a> for details.</p></div>
+open /Applications/Side.app</code></pre><p class="detail">Quit Side before copying a new build. Local builds use ad hoc signing, so macOS permissions and Keychain access may need to be granted again after replacement. See the <a href="https://github.com/Chris-Chai-Minjae/side-work-memory/blob/main/docs/manual.en.md">detailed manual ↗</a> for details.</p></div>
       </div></section>
       <section class="section"><div class="shell split">
-        <div><p class="kicker">Models and agents</p><h2>Your connections, your choice.</h2><p>Each user enters their own MiMo, MiniMax, or OpenAI API key in Side settings; the keys are stored in their macOS Keychain. An existing Claude Code login is an optional summary provider.</p><p>On busy days, summaries may use millions of input tokens. Side has no daily cap yet, so check provider usage and pause capture when needed.</p></div>
+        <div><p class="kicker">Models and agents</p><h2>Your connections, your choice.</h2><p>Enter keys for API providers such as MiMo and MiniMax in Side settings; Side stores them in macOS Keychain. For OpenAI, run <code>codex login</code> in Terminal, then choose <strong>OpenAI (Codex login)</strong> in Side. Claude Code has a separate <code>claude auth login</code> option. Side does not read or copy CLI login-token contents. A Codex login stored only in Keychain is not currently supported.</p><p>Use a CLI login for Side summaries at your own risk; check each service's terms and usage limits. Side sends real activity briefings only after you turn on <strong>Send evidence to this provider</strong>. Busy days can use millions of input tokens, and Side has no daily cap yet.</p></div>
         <div><div class="facts">
           <div class="fact"><strong>Summary provider</strong><p>Provider setup is optional. Capture can run without one, but summaries will wait.</p></div>
           <div class="fact"><strong>MCP connection</strong><p>Register Side's local MCP server separately in Claude Code, Codex, Cursor, Aside, or another client.</p></div>
-        </div><pre class="code-block"><code>claude mcp add --scope user side -- "/Applications/Side.app/Contents/Resources/side" mcp</code></pre><p class="detail">Example: register Side in Claude Code at user scope while Side is running. See <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.en.md">agent connection instructions ↗</a> for other clients.</p></div>
+        </div><pre class="code-block"><code>claude mcp add --scope user side -- "/Applications/Side.app/Contents/Resources/side" mcp</code></pre><p class="detail">Example: register Side in Claude Code at user scope while Side is running. See <a href="https://github.com/Chris-Chai-Minjae/side-work-memory/blob/main/docs/agents.en.md">agent connection instructions ↗</a> for other clients.</p></div>
       </div></section>
       <section class="section" id="privacy-en"><div class="shell split">
         <div><p class="kicker">Privacy and consent</p><h2>Choose what Side keeps, and for how long.</h2><p>Side does not sync raw captures to the cloud. Set retention, exclusions, pause capture, or delete Side history.</p></div>
         <div><div class="facts">
-          <div class="fact"><strong>macOS permissions</strong><p>Side's Permissions page shows Accessibility, Input Monitoring, and Screen Recording separately and opens the matching macOS settings pane. Screen Recording is optional for OCR; Automation is used for supported browser URLs.</p></div>
+          <div class="fact"><strong>Browser Automation</strong><p>Side uses this macOS permission to read the current tab URL in supported browsers. If already allowed, Side shows <strong>Already allowed</strong> and no new approval dialog is needed. Check System Settings → Privacy &amp; Security → Automation. <a href="https://support.apple.com/en-md/guide/mac-help/mchl108e1718/mac">Apple guide ↗</a></p></div>
+          <div class="fact"><strong>Authorize Keychain</strong><p>Checks whether Side can read an API key you saved for MiMo, MiniMax, or another API provider. “Key reference configured” means it was registered; “Access not checked” means it has not yet been read. If access is already approved, the check can finish without a new prompt. The record-encryption key is separate. Codex and Claude Code CLI logins do not use this button. <a href="https://support.apple.com/en-mt/guide/mac-help/kychn002/mac">Apple guide ↗</a></p></div>
+          <div class="fact"><strong>Other macOS permissions</strong><p>Side's Permissions page shows Accessibility, Input Monitoring, and Screen Recording separately and opens their macOS settings panes. Screen Recording is optional for OCR when readable text is unavailable.</p></div>
           <div class="fact"><strong>Local storage</strong><p>Records, summaries, and the search index are all stored on this Mac. Sensitive raw columns are masked and encrypted before storage, and the encryption key is kept in macOS Keychain.</p></div>
           <div class="fact"><strong>Retention and deletion</strong><p>Raw captures last 14 days by default; choose 1, 3, 7, 14, or 30 days. Delete the last 10 minutes, the past hour, today, or all history at any time; clearing all rotates the encryption key.</p></div>
           <div class="fact"><strong>Connection scope</strong><p>Side's tools are called only by the clients you register yourself. Password input fields are never recorded.</p></div>
         </div></div>
       </div></section>
-      <section class="section"><div class="shell status"><p class="kicker">Development status</p><h2>Open source, with gates still open.</h2><p>Side is in development. Distribution currently means building from source on each user's Mac. A prebuilt app has not completed Developer ID signing and notarization, and long running device checks remain. Using a Grok Build login to create Side summaries is unverified and is not connected as a summary provider. See the repository's <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/tree/main/docs/qa">QA reports</a> for evidence and open gates.</p></div></section>
+      <section class="section"><div class="shell status"><p class="kicker">Development status</p><h2>Open source, with gates still open.</h2><p>Side is in development. Distribution currently means building from source on each user's Mac. A prebuilt app has not completed Developer ID signing and notarization, and long running device checks remain. Using a Grok Build login to create Side summaries is unverified and is not connected as a summary provider. See the repository's <a href="https://github.com/Chris-Chai-Minjae/side-work-memory/tree/main/docs/qa">QA reports</a> for evidence and open gates.</p></div></section>
     </div>
   </main>
   <footer class="shell footer">
-    <span>Side · MIT License · <span id="footer-copy">소스에서 빌드해 사용하는 macOS 앱</span></span>
-    <span><a href="https://github.com/Chris-Chai-Minjae/side-context-awareness">GitHub</a><a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/LICENSE">MIT</a><a href="side-for-beginners.html" id="guide-link">처음 사용하기</a></span>
+    <span>Side Work Memory · MIT License · <span id="footer-copy">소스에서 빌드해 사용하는 macOS 앱</span></span>
+    <span><a href="https://github.com/Chris-Chai-Minjae/side-work-memory">GitHub</a><a href="https://github.com/Chris-Chai-Minjae/side-work-memory/blob/main/LICENSE">MIT</a><a href="side-for-beginners.html" id="guide-link">처음 사용하기</a></span>
   </footer>
   <script>
     (() => {
       const sections = document.querySelectorAll('[data-locale]');
       const buttons = document.querySelectorAll('[data-switch]');
       const nav = document.querySelectorAll('[data-ko][data-en]');
-      const names = { ko: { title: 'Side — Mac 활동 기록과 검색', description: 'Side는 Mac의 활성 창에서 읽을 수 있는 내용을 기기에 기록하고, 기록과 출처를 검색할 수 있는 오픈 소스 메뉴바 앱입니다.', footer: '소스에서 빌드해 사용하는 macOS 앱', guide: '처음 사용하기' }, en: { title: 'Side — Find the context behind your day', description: 'Side is an open source macOS menu bar app for local activity history, summaries, and source-aware recall.', footer: 'Build from source on macOS', guide: 'Beginner guide' } };
+      const names = { ko: { title: 'Side Work Memory — Mac 활동 기록과 검색', description: 'Side Work Memory는 Mac의 활성 창에서 읽을 수 있는 내용을 기기에 기록하고, 기록과 출처를 검색할 수 있는 오픈 소스 메뉴바 앱입니다.', footer: '소스에서 빌드해 사용하는 macOS 앱', guide: '처음 사용하기' }, en: { title: 'Side Work Memory — Find what you worked on', description: 'Side Work Memory is an open source macOS menu bar app for local activity history, summaries, and source-aware recall.', footer: 'Build from source on macOS', guide: 'Beginner guide' } };
       function setLanguage(language) {
         if (!names[language]) return;
         document.documentElement.lang = language;

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="A plain-language guide to installing Side, searching your Mac activity with an agent, and choosing what stays private.">
-<title>Side Beginner Guide | Understand and Use Side</title>
+<title>Side Work Memory | Beginner's Guide to Side</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&amp;display=swap" rel="stylesheet">
@@ -555,9 +555,9 @@
     <a href="side-for-beginners.html" lang="ko">한국어</a>
     <a href="side-for-beginners.en.html" lang="en" aria-current="page">English</a>
   </nav>
-  <div class="kicker">Side · A beginner's guide</div>
+  <div class="kicker">Side Work Memory · app name Side · a beginner's guide</div>
   <h1>Remember what you did today.<br>Understand and use Side.</h1>
-  <p class="sub">A plain-language guide to how Side records activity in browsers and Mac apps, makes optional summaries, and helps your agent find the source again. It also covers installation and real questions you can ask.</p>
+  <p class="sub">A plain-language guide to Side's local capture and search, optional summaries, and separate MCP agent connection. It also covers installation and real questions you can ask.</p>
 
   <nav class="toc" aria-label="Table of contents">
     <div class="toc-label">IN THIS GUIDE</div>
@@ -597,7 +597,7 @@
   </div>
 
   <h2 id="s2"><span class="num">2</span>How activity becomes a memory</h2>
-  <p class="h2-sub">The four steps are observe, store locally, summarize, and recall.</p>
+  <p class="h2-sub">Capture and search run locally. Summaries and agent connections are separate choices.</p>
   <p>Side starts with the window you are currently using. <em class="t">Accessibility</em> permission lets it read available text and window information. <em class="t">Input Monitoring</em> helps it notice interactions and when a typed sentence is complete. If a screen has no readable text, and you allow it, <em class="t">OCR (screen text recognition)</em> extracts text from the screen. Side does not keep the image as a record.</p>
   <figure class="svg">
     <svg viewBox="0 0 320 410" role="img" aria-label="Four steps: text from allowed browser and Mac app windows is stored locally, optionally summarized, then found by an agent">
@@ -610,7 +610,7 @@
       <line x1="160" y1="287" x2="160" y2="309" stroke="var(--accent)" stroke-width="2" marker-end="url(#side-arrow)"/>
       <rect x="24" y="316" width="272" height="70" rx="9" fill="var(--card)" stroke="var(--line)"/><text x="160" y="345" text-anchor="middle" font-size="17" font-weight="700" fill="var(--ink)">Find them with an agent</text><text x="160" y="367" text-anchor="middle" font-size="12" fill="var(--ink-soft)">Get results and source IDs</text>
     </svg>
-    <figcaption>Activity is sent to a summary model only after you explicitly allow evidence to be sent to that provider. The other stages store data on this Mac.</figcaption>
+    <figcaption>Local capture and search work if you skip summaries. Summaries run only after you allow evidence to be sent to that provider, and agent search requires separate MCP registration.</figcaption>
   </figure>
   <p>Raw records go into an encrypted local <em class="t">ledger (a time-ordered log)</em>. Side masks known password, token, and card-number patterns first, but rules cannot catch every sensitive value. It creates daily summary pages and a search index as separate files. Raw captures are kept for 14 days by default; summaries remain separately until you delete them.</p>
   <div class="analogy">
@@ -651,32 +651,45 @@
 
   <h2 id="s4"><span class="num">4</span>How do I ask an agent?</h2>
   <p class="h2-sub">Keep Side running and ask a connected agent in everyday language.</p>
-  <p>Side provides <em class="t">MCP (a way to connect AI agents to tools)</em> so an agent can search your records. Register Side's tools separately in Claude Code, Codex, Cursor, Grok Build, Aside, or another client. Installing Side alone does not connect them, and Side.app must be running when you ask.</p>
-  <p>You can also register Side in Aside's <strong>Settings → MCP → Add server</strong> screen, with name <code>side</code>, command <code>/Applications/Side.app/Contents/Resources/side</code>, and argument <code>mcp</code>. Aside then calls the Side tools on the same Mac. This does not automatically sync records to another device. If you installed Side elsewhere, use that app's actual executable path.</p>
+  <p>Side provides <em class="t">MCP (a way to connect AI agents to tools)</em> so an agent can search local records. Register Side's tools separately in Claude Code, Codex, Cursor, Grok Build, Aside, or another client. Installing Side or configuring summaries does not connect them, and Side.app must be running when you ask.</p>
+  <p>Aside is one compatible MCP client for Side's tools. Register Side in Aside's <strong>Settings → MCP → Add server</strong> screen, with name <code>side</code>, command <code>/Applications/Side.app/Contents/Resources/side</code>, and argument <code>mcp</code>. Aside then calls Side on the same Mac; records are not automatically synced to another device. If you installed Side elsewhere, use that app's actual executable path.</p>
   <div class="card-block">
-    <div class="case-label">EXAMPLE 1 · A PAGE FROM YESTERDAY</div>
-    <h3>I cannot remember the restaurant's name</h3>
-    <div class="prompt-box">“Find the restaurant booking page I saw yesterday evening. Tell me when I visited, the page title, and its address.”</div>
-    <p>The time and a few remembered words help narrow the choices. A browser-visit-only result can give you the visit time, title, and address, but no page text.</p>
+    <div class="case-label">EXAMPLE 1 · A PAGE FROM EARLIER</div>
+    <h3>Find a page you saw</h3>
+    <div class="prompt-box">“Find the restaurant booking page I saw yesterday evening. What was its title and address?”</div>
+    <p>A browser-visit-only result has the visit time, title, and address. Reopen the source if you need its full text.</p>
   </div>
   <div class="card-block">
-    <div class="case-label">EXAMPLE 2 · I ONLY REMEMBER THE TOPIC</div>
-    <h3>I want to check the refund policy again</h3>
-    <div class="prompt-box">“Find the refund policy page I read last week. If you have the original text or a source for the free-cancellation period, show me.”</div>
-    <p>You can give a topic and an approximate date without the exact title. Content is available only if a readable capture or a created summary exists. If you get only a title and address, check the policy on that page yourself.</p>
+    <div class="case-label">EXAMPLE 2 · AFTER A MEETING</div>
+    <h3>Pick up where you left off</h3>
+    <div class="prompt-box">“What document was I reading before the meeting? Give me a clue about where I left off.”</div>
+    <p>Recorded times and titles can help you resume. A screen Side missed cannot be part of the answer.</p>
   </div>
   <div class="card-block">
-    <div class="case-label">EXAMPLE 3 · ASKING IN ASIDE</div>
-    <h3>I want to find my travel plans</h3>
-    <div class="prompt-box">“Search Side for the travel itinerary page I looked at last week. Tell me when I saw it, the page title, and anything you can verify from the record.”</div>
-    <p>This works in Aside when Side's tools are registered there and Side.app is running. Results are limited to records Side still has. Summaries appear only if you enabled them and they were actually created.</p>
+    <div class="case-label">EXAMPLE 3 · TODAY'S ACTIVITY</div>
+    <h3>Review your day</h3>
+    <div class="prompt-box">“What did I work on this morning?”</div>
+    <p>Side can find records by time. Daily summaries appear only if you set up a provider, consented to sending evidence, and a summary was actually created.</p>
   </div>
+  <div class="card-block">
+    <div class="case-label">EXAMPLE 4 · TWO DOCUMENTS</div>
+    <h3>Compare a guide and your draft</h3>
+    <div class="prompt-box">“How does the guide I just read differ from the draft I wrote?”</div>
+    <p>Both documents need readable content in Side's records. Reopen both originals to check important differences.</p>
+  </div>
+  <div class="card-block">
+    <div class="case-label">EXAMPLE 5 · AN ERROR-FIX PAGE</div>
+    <h3>Find the fix again</h3>
+    <div class="prompt-box">“Find the error-fix page I opened earlier. What was its address?”</div>
+    <p>The same question works for a printer or app help page, even if you do not write code.</p>
+  </div>
+  <p>You can also revisit sources for legal work or reconstruct project time for a timesheet. Check legal quotations, dates, amounts, OCR-read figures, and final billable time against original sources and your actual work records.</p>
   <div class="codecard">
     <div class="cc-head">Connect Side tools · once after installation</div>
     <div class="cc-line"><code>claude mcp add --scope user side -- "/Applications/Side.app/Contents/Resources/side" mcp</code><span class="cc-note">Connect at user scope in Claude Code</span></div>
     <div class="cc-line"><code>codex mcp add side -- "/Applications/Side.app/Contents/Resources/side" mcp</code><span class="cc-note">Connect in Codex</span></div>
     <div class="cc-line"><code>grok mcp add --scope user side -- "/Applications/Side.app/Contents/Resources/side" mcp</code><span class="cc-note">Let Grok Build search Side records</span></div>
-    <div class="cc-foot">Copy a command into your terminal while Side is running. Registering Grok Build as a search client is separate from choosing a summary provider; an actual Grok Build tool call has not yet been verified. Cursor and Aside setup screens are described in <a href="https://github.com/Chris-Chai-Minjae/side-context-awareness/blob/main/docs/agents.en.md">the agent connection guide</a>.</div>
+    <div class="cc-foot">Copy a command into your terminal while Side is running. Registering Grok Build as a search client is separate from choosing a summary provider; an actual Grok Build tool call has not yet been verified. Cursor and Aside setup screens are described in <a href="https://github.com/Chris-Chai-Minjae/side-work-memory/blob/main/docs/agents.en.md">the agent connection guide</a>.</div>
   </div>
 
   <h2 id="s5"><span class="num">5</span>Install and set up Side</h2>
@@ -684,21 +697,23 @@
   <p>Side is currently distributed as source; there is no prebuilt app to download and open. Clone the source from GitHub, then run the commands below in a terminal. You need macOS 14 or later, Bun, Xcode Command Line Tools, and a SQLite dylib with FTS5 and extension loading. The build script looks for Homebrew's SQLite; if your copy is elsewhere, set <code>SIDE_SQLITE_LIBRARY</code> to its path. The build also bundles the MiniLM model, so it may need internet access the first time.</p>
   <div class="codecard">
     <div class="cc-head">Local build · copy each line in order</div>
-    <div class="cc-line"><code>git clone https://github.com/Chris-Chai-Minjae/side-context-awareness.git</code><span class="cc-note">Download Side's source from GitHub</span></div>
-    <div class="cc-line"><code>cd side-context-awareness</code><span class="cc-note">Enter the downloaded folder</span></div>
+    <div class="cc-line"><code>git clone https://github.com/Chris-Chai-Minjae/side-work-memory.git</code><span class="cc-note">Download Side's source from GitHub</span></div>
+    <div class="cc-line"><code>cd side-work-memory</code><span class="cc-note">Enter the downloaded folder</span></div>
     <div class="cc-line"><code>bun install --frozen-lockfile</code><span class="cc-note">Install the required packages</span></div>
     <div class="cc-line"><code>bun run build</code><span class="cc-note">Build the Mac app</span></div>
     <div class="cc-line"><code>ditto apps/side-mac/.build/release/Side.app /Applications/Side.app</code><span class="cc-note">Copy the app into Applications</span></div>
     <div class="cc-line"><code>open /Applications/Side.app</code><span class="cc-note">Start the menu bar app</span></div>
     <div class="cc-foot">Copy one line at a time. If Side is already running, quit it before copying a new build over the app.</div>
   </div>
-  <p>On first launch, Side guides you through Accessibility and Input Monitoring permissions. Screen Recording is needed for OCR but is optional. For summaries, you can enter a provider API key, which Side stores in Keychain. If Claude Code is installed and logged in on your Mac, you can instead choose its existing login as a summary-provider option. After configuring a provider, you must still turn on <strong>“Send evidence to this provider”</strong> in settings before Side uses real activity to make summaries.</p>
-  <p>You choose your summary providers. For example, you can try MiMo 2.6 Pro first and set MiniMax M3 as the next provider. Even with a working provider connection, a particular summary can fail because of a model error or an invalid response format. If the history screen looks empty, check whether the 10-minute window has ended and whether summaries are ready. If failed work appears, check the model connection, then click <strong>Retry failed summaries</strong> in the history view. After it completes, click <strong>Refresh summaries</strong> to show the new result.</p>
+  <p>On first launch, Side guides you through Accessibility and Input Monitoring. Screen Recording is optional for OCR when a screen has no readable text. <strong>Browser Automation</strong> is the macOS permission Side uses to read the current tab URL in supported browsers. <strong>Already allowed</strong> means no new approval prompt is needed.</p>
+  <p>Capture and search do not need a summary model. For summaries, enter a provider API key, or sign in to the official Codex CLI with <code>codex login</code> for ChatGPT and select <strong>OpenAI (Codex login)</strong> in Side. For Claude Code, use <code>claude auth login</code> and select its login option. A Codex login stored only in Keychain is not currently supported. These summary-provider choices are separate from MCP agent registration. Side uses real activity for summaries only after you enable <strong>“Send evidence to this provider”</strong> for that provider. Use a CLI login for Side summaries at your own risk; check each service's terms and usage limits.</p>
+  <p>You choose your summary providers. For example, set MiMo 2.6 Pro as primary and MiniMax M3 as fallback. A particular summary can still fail even with a working connection. If history looks empty, check whether the 10-minute window has ended and whether summaries are ready. For failed work, check the connection, click <strong>Retry failed summaries</strong>, then <strong>Refresh summaries</strong>.</p>
   <p>Side calls the summary model for active 10-minute windows and six-hour rollups. Leaving it on all day can use millions of input tokens, and the app currently has no daily token cap. If cost matters, check usage with your model provider, pause capture while away, or turn off <strong>Send evidence to this provider</strong>. Turning off evidence sending also stops new summaries.</p>
   <div class="danger">
     <div class="label">AFTER REBUILDING THE APP</div>
     <div class="name">macOS permissions may still point to the old app</div>
-    <p>Local builds use ad hoc signing. Replacing a build may show the Keychain approval dialog again for Side's saved encryption key. If Side cannot access a capture permission, open <strong>Settings → Permissions</strong> from its menu bar item and check Accessibility, Input Monitoring, and Screen Recording separately. Each row has an <strong>Open System Settings</strong> link to its matching macOS pane. You may need to remove the old Side entry and add <code>/Applications/Side.app</code> again. Check the app path before repeatedly toggling the same permission. Summary-provider Keychain access is not checked automatically; click <strong>Authorize Keychain</strong> when needed. If no Keychain prompt appears and the daemon does not start, follow <a href="https://support.apple.com/en-mt/guide/mac-help/kychn002/mac">Apple's guide</a> to allow the new Side app individually for the <code>local-context-awareness-ledger</code> item in Keychain Access, then restart Side. You do not need to reveal the password.</p>
+    <p>Local builds use ad hoc signing. Replacing a build may require macOS permission approval again or a new Keychain approval for the separate record-encryption key. In menu bar <strong>Settings → Permissions</strong>, check Accessibility, Input Monitoring, Screen Recording, and Browser Automation and use <strong>Open System Settings</strong> where needed. <strong>Already allowed</strong> for Browser Automation means no new prompt is needed.</p>
+    <p><strong>Authorize Keychain</strong> checks whether Side can read API keys saved in Side for summary providers such as MiMo or MiniMax. The local record-encryption key and Codex or Claude CLI logins are separate; there is no need to open login-token files. If a new build cannot read the encryption key and the daemon does not start, follow <a href="https://support.apple.com/en-mt/guide/mac-help/kychn002/mac">Apple's guide</a> to allow the new Side app for the <code>local-context-awareness-ledger</code> item in Keychain Access, then restart Side. You do not need to reveal the password.</p>
   </div>
   <div class="good">
     <div class="label">DIAGNOSIS</div>

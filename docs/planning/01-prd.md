@@ -42,16 +42,16 @@ Mac에서 사용자가 하는 일(브라우저 탭, 앱 창, 입력한 문장, �
 | 프로세스 | App → daemon | ADR-007 |
 | 에이전트 도구 | MCP stdio(`side mcp`) 세 도구 | ADR-003 |
 | 모델 | OpenAI 호환 provider 체인 | ADR-004 |
-| 시맨틱 인덱스 | MOSS (독점) | sqlite-vec + multilingual MiniLM | ADR-005 |
-| OCR | 온디바이스(구현 불명) | Apple Vision | ADR-009 |
-| 저장 암호화 | evidence content만 | + window_title·url·target·payload, term index 해시 | ADR-008 |
-| 설정 UI | Electron renderer | WKWebView 안의 로컬 웹 | ADR-006 |
+| 시맨틱 인덱스 | sqlite-vec + 다국어 MiniLM | ADR-005 |
+| OCR | Apple Vision 온디바이스 인식 | ADR-009 |
+| 저장 암호화 | 원본 민감 컬럼 봉인, 검색어 해시 색인 | ADR-008 |
+| 설정 UI | WKWebView 안의 로컬 웹 | ADR-006 |
 
 ## 5. 기능 요구사항 (FR ↔ 상세 문서)
 
 | FR | 이름 | 상세 문서 | 핵심 수용 기준 |
 |---|---|---|---|
-| FR-1 | 캡처 스케줄링 | `03-capture.md` §3 | §11 상수 일치, 트리거 승격, 동시 2, 스윕 8 |
+| FR-1 | 캡처 스케줄링 | `03-capture.md` §3 | 상수 계약 일치, 트리거 승격, 동시 2, 스윕 8 |
 | FR-2 | 저장 전 redaction | `03-capture.md` §6 | 카나리아 비밀이 ledger 바이트에 0회 등장 |
 | FR-3 | 로컬 증거 저장소 | `04-data-model.md` | 정본 DDL, 봉인 컬럼, frame 압축 |
 | FR-4 | 요약 파이프라인 | `05-comprehension.md` | 10분/6h, lease·재시도·repair, 인젝션 무력화 |

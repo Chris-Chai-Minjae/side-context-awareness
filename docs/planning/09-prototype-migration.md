@@ -22,7 +22,7 @@
 ```
 apps/side-mac/            # Xcode/SwiftPM: Side.app + SideCaptureKit(테스트 가능한 순수 로직)
 src/
-  constants.ts            # §11 상수(게이트 G5 대상)
+  constants.ts            # 캡처·요약·보존 상수(게이트 G5 대상)
   config/                 # settings v2 + migration
   crypto/ redact/ policy/ typed/
   helper/                 # JSON-lines 프로토콜 클라이언트, health

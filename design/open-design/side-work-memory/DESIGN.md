@@ -1,4 +1,4 @@
-# Side Context Awareness Prototype Design System
+# Side Work Memory Prototype Design System
 
 ## 1. Atmosphere & identity
 
