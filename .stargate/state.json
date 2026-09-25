@@ -2,7 +2,7 @@
   "version": 1,
   "started_at": "2026-09-23T15:00:00Z",
   "updated_at": "2026-09-23T15:34:04Z",
-  "idea_prompt": "Aside Context Awareness를 PRD 1:1로 재현하는 독립 macOS 프로그램(Side)의 개발 상세 명세. 입력: ~/.aside/u/0/sessions/2026-09-23_IWygSZhom4nLN3Kl/artifacts/context-awareness-prd.md",
+  "idea_prompt": "Mac에서 사용자의 작업 맥락을 로컬에 기록하고 요약해 두었다가 에이전트가 다시 찾게 하는 macOS 메뉴바 앱(Side)의 개발 상세 명세. 입력: docs/planning/01-prd.md",
   "planning_line": null,
   "current_phase": "4",
   "completed_phases": [
@@ -11,7 +11,7 @@
     "3"
   ],
   "artifacts": {
-    "source_prd": "/Users/minjaechai/.aside/u/0/sessions/2026-09-23_IWygSZhom4nLN3Kl/artifacts/context-awareness-prd.md",
+    "source_prd": "docs/planning/01-prd.md",
     "planning_docs": "docs/planning/ (00-decisions ~ 09-prototype-migration)",
     "screen_spec": "specs/screens/ (4 screens) + specs/domain/resources.yaml + specs/shared/",
     "tasks": "docs/planning/06-tasks.md",
@@ -19,5 +19,5 @@
     "derived_gates": null,
     "build_mode": "codex-delegation (Orca, same workspace)"
   },
-  "notes": "결정: (1) 독립 Bun+Swift 데몬, Aside는 브라우저 DOM 소스 어댑터(optional) (2) PRD 1:1, Windows 제외 (3) 소비자=Claude Code 등 모든 에이전트 + Aside (4) Phase 3 명세부터. 기존 프로토타입 local-context-awareness v0.1.0 위에 증축. | 2026-09-24: 개발 상세 명세 10개 작성 완료(docs/planning). screen-spec/tasks-generator 미실행. Spike S-1~S-5는 M0에서 확정. | screen-spec 완료: 화면 4, 리소스 16, needs 누락 0, 필드 커버리지 85%(나머지 CLI/MCP 전용). Stitch 미설정으로 Phase 5 생략. 02-architecture §4에 day.get/providers.setKey/providers.test/mcp.usage + helper keychain.set/get 보강. | tasks-generator 완료: 75 tasks(P0 9/P1 21/P2 8/P3 10/P4 21/P5 6). 사용자 지시: 구현은 같은 워크스페이스 Codex에 위임. | 2026-09-24 00:40 Codex(term_94d16e57, GPT-6-Sol max)에 풀 핸드오프 완료(docs/HANDOFF-codex.md, 하드 룰 0=승인 명세가 정본). Claude는 감독하지 않음."
+  "notes": "결정: (1) 독립 Bun+Swift 데몬, Aside는 브라우저 DOM 소스 어댑터(optional) (2) PRD 정본 구현, Windows 제외 (3) 소비자=Claude Code 등 모든 에이전트 + Aside (4) Phase 3 명세부터. 기존 프로토타입 local-context-awareness v0.1.0 위에 증축. | 2026-09-24: 개발 상세 명세 10개 작성 완료(docs/planning). screen-spec/tasks-generator 미실행. Spike S-1~S-5는 M0에서 확정. | screen-spec 완료: 화면 4, 리소스 16, needs 누락 0, 필드 커버리지 85%(나머지 CLI/MCP 전용). Stitch 미설정으로 Phase 5 생략. 02-architecture §4에 day.get/providers.setKey/providers.test/mcp.usage + helper keychain.set/get 보강. | tasks-generator 완료: 75 tasks(P0 9/P1 21/P2 8/P3 10/P4 21/P5 6). 사용자 지시: 구현은 같은 워크스페이스 Codex에 위임. | 2026-09-24 00:40 Codex(term_94d16e57, GPT-6-Sol max)에 풀 핸드오프 완료(docs/HANDOFF-codex.md, 하드 룰 0=승인 명세가 정본). Claude는 감독하지 않음."
 }
