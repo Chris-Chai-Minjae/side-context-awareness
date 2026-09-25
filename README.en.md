@@ -6,10 +6,10 @@
 
 **A Mac menu bar app that keeps what you read and work on, so you can find it again later or hand the context straight to your AI agent.**
 
-Side records the working context of your day on-device: browser tabs, text in Mac app windows, sentences you were typing. Search it later by time, keyword, or topic, or connect it to Cursor, Claude Code, or Codex, and the agent reads your recent context on its own when you say "apply what I was just reading in the browser." It is an independent open-source implementation of Aside's paid Context Awareness feature.
+Side records the working context of your day on-device: browser tabs, text in Mac app windows, sentences you were typing. Search it later by time, keyword, or topic, or connect it to Cursor, Claude Code, or Codex, and the agent reads your recent context on its own when you say "apply what I was just reading in the browser." Side is an independent open-source (MIT) project.
 
 - **It all stays on this Mac.** Records are stored in `~/Library/Application Support/Side/` and are not automatically sent to the cloud. Sensitive values are masked and encrypted before they are saved.
-- **No subscription.** You get the same context tracking without a paid plan such as Aside Max. You attach a summary model only if and when you want one.
+- **Summaries are optional.** Capture and local search work without a model. A model provider may charge for usage when you enable summaries.
 - **You decide what is remembered.** Password fields are excluded at the source, and you control the exclusion list, pausing, retention, and deletion from settings.
 
 > **Distributed as source code.** There is no ready-to-run app download yet. Each user builds Side on their own Mac. → [Install](#install)
@@ -27,7 +27,7 @@ Side records the working context of your day on-device: browser tabs, text in Ma
 
 | Area | What it means |
 |---|---|
-| No subscription | The same context tracking without an expensive proprietary plan such as Aside Max, as free open source. |
+| Free and open source | Released under the MIT License and runs on your own Mac with no separate server. Cost applies only to the model usage you enable for summaries. |
 | Privacy (fully local) | Capture data is stored on this Mac and is not automatically sent to the cloud. Sensitive values are masked and encrypted before storage. |
 | Optional model use | A model is used only when you turn on summaries. Without summaries, capture and search stay local. |
 | Agent workflow | No more copying documents or error pages into prompts; the agent picks up your recent browsing itself. |
