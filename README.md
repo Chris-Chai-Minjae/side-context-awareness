@@ -4,89 +4,162 @@
 
 <img src="docs/assets/side-logo.png" alt="Side 로고" width="88">
 
-Side는 Mac에서 활성 브라우저와 앱의 읽을 수 있는 내용을 기기에 기록하고, 나중에 시간·단어·주제로 찾아볼 수 있는 메뉴바 앱입니다. Aside Context Awareness의 macOS 동작을 독립적으로 구현했으며, Aside 설치나 Max 플랜 없이 사용할 수 있습니다.
+**Mac에서 내가 보고 읽은 화면 맥락을 기기에 기록해 두었다가, 나중에 다시 찾거나 AI 에이전트에게 바로 넘겨주는 메뉴바 앱입니다.**
 
-Side is an open-source macOS menu bar app that records readable content from active browser and app windows on your device. You and connected agents can search the history with its sources. Daily summaries require a configured provider and your consent to send activity briefings. Build Side on your own Mac from source; a prebuilt app is not currently distributed.
+브라우저 탭, Mac 앱 창의 글, 입력하던 문장 같은 "작업 맥락"을 온디바이스로 기록합니다. 필요할 때는 시간·키워드·주제로 찾아보고, Cursor·Claude Code·Codex 같은 에이전트에 연결하면 "방금 브라우저에서 보던 그 문서대로 고쳐줘"라고 말하는 것만으로 에이전트가 최근 맥락을 스스로 읽어 갑니다. Aside의 유료 컨텍스트 인지(Context Awareness) 기능을 독립 오픈소스로 구현한 프로젝트입니다.
 
-**[처음 사용하는 분을 위한 한국어 안내서](https://chris-chai-minjae.github.io/side-context-awareness/side-for-beginners.html)** · **[Side 소개 페이지 / Landing page (한국어 · English)](https://chris-chai-minjae.github.io/side-context-awareness/)**
+- **이 Mac 안에서 동작합니다.** 기록은 `~/Library/Application Support/Side/`에만 저장되고, 클라우드로 자동 전송되지 않습니다. 민감한 값은 저장 전에 가린 뒤 암호화합니다.
+- **구독이 필요 없습니다.** Aside Max 같은 유료 구독 없이 같은 컨텍스트 추적을 씁니다. 요약 모델도 쓰고 싶을 때만 골라 붙입니다.
+- **무엇을 기억할지는 내가 정합니다.** 비밀번호 입력 필드는 원천 제외, 앱·사이트 제외 목록, 일시정지, 기간별·전체 삭제를 설정에서 직접 제어합니다.
 
-소스코드는 [MIT License](LICENSE)로 공개합니다. 안내서에서는 사용법과 쉬운 질문 예시를 볼 수 있고, 소개 페이지에서는 한국어와 영어로 작동 방식과 설치 조건을 확인할 수 있습니다.
+> **소스코드로 배포합니다.** 내려받아 바로 실행하는 앱 파일은 아직 제공하지 않습니다. 각자 자기 Mac에서 빌드해 사용합니다. → [설치하기](#설치하기)
 
-## 어떻게 도움이 되나요?
+**바로가기** · [처음 쓰는 분을 위한 안내서](https://chris-chai-minjae.github.io/side-context-awareness/side-for-beginners.html) · [상세 설명서](docs/manual.md) · [소개 페이지 (한국어 · English)](https://chris-chai-minjae.github.io/side-context-awareness/) · [에이전트 연결 안내](docs/agents.md) · [MIT License](LICENSE)
+
+## 이걸로 무엇을 하나요?
+
+1. **지나간 작업 기억 검색** "어제 그거 어디서 봤더라?"를 다시 겪지 않아도 됩니다. 브라우저 방문 기록은 URL 목록만 남기지만, Side는 그때 화면에 실제로 떠 있던 **본문 텍스트**까지 검색합니다. 예: "어제 오후 4시쯤 보던 법령/판례 페이지", "며칠 전 레퍼런스로 봤던 사이트".
+2. **자동 활동 요약 (Activity Briefing)** 켜 두면 10분 단위와 6시간 단위로 무엇을 했는지 자동으로 정리해 날짜별 타임라인을 만듭니다.
+3. **AI 에이전트에 실시간 맥락 제공 (MCP)** Cursor, Claude Code, Codex 등에 `side mcp`를 등록하면 에이전트가 `history_search`, `history_read` 같은 도구로 "사용자가 방금 브라우저에서 무엇을 보고 있었는지"를 직접 읽습니다.
+4. **글자 없는 화면도 읽기 (온디바이스 OCR)** 접근성 API로 글자를 가져올 수 없는 그래픽 앱이나 PDF는 화면 녹화 권한으로 화면 글자만 로컬에서 추출합니다. 이미지를 저장하지는 않습니다.
+
+## 왜 좋은가요?
+
+| 구분 | 내용 |
+|---|---|
+| 비용·구독 부담 없음 | 고가 독점 서비스(Aside Max 등) 구독 없이 같은 수준의 컨텍스트 추적을 무료 오픈소스로 씁니다. |
+| 프라이버시 (로컬 완결) | 캡처 데이터는 이 Mac에만 저장되고 클라우드로 자동 전송되지 않습니다. 민감 정보는 저장 전에 가린 뒤 암호화합니다. |
+| 선택적 모델 연동 | 요약 기능을 켤 때만 내가 지정한 모델을 씁니다. 요약을 쓰지 않으면 기록과 검색만 로컬에서 동작합니다. |
+| 에이전트 작업 효율 | 개발·집필 중 문서나 에러 페이지를 복사해 프롬프트에 붙여넣지 않아도, 에이전트가 최근 탐색 내용을 스스로 파악합니다. |
+| 통제권 | 비밀번호 입력 필드 원천 제외, 앱·사이트 제외 목록, 15분~1시간 일시정지, 기간별·전체 이력 삭제를 직접 제어합니다. |
+
+한 줄로 말하면, **"내 Mac에서 일어난 작업을 로컬에 암호화해 두고, 나 자신은 물론 Cursor·Claude Code 같은 에이전트도 그 맥락을 바로 참조할 수 있게 해주는 개인 컨텍스트 백엔드"**입니다.
+
+## 실무에서는 이렇게 씁니다
+
+아래 프롬프트는 그대로 복사해 쓰셔도 됩니다.
+
+### 전문가 업무 (법률·행정)
+
+**1. 여러 법령·판례·행정규칙을 오가며 서면·자문 초안 쓰기**
+- 전에는: 판시사항, 조문 번호, 고시 문구를 하나씩 복사해 워드나 프롬프트 창에 붙여넣고 문맥을 매번 다시 설명했습니다.
+- 이제: *"방금 브라우저 탭들에서 확인한 최근 대법원 판시사항이랑 행정청 지침 문구 맥락 반영해서, 우리 측 처분의 위법성/적법성 쟁점을 '이유' 형식으로 3가지로 정리해줘."*
+- 결과: 훑어본 판결문과 지침 문구가 그대로 반영된, 논리 구조를 갖춘 초안이 나옵니다.
+
+**2. 복사가 막힌 PDF·전산 뷰어에서 인용구와 수치 옮기기**
+- 전에는: 화면 텍스트를 복사할 수 없어 숫자를 눈으로 보며 타이핑하거나 캡처 도구로 OCR을 따로 돌렸습니다.
+- 이제: *"조금 전 화면에 띄워뒀던 증거자료/공문서 화면에서 '처분 일자'와 '산출 근거 수치' 부분 텍스트 그대로 긁어서 표로 만들어줘."*
+- 결과: 접근성 텍스트가 잡히지 않는 화면도 이미 글자로 남아 있어, 오타 걱정 없이 원문을 인용할 수 있습니다.
+
+**3. 전화·돌발 회의로 끊긴 흐름 되찾기**
+- 전에는: 회의에서 돌아와 "내가 어디까지 읽고 어떤 논리를 세우던 중이었지"를 되짚느라 탭을 다시 눌러 보며 10~20분을 썼습니다.
+- 이제: *"1시간 전 회의 들어가기 직전에 내가 집중해서 보고 있던 문서 단락이랑 직전에 메모장에 타이핑하던 문장이 뭐였는지 요약해줘."*
+- 결과: 시간대별 활동 기록과 직전에 입력하던 문장 맥락이 남아 있어, 끊긴 생각의 실마리를 바로 이어붙일 수 있습니다.
+
+**4. 상대 문서와 내 답변을 나란히 놓고 쟁점 누락 점검**
+- 전에는: 상대방 준비서면과 내가 쓴 답변을 각각 복사해 AI에게 넣어 주고 비교를 부탁했습니다.
+- 이제: *"조금 전 브라우저에서 읽은 상대방 준비서면(또는 감사 결과 통보서)의 핵심 주장 목록과, 내가 방금 문서 창에 작성한 반박 논리를 비교해서 빠뜨린 쟁점이 있는지 체크해줘."*
+- 결과: 두 문서의 맥락을 함께 본 상태로 쟁점 누락을 확인할 수 있습니다.
+
+**5. 타임시트·청구 시간(Billable Hour) 정리**
+- 전에는: 언제 무슨 사건 기록을 봤는지 기억이 흐릿해 대략 어림잡아 적었습니다.
+- 이제: *"오늘 내가 다룬 사건명(또는 프로젝트명) 키워드별로 각각 몇 시부터 몇 시까지 관련 문서를 열람하고 작성했는지 시간대별로 묶어줘."*
+- 결과: 실제 창 전환 시점과 10분 단위 기록을 근거로 사건별 투입 시간대가 정리됩니다. 최종 청구 시간은 본인이 확인해 확정하세요.
+
+### 개발·리서치 업무
+
+**6. 웹 리서치에서 초안 작성까지 한 번에 (자료 복붙 생략)**
+- 전에는: 브라우저에서 가이드라인·해외 사례·법령을 30분 훑어본 뒤, 에디터로 돌아와 핵심 문단을 드래그·복사해 프롬프트에 넣었습니다.
+- 이제: *"방금 브라우저에서 살펴본 3~4개 가이드라인 문서 내용 바탕으로 핵심 쟁점 3가지 뽑아서 요약본 초안 작성해줘."*
+- 결과: 직전에 활성 상태였던 탭들의 텍스트를 에이전트가 직접 조회해 초안을 완성합니다.
+
+**7. 공식 문서·에러 해결법을 보고 바로 코드에 반영**
+- 전에는: API 파라미터나 예제 코드를 확인하려고 브라우저와 에디터를 계속 오갔습니다.
+- 이제: Cursor나 Claude Code 창에서 *"방금 공식 문서에서 확인한 권장 설정 옵션이랑 파라미터 그대로 내 설정 파일에 반영해줘."*
+- 결과: 몇 분 전 읽고 있던 페이지의 코드 블록과 파라미터 스펙을 가져와 바로 수정합니다.
+
+**8. "그 문장 어디서 봤더라?" 텍스트 단위로 되살리기**
+- 전에는: 방문 기록을 수십 개 뒤지며 페이지마다 들어가 Ctrl+F를 눌렀습니다.
+- 이제: *"오늘 오전에 봤던 내용 중에 '개인정보 암호화 키 관리' 관련된 문구 나온 페이지 주소랑 전후 문맥 찾아줘."*
+- 결과: 이미 닫힌 탭이라도 그때 렌더링된 본문 키워드로 정확한 출처 URL과 당시 문맥을 찾아냅니다.
+
+**9. 하루 작업 일지·인수인계 타임라인 뽑기**
+- 전에는: 캘린더, 커밋 로그, 열어 둔 탭, 작성 중인 문서를 뒤지며 기억을 짜냈습니다.
+- 이제: *"오늘 오전 10시부터 오후 4시까지 내가 어떤 작업들을 오가며 진행했는지 10분 단위 활동 요약 바탕으로 브리핑해줘."*
+- 결과: 실제 화면에서 오간 작업 흐름을 시간 순으로 정돈해 줍니다. 팀·의뢰인 공유용 진행 보고에도 그대로 씁니다.
+
+## 어떻게 동작하나요?
 
 ![Mac의 활성 창을 기기에 기록하고, 출처를 검색해 연결한 에이전트에서 다시 찾는 네 단계 흐름](docs/assets/side-flow.png)
 
-1. 권한을 허용한 활성 창의 읽을 수 있는 내용을 Side가 기기에 기록합니다. 앱·웹사이트를 제외하거나 기록을 일시정지할 수 있습니다.
-2. 언제 무엇을 봤는지 검색할 수 있습니다. 요약 제공자를 설정하고 전송에 동의하면 날짜별 요약도 만듭니다.
-3. 예를 들어 “어제 저녁에 봤던 식당 예약 페이지를 찾아주세요”라고 물어볼 수 있습니다. 확인할 수 있는 기록이 있다면 본 시간과 제목·주소를 알려줍니다.
-4. Claude Code, Codex, Cursor, **Aside** 등에 Side를 MCP 도구로 등록하면 해당 에이전트에서도 같은 기록을 검색할 수 있습니다. 이때 Side.app이 실행 중이어야 합니다.
+1. **기록** 권한을 허용한 활성 창의 읽을 수 있는 내용을 Side가 이 Mac에 기록합니다. 앱·웹사이트를 제외하거나 기록을 잠시 멈출 수 있습니다.
+2. **요약 (선택)** 요약 모델을 설정해 두면 10분 단위와 6시간 단위로 그 시간에 무엇을 했는지 정리해 날짜별 페이지를 만듭니다.
+3. **검색** 시간·단어·주제로 무엇을 언제 봤는지 찾습니다. 예: "어제 저녁에 봤던 식당 예약 페이지를 찾아주세요."
+4. **에이전트 연결** Claude Code, Codex, Cursor, **Aside** 등에 Side를 MCP 도구로 등록하면 그 에이전트에서도 같은 기록을 검색할 수 있습니다. 이때 Side.app이 실행 중이어야 합니다.
 
-현재 저장소는 개발 중이며, 각 사용자가 Mac에서 소스를 빌드해 설치하는 방식으로 배포합니다. 사전 빌드 앱의 Developer ID 서명·공증과 장시간 실기기 검증은 완료되지 않았습니다. 남은 검증 항목은 [`docs/qa/`](docs/qa/)에 구분해 기록했습니다.
+Side는 화면을 녹화해 두는 방식이 아닙니다. 권한이 없는 창, 제외한 앱·웹사이트, 비밀번호 필드는 기록하지 않습니다.
 
-공개 저장소는 검증한 소스의 단일 시작 스냅샷입니다. 과거 QA 보고서의 개발 커밋 ID가 공개 Git 이력에서 조회되지 않는 이유는 [공개 이력 설명](docs/qa/publication-history.md)에 기록했습니다.
+## 설치하기
 
-## 설치와 시작
+Side는 **소스코드로만 배포합니다.** 설치 파일을 받아 바로 쓰는 방식이 아니며, 각자 자기 Mac에서 빌드합니다. 사전 빌드 앱의 Developer ID 서명·공증과 장시간 실기기 검증은 아직 남아 있습니다([개발 현황](docs/qa/)).
 
-macOS 14 이상이 필요합니다. 소스 빌드에는 Bun, Xcode Command Line Tools, FTS5와 확장 로딩을 지원하는 SQLite dylib가 필요합니다. 빌드 스크립트는 Homebrew SQLite 경로를 찾으며, 다른 빌드 경로의 dylib는 `SIDE_SQLITE_LIBRARY`로 지정할 수 있습니다. MiniLM 모델은 빌드할 때 내려받아 앱에 동봉합니다. 이미 채운 캐시가 있다면 `SIDE_MODEL_CACHE_SOURCE`로 지정할 수 있습니다. 실행할 Mac에는 Homebrew가 필요하지 않습니다.
+필요한 것: macOS 14 이상, Bun, Xcode Command Line Tools, FTS5와 확장 로딩을 지원하는 SQLite dylib. 빌드할 때 MiniLM 모델을 내려받아 앱에 넣습니다. 실행할 Mac에는 Homebrew가 필요하지 않습니다.
 
 ```sh
 git clone https://github.com/Chris-Chai-Minjae/side-context-awareness.git
 cd side-context-awareness
 bun install --frozen-lockfile
 bun run build
-```
 
-빌드된 앱을 `/Applications/Side.app`에 복사해서 실행합니다. 같은 이름의 앱이 이미 실행 중이면 먼저 종료합니다.
-
-```sh
 ditto apps/side-mac/.build/release/Side.app /Applications/Side.app
 open /Applications/Side.app
 ```
 
-Side는 Dock 대신 메뉴바에 표시됩니다. 첫 실행 온보딩에서 캡처 권한을 부여하고 상황 인식을 켭니다. 요약 provider 설정은 건너뛸 수 있으며, 이 경우 캡처는 가능하지만 요약은 대기합니다. 메뉴바의 설정에서 보존 기간, 제외 앱·웹사이트, 요약 모델과 에이전트 연결을 관리합니다. 화면 언어는 설정에서 한국어 또는 English로 선택할 수 있습니다.
+같은 이름의 앱이 이미 실행 중이면 복사하기 전에 먼저 종료합니다. Side는 Dock 대신 메뉴바에 나타납니다. 첫 실행에서 캡처 권한을 허용하고 상황 인식을 켜면 바로 시작됩니다. 요약 모델 설정은 건너뛸 수 있고, 그 경우 캡처와 검색은 그대로 동작합니다.
 
-로컬 빌드는 임시 서명(ad hoc signing)을 사용합니다. 다시 빌드해 앱을 교체하면 macOS가 기존 Accessibility·Input Monitoring·Screen Recording 권한을 새 빌드에 적용하지 않을 수 있고, 저장된 암호화 키의 Keychain 접근도 다시 물을 수 있습니다. 그때는 Keychain 창에서 새 Side를 허용하고, 시스템 설정 → 개인정보 보호 및 보안의 해당 권한 목록에서 이전 `Side` 항목을 제거한 뒤 `/Applications/Side.app`을 다시 추가합니다. 사전 빌드 앱을 제3자에게 배포할 때 필요한 Developer ID·공증은 별도 게이트로 남아 있습니다. 현재 상태는 [`docs/qa/`](docs/qa/) 보고서와 [`docs/planning/06-tasks.md`](docs/planning/06-tasks.md)의 체크박스에서 확인할 수 있습니다.
-
-Keychain 허용 창이 보이지 않고 데몬이 시작되지 않으면 **Keychain Access → login → Passwords**에서 `local-context-awareness-ledger` 항목의 **Access Control**을 열어 `/Applications/Side.app`을 개별 앱으로 추가한 뒤 저장합니다. 암호 표시나 모든 앱 허용은 필요하지 않습니다. [Apple의 앱별 Keychain 접근 안내](https://support.apple.com/en-mt/guide/mac-help/kychn002/mac)를 참고하세요. 저장 후 Side를 다시 시작합니다.
+빌드 옵션(`SIDE_SQLITE_LIBRARY`, `SIDE_MODEL_CACHE_SOURCE`), 다시 빌드했을 때 권한과 Keychain을 다시 허용하는 방법, 진단 명령은 [상세 설명서](docs/manual.md)에 정리했습니다.
 
 ## macOS 권한
 
-| 권한 | Side에서 쓰는 용도 |
+| 권한 | 쓰이는 곳 |
 |---|---|
 | Accessibility | 활성 창의 제목, 접근성 텍스트와 선택 영역 읽기 |
-| Input Monitoring | 입력된 문장을 구성하기 위한 입력 이벤트 관찰. 비밀번호 필드와 개별 키 입력은 저장하지 않음 |
+| Input Monitoring | 입력된 문장 구성을 위한 입력 이벤트 관찰. 비밀번호 필드와 개별 키 입력은 저장하지 않음 |
 | Screen Recording | 읽을 수 있는 접근성 텍스트가 없을 때 화면 글자를 온디바이스 OCR로 읽기. 이미지는 저장하지 않음 |
 | Automation | 지원 브라우저의 현재 탭 URL 읽기 |
 
-Screen Recording은 선택 사항입니다. macOS의 권한 창에서 Side를 승인해야 해당 관찰 기능이 작동합니다. 메뉴바 **Settings… → Permissions**에서 각 권한의 현재 상태를 따로 확인하고, 권한 요청 또는 해당 macOS 시스템 설정 항목 열기를 선택할 수 있습니다. 같은 화면에서 요약 제공자의 Keychain 키 참조를 확인하고, 접근 확인이 필요하면 **Keychain 권한 허용**을 누릅니다. 접근 상태는 명시적 승인 전까지 미확인으로 표시됩니다. CLI 진단은 아래 명령으로 실행합니다.
+Screen Recording은 선택 사항입니다. 메뉴바 **설정 → 권한**에서 각 항목의 상태를 따로 확인하고, 필요한 macOS 설정 화면을 바로 열 수 있습니다. 권한이 잡히지 않거나 요약이 비어 있을 때 쓰는 진단 명령과 복구 순서는 [상세 설명서](docs/manual.md)에 있습니다.
 
-```sh
-"/Applications/Side.app/Contents/Resources/side" doctor
-```
+## 프라이버시
 
-오늘의 요약이 비어 있다면 먼저 10분 창이 끝났는지 확인하세요. 기록 화면에 실패한 요약 작업이 표시되면 모델 연결과 Keychain 접근을 확인한 뒤 **실패한 요약 다시 시도**를 누를 수 있습니다. 완료를 기다린 뒤 **요약 새로고침**을 누르면 새 결과가 표시됩니다. 재시도 버튼을 누르기 전에는 실패 작업을 다시 모델에 보내지 않습니다.
+Side는 이 Mac 안에서 동작합니다. 브라우저와 앱에서 읽은 기록, 요약, 검색 색인은 모두 이 Mac의 `~/Library/Application Support/Side/`에 저장됩니다. 원본 기록의 제목·주소·본문처럼 민감한 값은 저장 전에 알려진 패턴으로 가린 뒤 암호화하고, 암호화 키와 모델 API 키는 macOS Keychain에 보관합니다. 원본 기록을 클라우드로 동기화하지 않습니다.
 
-요약은 활동이 있는 10분 구간과 6시간 롤업에 모델을 사용합니다. 사용량은 활동량·입력 길이·재시도에 따라 크게 달라지며, 하루 종일 사용하면 수백만 입력 토큰에 이를 수 있습니다. 현재 일일 토큰 한도 기능은 없으므로 제공자 사용량을 확인하고, 비용을 제한하려면 캡처를 일시정지하거나 **이 제공자에게 증거 전송**을 끄세요. 전송을 끄면 새 요약은 만들어지지 않습니다.
+남길 범위와 기간은 직접 정합니다.
 
-## 데이터와 프라이버시
+- **일시정지** 메뉴바에서 15분·30분·1시간, 또는 재개할 때까지 캡처를 멈춥니다.
+- **제외 목록** 관찰하지 않을 앱과 웹사이트를 등록합니다. 비밀번호 입력 필드는 처음부터 기록하지 않습니다.
+- **보관 기간** 원본 기록은 기본 14일이며 1·3·7·14·30일 중 고를 수 있습니다.
+- **삭제** 최근 10분, 지난 1시간, 오늘, 전체 기록을 지웁니다. 전체 삭제는 암호화 키까지 교체합니다.
+- **끄기** 상황 인식을 끄면 새 캡처가 멈춥니다. 기존 기록은 보관 기간이 끝나거나 직접 지울 때까지 남습니다.
 
-데이터 루트는 `~/Library/Application Support/Side/`이며 `SIDE_DATA_DIR`로 개발용 경로를 지정할 수 있습니다. `context-awareness/ledger.db`에는 원본 이벤트, `memory/episodic/`에는 날짜별 요약, `index.db`에는 검색 색인이 있습니다. 원본의 제목·URL·본문 등 민감 컬럼은 저장 전에 알려진 패턴에 따라 마스킹하고 AES-256-GCM으로 암호화합니다. 규칙 기반 마스킹은 모든 민감 정보를 찾는다는 보장이 없습니다. 마스터 키와 provider API 키는 macOS Keychain에 보관합니다. 요약과 날짜별 페이지는 로컬 파일에 평문으로 남습니다.
-
-원본 캡처의 기본 보존 기간은 14일이며 설정에서 1·3·7·14·30일 중 선택할 수 있습니다. 요약은 별도로 남습니다. Side는 원본 캡처를 클라우드로 동기화하지 않습니다. 요약 provider에 **Send evidence to this provider**를 켠 경우에만 마스킹한 10분 창 briefing과 6시간 rollup briefing을 표시된 provider host로 보냅니다. 이 설정은 기본적으로 꺼져 있습니다. 연결한 에이전트가 MCP 결과를 자신의 모델에 전달할 수 있으므로 해당 에이전트의 데이터 정책도 확인해야 합니다. 같은 macOS 사용자 권한으로 실행되는 다른 프로세스의 MCP 접근은 완전히 차단할 수 없습니다.
-
-## 일시정지와 삭제
-
-메뉴바에서 15분·30분·1시간·재개할 때까지 캡처를 멈출 수 있습니다. 설정의 **Denylist**에는 관찰하지 않을 앱이나 웹사이트를 추가합니다. **Disable Context Awareness**는 새 캡처를 중단하지만 기존 이력은 보존 기간 또는 직접 삭제 시점까지 남습니다.
-
-설정의 **Clear history**에서 최근 10분, 지난 1시간, 오늘, 전체 이력을 삭제할 수 있습니다. CLI에서도 다음처럼 실행합니다.
-
-```sh
-"/Applications/Side.app/Contents/Resources/side" clear today
-"/Applications/Side.app/Contents/Resources/side" clear all
-```
-
-`clear all`은 대화형 확인 후 Side 이벤트·요약·날짜 페이지·검색 색인을 지우고 마스터 키를 교체합니다. `--yes`를 붙이면 대화형 확인을 건너뜁니다. 이 명령은 브라우저 자체의 방문 기록을 지우지 않습니다. 설정과 provider Keychain 항목은 이 이력 삭제와 별개입니다. 앱을 완전히 제거하려면 먼저 Side를 종료하고 이력을 삭제한 뒤 앱과 Side 데이터 디렉터리를 제거합니다. Keychain Access에서 `local-context-awareness-ledger` 및 `side-provider-api-key` 서비스 항목도 별도로 확인합니다.
+저장 구조, 삭제 명령, 요약 모델 설정, 앱을 완전히 지우는 절차는 [상세 설명서](docs/manual.md)를 보세요.
 
 ## 에이전트 연결
 
-Side.app이 실행 중일 때 `"/Applications/Side.app/Contents/Resources/side" mcp`가 `history_search`, `history_read`, `memory_search`를 제공합니다. Aside의 **Settings → MCP → Add server**에 Side를 등록하면 Aside 에이전트에서도 Side 기록을 찾아달라고 요청할 수 있습니다. Claude Code, Codex, Cursor와 Aside의 연결 방법은 [에이전트 연결 안내](docs/agents.md)에 있습니다. 데몬이 꺼져 있어도 MCP 서버는 시작되지만 도구 호출 시 `Side is not running. Open Side.app.`를 반환합니다.
+Side.app이 실행 중일 때 `side mcp`가 `history_search`, `history_read`, `memory_search` 세 도구를 제공합니다. Claude Code, Codex, Cursor, Aside에 각각 등록해야 하며 자동으로 연결되지는 않습니다.
+
+```sh
+claude mcp add --scope user side -- "/Applications/Side.app/Contents/Resources/side" mcp
+```
+
+에이전트별 등록 방법과 도구 사용법은 [에이전트 연결 안내](docs/agents.md)에 있습니다. 데몬이 꺼져 있어도 MCP 서버는 시작되지만, 도구 호출 시 `Side is not running. Open Side.app.`을 반환합니다.
+
+## 문서
+
+- **[상세 설명서](docs/manual.md)** 설치·빌드 옵션, 권한과 재빌드 문제 해결, 데이터 저장 구조, 삭제와 완전 제거, 요약 모델과 비용
+- [처음 쓰는 사람을 위한 안내서](https://chris-chai-minjae.github.io/side-context-awareness/side-for-beginners.html) 처음 쓰는 분을 위한 쉬운 설명과 질문 예시
+- [에이전트 연결 안내](docs/agents.md) Claude Code, Codex, Cursor, Grok Build, Aside 등록 방법
+- [소개 페이지](https://chris-chai-minjae.github.io/side-context-awareness/) 한국어·영어 소개
+- [개발 현황](docs/qa/) QA 보고서와 남은 검증 항목 · [공개 이력 설명](docs/qa/publication-history.md)
+
+소스코드는 [MIT License](LICENSE)로 공개합니다.
