@@ -218,7 +218,7 @@ final class SupervisorTests: XCTestCase {
         let keys = Set(process.environment?.keys.map { $0 } ?? [])
         XCTAssertTrue(keys.isSubset(of: ["HOME", "PATH", "LANG", "SIDE_DATA_DIR", "USER", "LOGNAME"]))
         XCTAssertTrue(keys.isSuperset(of: ["HOME", "PATH", "LANG", "USER", "LOGNAME"]))
-        XCTAssertEqual(process.environment?["PATH"], "/usr/bin:/bin:/usr/sbin:/sbin")
+        XCTAssertEqual(process.environment?["PATH"], "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin")
         let inherited = ProcessInfo.processInfo.environment
         for name in ["USER", "LOGNAME"] {
             let expected = inherited[name].flatMap { $0.isEmpty ? nil : $0 } ?? NSUserName()

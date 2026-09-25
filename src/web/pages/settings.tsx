@@ -142,7 +142,7 @@ function formatBytes(value: number): string {
 }
 
 function patchProvider(provider: Provider) {
-  if (provider.kind === "claude-code-cli")
+  if (provider.kind === "claude-code-cli" || provider.kind === "codex-cli")
     return {
       id: provider.id,
       kind: provider.kind,
@@ -307,7 +307,8 @@ export function SettingsPage({
   const binaryPath =
     browser.document.querySelector<HTMLMetaElement>('meta[name="side-executable"]')?.content ??
     BINARY_PATH
-  const CLAUDE_COMMAND = `claude mcp add side -- ${shellQuote(binaryPath)} mcp`
+  const CLAUDE_COMMAND = `claude mcp add --scope user side -- ${shellQuote(binaryPath)} mcp`
+  const CODEX_COMMAND = `codex mcp add side -- ${shellQuote(binaryPath)} mcp`
   const ASIDE_SNIPPET = `command: ${JSON.stringify(binaryPath)}\nargs: mcp`
   const MCP_JSON = JSON.stringify(
     { mcpServers: { side: { command: binaryPath, args: ["mcp"] } } },
@@ -331,9 +332,9 @@ export function SettingsPage({
   )
   const [evidenceProvider, setEvidenceProvider] = useState<string | null>(null)
   const [editingProvider, setEditingProvider] = useState<string | null>(null)
-  const [providerKind, setProviderKind] = useState<"openai-compatible" | "claude-code-cli">(
-    "openai-compatible",
-  )
+  const [providerKind, setProviderKind] = useState<
+    "openai-compatible" | "claude-code-cli" | "codex-cli"
+  >("openai-compatible")
   const [providerName, setProviderName] = useState("")
   const [providerUrl, setProviderUrl] = useState("")
   const [providerModels, setProviderModels] = useState("")
@@ -641,12 +642,25 @@ export function SettingsPage({
         setProviderError(t(language, "Enter a valid Base URL."))
         return
       }
-    } else if (
-      models.length === 0 ||
-      models.some((model) => !/^claude-[A-Za-z0-9-]+$/.test(model))
-    ) {
-      setProviderError(t(language, "Enter explicit Claude Code model IDs beginning with claude-."))
-      return
+    } else {
+      if (
+        models.length === 0 ||
+        models.some((model) =>
+          providerKind === "claude-code-cli"
+            ? !/^claude-[A-Za-z0-9-]+$/.test(model)
+            : !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(model),
+        )
+      ) {
+        setProviderError(
+          t(
+            language,
+            providerKind === "claude-code-cli"
+              ? "Enter explicit Claude Code model IDs beginning with claude-."
+              : "Enter an explicit Codex model ID, such as gpt-6-luna.",
+          ),
+        )
+        return
+      }
     }
     if (!providerName.trim()) {
       setProviderError(t(language, "Enter a provider name."))
@@ -659,7 +673,7 @@ export function SettingsPage({
     }
     const current = settings.providers.find((provider) => provider.id === editingProvider)
     const nextProvider =
-      providerKind === "claude-code-cli"
+      providerKind === "claude-code-cli" || providerKind === "codex-cli"
         ? {
             id: providerId,
             kind: providerKind,
@@ -1021,7 +1035,7 @@ export function SettingsPage({
                   >
                     {t(language, "Delete")}
                   </button>
-                  {provider.kind !== "claude-code-cli" && (
+                  {provider.kind === "openai-compatible" && (
                     <button
                       type="button"
                       class="button button-secondary"
@@ -1188,7 +1202,20 @@ export function SettingsPage({
           </button>
         </div>
         <div class="agent-connection">
-          <h3>Codex / Cursor</h3>
+          <h3>Codex</h3>
+          <pre>
+            <code>{CODEX_COMMAND}</code>
+          </pre>
+          <button
+            type="button"
+            class="button button-secondary"
+            onClick={() => void copyText(CODEX_COMMAND)}
+          >
+            {t(language, "Copy")}
+          </button>
+        </div>
+        <div class="agent-connection">
+          <h3>Cursor</h3>
           <pre>
             <code>{MCP_JSON}</code>
           </pre>
@@ -1507,6 +1534,20 @@ export function SettingsPage({
                 <button
                   type="button"
                   class="button button-secondary"
+                  data-action="preset-codex"
+                  onClick={() => {
+                    setProviderKind("codex-cli")
+                    setProviderName("OpenAI (Codex login)")
+                    setProviderUrl("")
+                    setProviderModels("gpt-6-luna")
+                    setApiKey("")
+                  }}
+                >
+                  {t(language, "OpenAI (Codex login)")}
+                </button>
+                <button
+                  type="button"
+                  class="button button-secondary"
                   data-action="preset-claude-code"
                   onClick={() => {
                     setProviderKind("claude-code-cli")
@@ -1551,6 +1592,13 @@ export function SettingsPage({
                   "Uses your existing Claude Code login. Enter an explicit model ID. Summaries are sent to the Claude Code service only after you allow evidence below.",
                 )}
               </p>
+            ) : providerKind === "codex-cli" ? (
+              <p class="supporting-text">
+                {t(
+                  language,
+                  "Uses your existing Codex CLI ChatGPT login. No API key is needed. A login stored only in Keychain is not supported. Summaries are sent to OpenAI only after you allow evidence below. MiMo remains the recommended primary provider.",
+                )}
+              </p>
             ) : (
               <>
                 <p class="supporting-text">
@@ -1576,6 +1624,14 @@ export function SettingsPage({
                   {t(language, "Supports forced tool calls")}
                 </label>
               </>
+            )}
+            {providerKind !== "openai-compatible" && (
+              <p class="supporting-text">
+                {t(
+                  language,
+                  "Using an existing CLI login is at your own risk. Check each provider's terms and usage limits.",
+                )}
+              </p>
             )}
             {providerError && <p role="alert">{providerError}</p>}
             <div class="dialog-actions">

@@ -27,7 +27,7 @@ const PageSettingsSchema = z.object({
   providers: z.array(
     z.object({
       id: z.string(),
-      kind: z.enum(["openai-compatible", "claude-code-cli"]),
+      kind: z.enum(["openai-compatible", "claude-code-cli", "codex-cli"]),
       has_key: z.boolean(),
     }),
   ),
@@ -225,6 +225,7 @@ export function PermissionsPage({ rpc, language }: PermissionsPageProps) {
 
   const { permissions, status, settings } = load.data
   const automation = Object.entries(permissions.automation).sort(([a], [b]) => a.localeCompare(b))
+  const automationAllAllowed = automation.length > 0 && automation.every(([, allowed]) => allowed)
   const helperConnected = (status.health.pid ?? 0) > 0
   const captureState = !status.enabled
     ? "Capture disabled"
@@ -337,7 +338,9 @@ export function PermissionsPage({ rpc, language }: PermissionsPageProps) {
       <section class="settings-section" aria-labelledby="automation-heading">
         <h2 id="automation-heading">{t(language, "Browser Automation")}</h2>
         {automation.length === 0 ? (
-          <p class="supporting-text">{t(language, "No browser Automation status reported yet.")}</p>
+          <p class="supporting-text">
+            {t(language, "No browser target is available for an Automation request.")}
+          </p>
         ) : (
           automation.map(([bundleId, allowed]) => (
             <div class="permission-row" data-automation={bundleId} key={bundleId}>
@@ -349,10 +352,10 @@ export function PermissionsPage({ rpc, language }: PermissionsPageProps) {
         <button
           type="button"
           class="button button-secondary permissions-action"
-          disabled={busy !== null}
+          disabled={busy !== null || automation.length === 0 || automationAllAllowed}
           onClick={() => void request("automation")}
         >
-          {t(language, "Request Automation")}
+          {t(language, automationAllAllowed ? "Already allowed" : "Request Automation")}
         </button>
         <p class="supporting-text">
           {t(language, "Automation access is shown only for browsers the helper has reported.")}
@@ -390,8 +393,10 @@ export function PermissionsPage({ rpc, language }: PermissionsPageProps) {
                   <span class="setting-meta">
                     {t(
                       language,
-                      provider.kind === "claude-code-cli"
-                        ? "Claude Code login"
+                      provider.kind === "claude-code-cli" || provider.kind === "codex-cli"
+                        ? provider.kind === "codex-cli"
+                          ? "OpenAI (Codex login)"
+                          : "Claude Code login"
                         : provider.has_key
                           ? "Key reference configured"
                           : "Key not configured",

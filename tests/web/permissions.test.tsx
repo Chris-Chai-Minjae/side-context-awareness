@@ -218,6 +218,38 @@ test("Given reported browser Automation, when requested, then only automation is
   })
 })
 
+test("Given all reported Automation grants, request is disabled and already allowed is shown", async () => {
+  permissions["automation"] = { "com.apple.Safari": true, "com.google.Chrome": true }
+  const element = await page()
+  const button = element.querySelector<HTMLButtonElement>("#automation-heading ~ button")
+  expect(button?.disabled).toBe(true)
+  expect(button?.textContent).toContain("Already allowed")
+  button?.click()
+  await settle()
+  expect(calls.map((call) => call.method)).not.toContain("requestPermissions")
+})
+
+test("Given no reported browser target, Automation explains why request is unavailable", async () => {
+  permissions["automation"] = {}
+  const element = await page()
+  const button = element.querySelector<HTMLButtonElement>("#automation-heading ~ button")
+  expect(button?.disabled).toBe(true)
+  expect(element.querySelector("#automation-heading")?.parentElement?.textContent).toContain(
+    "No browser target is available for an Automation request.",
+  )
+})
+
+test("Korean permissions show allowed Automation and Codex login without a key prompt", async () => {
+  settings["ui_language"] = "ko"
+  settings["providers"] = [{ id: "codex", kind: "codex-cli", has_key: false }]
+  permissions["automation"] = { "com.apple.Safari": true }
+  const element = await page()
+  const button = element.querySelector<HTMLButtonElement>("#automation-heading ~ button")
+  expect(button?.textContent).toContain("이미 허용됨")
+  expect(element.querySelector('[data-provider="codex"]')?.textContent).toContain("Codex 로그인")
+  expect(element.querySelector('[data-provider="codex"] [data-action="authorize-key"]')).toBeNull()
+})
+
 test("Given connected helper and disabled capture, when loaded, then both states remain distinct", async () => {
   status["health"] = { nativeCaptureAvailable: false, pid: 123 }
   const element = await page()

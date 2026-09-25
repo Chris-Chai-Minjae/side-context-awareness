@@ -8,7 +8,7 @@ final class OnboardingProviderPresetTests: XCTestCase {
 
         // Then MiMo precedes MiniMax and OpenAI, while custom entry remains available.
         XCTAssertEqual(OnboardingProviderPreset.allCases, [
-            .xiaomiMiMo26Pro, .miniMaxM3, .openAI, .claudeCode, .custom,
+            .xiaomiMiMo26Pro, .miniMaxM3, .openAI, .codexLogin, .claudeCode, .custom,
         ])
         XCTAssertEqual(draft.preset, .custom)
         XCTAssertEqual(draft.name, "")
@@ -98,5 +98,22 @@ final class OnboardingProviderPresetTests: XCTestCase {
         XCTAssertEqual(draft.kind, .claudeCodeCLI)
         XCTAssertFalse(draft.supportsToolChoice)
         XCTAssertEqual(OnboardingProviderPreset.claudeCode.displayTitle(language: .ko), "Claude Code 로그인")
+    }
+
+    func testCodexPresetUsesExistingLoginAndKeepsManualOpenAI() {
+        var draft = OnboardingProviderDraft()
+        draft.select(.openAI)
+        XCTAssertEqual(draft.baseURL, "https://api.openai.com/v1")
+        draft.apiKey = "synthetic-key"
+
+        draft.select(.codexLogin)
+
+        XCTAssertEqual(draft.name, "OpenAI (Codex login)")
+        XCTAssertEqual(draft.baseURL, "")
+        XCTAssertEqual(draft.apiKey, "")
+        XCTAssertEqual(draft.modelID, "gpt-6-luna")
+        XCTAssertEqual(draft.kind, .codexCLI)
+        XCTAssertFalse(draft.supportsToolChoice)
+        XCTAssertEqual(OnboardingProviderPreset.codexLogin.displayTitle(language: .ko), "OpenAI (Codex 로그인)")
     }
 }

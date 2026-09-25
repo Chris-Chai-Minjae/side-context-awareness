@@ -19,3 +19,9 @@ The independent Astra review found that the GUI helper starts the daemon with `P
 ## Account identity in the packaged daemon
 
 A second Astra review found that the supervisor's environment allowlist also dropped `USER` and `LOGNAME`, which the existing Claude login may need for credential refresh. `2dfcc14` passes those two account identifiers to the daemon while keeping API token variables excluded. A synthetic Swift child checks the values received at process launch, and the Claude CLI stub checks them for both auth and summary calls. The full Swift suite passed 168 SideCaptureKit and 23 SideApp tests; the Bun suite passed 783 tests. The packaged GUI-to-Claude login path still requires a physical check.
+
+## 2026-09-25 OAuth-only follow-up
+
+The adapter now requires `loggedIn=true` and `authMethod=claude.ai` from the official CLI before it sends a briefing. It removes inherited API-key, OAuth-token, custom-endpoint, and alternative-host variables. Synthetic tests reject API-key and missing-method status before the summary call and verify that those overrides are absent from both child processes. `bun test` passed 860 tests; TypeScript and Biome checks passed.
+
+The installed Claude CLI 2.1.282 reported the same account auth method through `claude --restricted auth status --json`. One real `claude-sonnet-4-6` call through `callClaudeCliSummary` with only a fictional `example.invalid` activity sentence and synthetic evidence ID returned structured JSON in 6.9 seconds. No captured user activity or credential was used. Managed CLI settings and the packaged GUI-to-Claude path remain separate physical checks.

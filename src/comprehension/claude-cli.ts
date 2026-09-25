@@ -25,7 +25,10 @@ export class ClaudeCliConsentRevokedError extends Error {
   }
 }
 
-const AuthStatusSchema = z.object({ loggedIn: z.literal(true) })
+const AuthStatusSchema = z.object({
+  loggedIn: z.literal(true),
+  authMethod: z.literal("claude.ai"),
+})
 const ResultSchema = z.object({
   type: z.literal("result"),
   is_error: z.boolean().optional(),
@@ -37,6 +40,29 @@ const UsageSchema = z.object({
   output_tokens: z.number().int().nonnegative(),
 })
 const ModelIdSchema = z.string().regex(/^claude-[A-Za-z0-9-]+$/)
+const CLAUDE_AUTH_OVERRIDE_ENV = [
+  "ANTHROPIC_API_KEY",
+  "ANTHROPIC_AUTH_TOKEN",
+  "CLAUDE_CODE_OAUTH_TOKEN",
+  "CLAUDE_CODE_OAUTH_REFRESH_TOKEN",
+  "CLAUDE_CODE_OAUTH_SCOPES",
+  "ANTHROPIC_BASE_URL",
+  "ANTHROPIC_CUSTOM_HEADERS",
+  "CLAUDE_CODE_API_KEY_HELPER_TTL_MS",
+  "CLAUDE_CODE_USE_BEDROCK",
+  "CLAUDE_CODE_USE_VERTEX",
+  "CLAUDE_CODE_USE_FOUNDRY",
+  "CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST",
+  "CLAUDE_CONFIG_DIR",
+  "ANTHROPIC_AWS_API_KEY",
+  "ANTHROPIC_AWS_BASE_URL",
+  "ANTHROPIC_AWS_WORKSPACE_ID",
+  "ANTHROPIC_BEDROCK_BASE_URL",
+  "ANTHROPIC_VERTEX_BASE_URL",
+  "ANTHROPIC_FOUNDRY_API_KEY",
+  "ANTHROPIC_FOUNDRY_BASE_URL",
+  "ANTHROPIC_FOUNDRY_RESOURCE",
+] as const
 // The CLI schema enforces structure; the existing record_summary validator enforces these limits.
 const CliJsonSchema = JSON.stringify(RecordSummaryTool.parameters, (key, value: unknown) =>
   key === "maxLength" || key === "minItems" || key === "maxItems" ? undefined : value,
@@ -71,9 +97,8 @@ function resolveClaudeExecutable(): string {
 
 function cliEnvironment(): NodeJS.ProcessEnv {
   const env = { ...process.env }
-  // The optional CLI provider uses the user's Claude Code login, not an inherited API key.
-  delete env["ANTHROPIC_API_KEY"]
-  delete env["ANTHROPIC_AUTH_TOKEN"]
+  // Use the saved Claude account login for both the status check and summary.
+  for (const name of CLAUDE_AUTH_OVERRIDE_ENV) delete env[name]
   delete env["CLAUDE_CODE_SIMPLE"]
   return env
 }
@@ -153,7 +178,7 @@ export async function callClaudeCliSummary(
   const executable = resolveClaudeExecutable()
   const auth = await runClaude(
     executable,
-    ["auth", "status", "--json"],
+    ["--restricted", "auth", "status", "--json"],
     undefined,
     deadline,
     canSendEvidence,
@@ -185,6 +210,8 @@ export async function callClaudeCliSummary(
       "--safe-mode",
       "--tools",
       "",
+      "--disallowedTools",
+      "mcp__*",
       "--strict-mcp-config",
       "--no-session-persistence",
       "--output-format",

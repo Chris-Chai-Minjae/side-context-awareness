@@ -19,7 +19,9 @@ function rpc(method: string, params: unknown): string {
 }
 
 function apiKeyRefOf(provider: Settings["providers"][number] | undefined): string | undefined {
-  return provider?.kind === "claude-code-cli" ? undefined : provider?.apiKeyRef
+  return provider?.kind === "claude-code-cli" || provider?.kind === "codex-cli"
+    ? undefined
+    : provider?.apiKeyRef
 }
 
 async function fixture(
@@ -679,7 +681,7 @@ test("Given ambiguous provider IDs in current state, provider RPCs fail closed b
     providers: [{ id: "p", baseUrl: "https://a.fixture.invalid/v1", models: ["m"] }],
   })
   const provider = valid.providers[0]
-  if (!provider || provider.kind === "claude-code-cli")
+  if (!provider || provider.kind === "claude-code-cli" || provider.kind === "codex-cli")
     throw new TypeError("Missing OpenAI provider fixture")
   const current: Settings = {
     ...valid,
@@ -752,6 +754,40 @@ test("Claude Code CLI rejects key storage and HTTP model discovery", async () =>
     ).toMatchObject({ error: { code: -32603, message: "Internal error" } })
     expect(
       await handleRpcBody(rpc("providers.listModels", { providerId: "Claude Code" }), handlers),
+    ).toMatchObject({ result: { status: "unavailable", reason: "endpoint-unavailable" } })
+    expect(helperCalls).toBe(0)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test("Codex CLI rejects key storage and HTTP model discovery", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "side-api-codex-provider-"))
+  const current = SettingsSchema.parse({
+    version: 2,
+    contextAwareness: {},
+    providers: [{ id: "Codex", kind: "codex-cli", models: ["gpt-6-luna"], allowEvidence: false }],
+  })
+  let helperCalls = 0
+  const handlers = createProviderHandlers({
+    directory,
+    reconciler: { currentSettings: current, async settingsPatched() {} },
+    helper: {
+      async sendCommand() {
+        helperCalls++
+        throw new TypeError("Unexpected helper call")
+      },
+    },
+  })
+  try {
+    expect(
+      await handleRpcBody(
+        rpc("providers.setKey", { providerId: "Codex", apiKey: "synthetic-secret" }),
+        handlers,
+      ),
+    ).toMatchObject({ error: { code: -32603, message: "Internal error" } })
+    expect(
+      await handleRpcBody(rpc("providers.listModels", { providerId: "Codex" }), handlers),
     ).toMatchObject({ result: { status: "unavailable", reason: "endpoint-unavailable" } })
     expect(helperCalls).toBe(0)
   } finally {

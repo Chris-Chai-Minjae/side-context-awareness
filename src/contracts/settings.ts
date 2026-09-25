@@ -34,7 +34,18 @@ const ClaudeCodeCliProviderSchema = z.strictObject({
   allowEvidence: z.boolean().default(false),
 })
 
-export const ProviderSchema = z.union([OpenAICompatibleProviderSchema, ClaudeCodeCliProviderSchema])
+const CodexCliProviderSchema = z.strictObject({
+  id: z.string(),
+  kind: z.literal("codex-cli"),
+  models: z.array(z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)),
+  allowEvidence: z.boolean().default(false),
+})
+
+export const ProviderSchema = z.union([
+  OpenAICompatibleProviderSchema,
+  ClaudeCodeCliProviderSchema,
+  CodexCliProviderSchema,
+])
 const ProvidersSchema = z
   .array(ProviderSchema)
   .refine(

@@ -18,6 +18,11 @@ import {
   ClaudeCliUnavailableError,
   callClaudeCliSummary,
 } from "./claude-cli"
+import {
+  CodexCliConsentRevokedError,
+  CodexCliUnavailableError,
+  callCodexCliSummary,
+} from "./codex-cli"
 import type { ValidatedSummary } from "./contract"
 import type { SummaryMessage } from "./prompt"
 import { runSummaryWithOneRepair } from "./repair"
@@ -147,7 +152,11 @@ export function resolveSummaryChain(settings: Settings): readonly ResolvedSummar
     seen.add(key)
     const provider = settings.providers.find((item) => item.id === ref.provider)
     if (!provider) return []
-    if (provider.kind === "claude-code-cli" && !provider.models.includes(ref.modelId)) return []
+    if (
+      (provider.kind === "claude-code-cli" || provider.kind === "codex-cli") &&
+      !provider.models.includes(ref.modelId)
+    )
+      return []
     const override = settings.summary.modelOverrides.find((item) =>
       new RegExp(item.match).test(ref.modelId),
     )
@@ -261,6 +270,41 @@ export async function callSummaryCompletion(
       }
     }, options.queueWaitTimeoutMs)
   }
+  if (provider.kind === "codex-cli") {
+    return withCallSlot(async () => {
+      if (options.canSendRequest && !options.canSendRequest()) throw new ProviderFallbackError()
+      const started = performance.now()
+      const requestBytes = Buffer.byteLength(
+        messages.map((message) => message.content).join("\n\n"),
+      )
+      try {
+        const response = await callCodexCliSummary(
+          messages,
+          model.modelId,
+          options.canSendEvidence ?? (() => true),
+        )
+        options.log?.({
+          provider: provider.id,
+          modelId: model.modelId,
+          durationMs: performance.now() - started,
+          requestBytes,
+          responseBytes: response.responseBytes,
+        })
+        return { ...response, toolCallObserved: false }
+      } catch (error) {
+        options.log?.({
+          provider: provider.id,
+          modelId: model.modelId,
+          durationMs: performance.now() - started,
+          requestBytes,
+          responseBytes: 0,
+        })
+        if (error instanceof CodexCliConsentRevokedError) throw new EvidencePermissionRevokedError()
+        if (error instanceof CodexCliUnavailableError) throw new ProviderFallbackError()
+        throw error
+      }
+    }, options.queueWaitTimeoutMs)
+  }
   return withCallSlot(async () => {
     if (options.canSendRequest && !options.canSendRequest()) throw new ProviderFallbackError()
     const { modelId, reasoningEffort } = model
@@ -370,10 +414,11 @@ export async function summarizeBriefing(options: SummaryOptions): Promise<Summar
       const current = options.getCurrentSettings?.() ?? options.settings
       const provider = current.providers.find((item) => item.id === model.provider.id)
       if (!current.contextAwareness.enabled || provider?.allowEvidence !== true) return false
-      if (model.provider.kind === "claude-code-cli")
-        return provider.kind === "claude-code-cli" && provider.models.includes(model.modelId)
+      if (model.provider.kind === "claude-code-cli" || model.provider.kind === "codex-cli")
+        return provider.kind === model.provider.kind && provider.models.includes(model.modelId)
       return (
         provider.kind !== "claude-code-cli" &&
+        provider.kind !== "codex-cli" &&
         provider.baseUrl === model.provider.baseUrl &&
         provider.apiKeyRef === model.provider.apiKeyRef
       )

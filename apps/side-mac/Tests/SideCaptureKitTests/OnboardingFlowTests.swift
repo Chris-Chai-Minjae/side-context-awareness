@@ -489,6 +489,45 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertTrue(service.calls.isEmpty)
     }
 
+    func testCodexLoginProviderTestsAndSelectsExplicitModelWithoutKey() async throws {
+        let service = FakeOnboardingService()
+        service.permissions = OnboardingPermissions(
+            accessibility: true, inputMonitoring: true, screenRecording: true
+        )
+        let (flow, _) = makeFlow(service: service, defaults: makeDefaults())
+        try await flow.load()
+        flow.continueFromIntro()
+
+        await flow.submitProvider(
+            name: "OpenAI (Codex login)", baseURL: "", apiKey: "", modelID: "gpt-6-luna",
+            kind: .codexCLI
+        )
+
+        XCTAssertEqual(service.calls, [
+            "providers", "test:OpenAI (Codex login):gpt-6-luna", "select:OpenAI (Codex login):gpt-6-luna",
+        ])
+        XCTAssertEqual(service.settings.providers.last?.kind, .codexCLI)
+        XCTAssertNil(service.settings.providers.last?.baseURL)
+        XCTAssertEqual(service.settings.providers.last?.allowEvidence, false)
+        XCTAssertEqual(flow.step, .finish)
+    }
+
+    func testCodexLoginRejectsUnexpectedKeyBeforeSaving() async throws {
+        let service = FakeOnboardingService()
+        service.permissions = OnboardingPermissions(
+            accessibility: true, inputMonitoring: true, screenRecording: true
+        )
+        let (flow, _) = makeFlow(service: service, defaults: makeDefaults())
+        try await flow.load()
+        flow.continueFromIntro()
+
+        await flow.submitProvider(
+            name: "OpenAI (Codex login)", baseURL: "", apiKey: "synthetic-key",
+            modelID: "gpt-6-luna", kind: .codexCLI
+        )
+        XCTAssertTrue(service.calls.isEmpty)
+    }
+
     func testProviderURLCredentialsNeverEnterSettingsPatch() async throws {
         // Given provider setup with a URL that embeds a credential.
         let service = FakeOnboardingService()

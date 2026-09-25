@@ -2,7 +2,7 @@
 
 ## 0. Research Log
 
-- Embedded reference: used the Aside product-app palette and compact controls because Side is an Aside-derived local settings surface.
+- Embedded reference: use the Side palette and compact controls defined by the approved screen specifications.
 - Approved source: `docs/planning/06-screens.md` and `specs/shared/components.yaml` fix the copy, states, and four shared components.
 - This task is a functional shell for a local WKWebView. External screen research and image concepts are outside its approved scope; no visual-fidelity claim is made.
 

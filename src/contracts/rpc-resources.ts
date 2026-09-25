@@ -75,7 +75,7 @@ export const ProviderModelListSchema = z.discriminatedUnion("status", [
 
 export const ProviderResourceSchema = z.strictObject({
   id: z.string(),
-  kind: z.enum(["openai-compatible", "claude-code-cli"]).default("openai-compatible"),
+  kind: z.enum(["openai-compatible", "claude-code-cli", "codex-cli"]).default("openai-compatible"),
   base_url: z.string().url().nullable(),
   host: z.string(),
   models: z.array(z.string()),

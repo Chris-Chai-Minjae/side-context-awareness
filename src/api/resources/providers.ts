@@ -61,9 +61,11 @@ function providerStillCurrent(
 ): boolean {
   const provider = uniqueProvider(current, original.id)
   if (!provider || (modelId !== undefined && !provider.models.includes(modelId))) return false
-  if (original.kind === "claude-code-cli") return provider.kind === "claude-code-cli"
+  if (original.kind === "claude-code-cli" || original.kind === "codex-cli")
+    return provider.kind === original.kind
   return (
     provider.kind !== "claude-code-cli" &&
+    provider.kind !== "codex-cli" &&
     provider.baseUrl === original.baseUrl &&
     provider.apiKeyRef === original.apiKeyRef
   )
@@ -88,7 +90,10 @@ export function createProviderHandlers(
   const keyVersion = (id: string) => keyVersions.get(id) ?? 0
   const verifiedKeys = new Map<string, string>()
   const keyIdentity = (
-    provider: Exclude<Settings["providers"][number], { kind: "claude-code-cli" }>,
+    provider: Exclude<
+      Settings["providers"][number],
+      { kind: "claude-code-cli" } | { kind: "codex-cli" }
+    >,
   ) => JSON.stringify([provider.id, provider.baseUrl, provider.apiKeyRef])
   const invalidateVerifiedKey = (provider: Settings["providers"][number], version: number) => {
     if (
@@ -102,7 +107,11 @@ export function createProviderHandlers(
       const versions = new Map(keyVersions)
       return (ref) => {
         for (const provider of settings.providers) {
-          if (provider.kind !== "claude-code-cli" && provider.apiKeyRef === ref)
+          if (
+            provider.kind !== "claude-code-cli" &&
+            provider.kind !== "codex-cli" &&
+            provider.apiKeyRef === ref
+          )
             invalidateVerifiedKey(provider, versions.get(provider.id) ?? 0)
         }
       }
@@ -110,7 +119,8 @@ export function createProviderHandlers(
     "providers.keyStatus": async (value) => {
       const { providerId } = RpcMethods["providers.keyStatus"].input.parse(value)
       const provider = uniqueProvider(dependencies.reconciler.currentSettings, providerId)
-      if (!provider || provider.kind === "claude-code-cli") throw new TypeError("Invalid provider")
+      if (!provider || provider.kind === "claude-code-cli" || provider.kind === "codex-cli")
+        throw new TypeError("Invalid provider")
       if (!provider.apiKeyRef) return { stored: false, accessible: false }
       return verifiedKeys.get(providerId) === keyIdentity(provider)
         ? { stored: true, accessible: true }
@@ -119,7 +129,8 @@ export function createProviderHandlers(
     "providers.authorizeKey": async (value) => {
       const { providerId } = RpcMethods["providers.authorizeKey"].input.parse(value)
       const provider = uniqueProvider(dependencies.reconciler.currentSettings, providerId)
-      if (!provider || provider.kind === "claude-code-cli") throw new TypeError("Invalid provider")
+      if (!provider || provider.kind === "claude-code-cli" || provider.kind === "codex-cli")
+        throw new TypeError("Invalid provider")
       if (!provider.apiKeyRef) return { authorized: false }
       const version = keyVersion(providerId) + 1
       keyVersions.set(providerId, version)
@@ -145,7 +156,12 @@ export function createProviderHandlers(
       const { providerId, apiKey } = RpcMethods["providers.setKey"].input.parse(value)
       const current = dependencies.reconciler.currentSettings
       const provider = uniqueProvider(current, providerId)
-      if (!provider || provider.kind === "claude-code-cli" || apiKey.length === 0)
+      if (
+        !provider ||
+        provider.kind === "claude-code-cli" ||
+        provider.kind === "codex-cli" ||
+        apiKey.length === 0
+      )
         throw new TypeError("Invalid provider key request")
 
       keyVersions.set(providerId, keyVersion(providerId) + 1)
@@ -168,13 +184,14 @@ export function createProviderHandlers(
         if (
           !latestProvider ||
           latestProvider.kind === "claude-code-cli" ||
+          latestProvider.kind === "codex-cli" ||
           latestProvider.baseUrl !== provider.baseUrl
         )
           throw new TypeError("Provider changed before its key could be linked")
         return {
           ...latest,
           providers: latest.providers.map((item) =>
-            item.id === providerId && item.kind !== "claude-code-cli"
+            item.id === providerId && item.kind !== "claude-code-cli" && item.kind !== "codex-cli"
               ? { ...item, apiKeyRef: ref }
               : item,
           ),
@@ -186,7 +203,7 @@ export function createProviderHandlers(
       const { providerId } = RpcMethods["providers.listModels"].input.parse(value)
       const provider = uniqueProvider(dependencies.reconciler.currentSettings, providerId)
       if (!provider) return { status: "unavailable", models: [], reason: "provider-not-found" }
-      if (provider.kind === "claude-code-cli")
+      if (provider.kind === "claude-code-cli" || provider.kind === "codex-cli")
         return { status: "unavailable", models: [], reason: "endpoint-unavailable" }
       if (!provider.apiKeyRef)
         return { status: "unavailable", models: [], reason: "key-not-configured" }
@@ -322,6 +339,7 @@ export function createProviderHandlers(
           latencyMs: latencyMs(started),
           toolChoiceSupported:
             provider.kind !== "claude-code-cli" &&
+            provider.kind !== "codex-cli" &&
             provider.supportsToolChoice &&
             completion.toolCallObserved,
         }

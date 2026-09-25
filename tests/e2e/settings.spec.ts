@@ -226,9 +226,11 @@ test("P4-S1-T2: saved provider key never appears in settings response", async ()
     const expectedRef = `provider/local/${createHash("sha256")
       .update(JSON.stringify(["local", "https://fixture.invalid/v1"]))
       .digest("hex")}`
-    expect(savedProvider?.kind === "claude-code-cli" ? undefined : savedProvider?.apiKeyRef).toBe(
-      expectedRef,
-    )
+    expect(
+      savedProvider?.kind === "claude-code-cli" || savedProvider?.kind === "codex-cli"
+        ? undefined
+        : savedProvider?.apiKeyRef,
+    ).toBe(expectedRef)
     expect(fixture.helperCalls.filter((call) => call.name === "keychain.set")).toEqual([
       { name: "keychain.set", ref: expectedRef, keyMatched: true },
     ])

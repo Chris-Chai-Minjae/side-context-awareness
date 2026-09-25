@@ -126,7 +126,7 @@ final class DaemonSupervisor {
         let inherited = ProcessInfo.processInfo.environment
         var environment = [
             "HOME": inherited["HOME"] ?? NSHomeDirectory(),
-            "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
+            "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
             "LANG": inherited["LANG"] ?? "en_US.UTF-8",
         ]
         for name in ["USER", "LOGNAME"] {

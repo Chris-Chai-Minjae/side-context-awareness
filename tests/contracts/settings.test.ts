@@ -121,6 +121,29 @@ test("Given a Claude Code CLI provider, when parsed, then consent defaults off a
   expect(SettingsPatchSchema.safeParse({ providers: [record] }).success).toBe(true)
 })
 
+test("Given a Codex login provider, when parsed, then consent defaults off and API credentials are rejected", () => {
+  const record = {
+    id: "codex",
+    kind: "codex-cli" as const,
+    models: ["gpt-6-luna"],
+  }
+  const parsed = SettingsSchema.parse({ version: 2, contextAwareness: {}, providers: [record] })
+  expect(parsed.providers[0]).toEqual({ ...record, allowEvidence: false })
+  for (const extra of [
+    { baseUrl: "https://api.openai.com/v1" },
+    { apiKeyRef: "provider/codex" },
+    { command: "/tmp/codex" },
+  ]) {
+    expect(
+      SettingsSchema.safeParse({
+        version: 2,
+        contextAwareness: {},
+        providers: [{ ...record, ...extra }],
+      }).success,
+    ).toBe(false)
+  }
+})
+
 test("Given separate settings parses, when defaults are created, then mutable lists are independent", () => {
   const first = SettingsSchema.parse({ version: 2, contextAwareness: {} })
   const second = SettingsSchema.parse({ version: 2, contextAwareness: {} })

@@ -49,12 +49,12 @@ function toResource(settings: Settings) {
     summary_model: capture.summaryModel ?? null,
     default_model: settings.defaultModel ?? null,
     providers: settings.providers.map((provider) =>
-      provider.kind === "claude-code-cli"
+      provider.kind === "claude-code-cli" || provider.kind === "codex-cli"
         ? {
             id: provider.id,
             kind: provider.kind,
             base_url: null,
-            host: "Claude Code service",
+            host: provider.kind === "codex-cli" ? "OpenAI (Codex login)" : "Claude Code service",
             models: provider.models,
             supports_tool_choice: false,
             allow_evidence: provider.allowEvidence,
@@ -81,7 +81,7 @@ function mergeSettings(current: Settings, value: unknown): Settings {
   const { defaultModel, providers, summary, summaryModel, uiLanguage, ...capturePatch } = patch
   const oldRefs = new Map(
     current.providers.flatMap((provider) =>
-      provider.kind === "claude-code-cli"
+      provider.kind === "claude-code-cli" || provider.kind === "codex-cli"
         ? []
         : [[provider.id, { baseUrl: provider.baseUrl, ref: provider.apiKeyRef }] as const],
     ),
@@ -100,7 +100,7 @@ function mergeSettings(current: Settings, value: unknown): Settings {
       ? {}
       : {
           providers: providers.map((provider) =>
-            provider.kind === "claude-code-cli"
+            provider.kind === "claude-code-cli" || provider.kind === "codex-cli"
               ? {
                   id: provider.id,
                   kind: provider.kind,

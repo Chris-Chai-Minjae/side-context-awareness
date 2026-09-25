@@ -1,4 +1,4 @@
-// Capture timing and target limits from the Aside CA reference.
+// Capture timing and target limits in the Side capture contract.
 export const MIN_CAPTURE_INTERVAL_MS = 2_000 // [verified]
 export const UNCHANGED_URL_INTERVAL_MS = 60_000 // [verified]
 export const ACTIVATION_INTERVAL_MS = 15_000 // [verified]
@@ -65,6 +65,8 @@ export const SUMMARY_PROVIDER_TIMEOUT_MS = 60_000 // [design] 05-comprehension.m
 export const SUMMARY_CALL_SLOT_WAIT_MS = 10_000 // Synthetic providers.test only: 10s queued + 60s provider request + 10s native RPC margin.
 export const SUMMARY_CLAUDE_MAX_OUTPUT_BYTES = 1_048_576 // [design] 02-architecture.md §4, Claude CLI stdout+stderr cap.
 export const SUMMARY_CLAUDE_CONSENT_POLL_MS = 100 // [design] 02-architecture.md §4, in-flight revocation check.
+export const SUMMARY_CODEX_MAX_OUTPUT_BYTES = SUMMARY_CLAUDE_MAX_OUTPUT_BYTES // Same bounded CLI output budget.
+export const SUMMARY_CODEX_CONSENT_POLL_MS = SUMMARY_CLAUDE_CONSENT_POLL_MS // Same in-flight revocation cadence.
 export const SUMMARY_MAX_TOKENS = 4_096 // [design] 05-comprehension.md §6.
 export const SUMMARY_TEMPERATURE = 0.2 // [design] 05-comprehension.md §6.
 export const MAX_CONCURRENT_SUMMARY_CALLS = 2 // [design] 05-comprehension.md §2.

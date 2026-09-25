@@ -8,7 +8,9 @@ import { loadSettings, saveSettings } from "../../src/config/index"
 import { type Settings, SettingsSchema } from "../../src/contracts/settings"
 
 function apiKeyRefOf(provider: Settings["providers"][number] | undefined): string | undefined {
-  return provider?.kind === "claude-code-cli" ? undefined : provider?.apiKeyRef
+  return provider?.kind === "claude-code-cli" || provider?.kind === "codex-cli"
+    ? undefined
+    : provider?.apiKeyRef
 }
 
 async function fixture() {
@@ -289,6 +291,47 @@ test("Claude Code CLI provider patches and reads without a URL or Keychain refer
       allowEvidence: false,
     })
     expect(JSON.stringify(response)).not.toContain("synthetic-keychain-ref-private")
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test("Codex CLI provider patches and reads without a URL or Keychain reference", async () => {
+  const { directory, handlers } = await fixture()
+  try {
+    const response = await handleRpcBody(
+      rpc("settings.patch", {
+        providers: [
+          {
+            id: "OpenAI (Codex login)",
+            kind: "codex-cli",
+            models: ["gpt-6-luna"],
+            allowEvidence: false,
+          },
+        ],
+      }),
+      handlers,
+    )
+    expect(response).toMatchObject({
+      result: {
+        providers: [
+          {
+            id: "OpenAI (Codex login)",
+            kind: "codex-cli",
+            base_url: null,
+            host: "OpenAI (Codex login)",
+            has_key: false,
+            allow_evidence: false,
+          },
+        ],
+      },
+    })
+    expect((await loadSettings(directory)).providers[0]).toEqual({
+      id: "OpenAI (Codex login)",
+      kind: "codex-cli",
+      models: ["gpt-6-luna"],
+      allowEvidence: false,
+    })
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

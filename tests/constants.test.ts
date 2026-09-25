@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import * as constants from "../src/constants"
 
-// Transcribed from the verified §11 constant reference in the source PRD.
+// Fixed regression values for the approved Side capture and summary contracts.
 const verified = {
   MIN_CAPTURE_INTERVAL_MS: 2_000,
   UNCHANGED_URL_INTERVAL_MS: 60_000,
@@ -77,7 +77,7 @@ const verified = {
   CONTEXT_AWARENESS_ALLOWED_PLANS: ["max"],
 }
 
-test("P0-T0.2: the verified §11 constants and Side design values match", () => {
+test("P0-T0.2: approved capture and summary constants match fixed regression values", () => {
   const actual: Record<string, unknown> = constants
   expect(actual).toEqual({
     ...verified,
@@ -179,6 +179,8 @@ test("P0-T0.2: the verified §11 constants and Side design values match", () => 
     SUMMARY_CALL_SLOT_WAIT_MS: 10_000,
     SUMMARY_CLAUDE_MAX_OUTPUT_BYTES: 1_048_576,
     SUMMARY_CLAUDE_CONSENT_POLL_MS: 100,
+    SUMMARY_CODEX_MAX_OUTPUT_BYTES: 1_048_576,
+    SUMMARY_CODEX_CONSENT_POLL_MS: 100,
     SUMMARY_MAX_TOKENS: 4_096,
     SUMMARY_TEMPERATURE: 0.2,
     MAX_CONCURRENT_SUMMARY_CALLS: 2,

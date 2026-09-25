@@ -15,6 +15,7 @@ struct OnboardingPermissions: Equatable, Decodable {
 enum OnboardingProviderKind: String, Decodable {
     case openAICompatible = "openai-compatible"
     case claudeCodeCLI = "claude-code-cli"
+    case codexCLI = "codex-cli"
 }
 
 struct OnboardingProvider: Equatable {
@@ -162,7 +163,7 @@ final class UDSOnboardingService: OnboardingService {
 
     func saveProviders(_ providers: [OnboardingProvider]) async throws -> OnboardingSettings {
         let values: [[String: Any]] = try providers.map { provider in
-            if provider.kind == .claudeCodeCLI {
+            if provider.kind == .claudeCodeCLI || provider.kind == .codexCLI {
                 return [
                     "id": provider.id,
                     "kind": provider.kind.rawValue,

@@ -5,6 +5,7 @@ enum OnboardingProviderPreset: CaseIterable, Hashable {
     case xiaomiMiMo26Pro
     case miniMaxM3
     case openAI
+    case codexLogin
     case claudeCode
     case custom
 
@@ -13,6 +14,7 @@ enum OnboardingProviderPreset: CaseIterable, Hashable {
         case .xiaomiMiMo26Pro: return "Xiaomi MiMo 2.6 Pro (Singapore Token Plan)"
         case .miniMaxM3: return "MiniMax M3"
         case .openAI: return "OpenAI"
+        case .codexLogin: return "OpenAI (Codex login)"
         case .claudeCode: return "Claude Code"
         case .custom: return "Custom URL"
         }
@@ -26,6 +28,7 @@ enum OnboardingProviderPreset: CaseIterable, Hashable {
                 "Xiaomi MiMo 2.6 Pro (싱가포르 토큰 요금제)"
             )
         case .miniMaxM3, .openAI: return title
+        case .codexLogin: return language.localized("OpenAI (Codex login)", "OpenAI (Codex 로그인)")
         case .claudeCode: return language.localized("Claude Code login", "Claude Code 로그인")
         case .custom: return language.localized("Custom URL", "직접 URL 입력")
         }
@@ -39,9 +42,13 @@ struct OnboardingProviderDraft {
     var modelID = ""
     var apiKey = ""
 
-    var supportsToolChoice: Bool { preset != .xiaomiMiMo26Pro && preset != .claudeCode }
+    var supportsToolChoice: Bool { preset != .xiaomiMiMo26Pro && preset != .claudeCode && preset != .codexLogin }
     var kind: OnboardingProviderKind {
-        preset == .claudeCode ? .claudeCodeCLI : .openAICompatible
+        switch preset {
+        case .claudeCode: return .claudeCodeCLI
+        case .codexLogin: return .codexCLI
+        default: return .openAICompatible
+        }
     }
 
     mutating func select(_ next: OnboardingProviderPreset) {
@@ -60,6 +67,10 @@ struct OnboardingProviderDraft {
             name = next.title
             baseURL = "https://api.openai.com/v1"
             modelID = ""
+        case .codexLogin:
+            name = next.title
+            baseURL = ""
+            modelID = "gpt-6-luna"
         case .claudeCode:
             name = next.title
             baseURL = ""
@@ -207,10 +218,23 @@ struct OnboardingView: View {
                         "기존 Claude Code 로그인을 사용합니다. claude-* 모델 ID를 입력하세요. 요약은 설정에서 증거 전송을 허용한 뒤에만 이 Mac 밖으로 전송됩니다."
                     ))
                         .foregroundStyle(.secondary)
+                } else if providerDraft.kind == .codexCLI {
+                    Text(language.localized(
+                        "Uses your existing Codex CLI ChatGPT login. No API key is needed. A login stored only in Keychain is not supported. Summaries reach OpenAI only after evidence consent in Settings. MiMo remains the recommended primary provider.",
+                        "기존 Codex CLI ChatGPT 로그인을 사용합니다. API 키는 필요하지 않습니다. Keychain에만 저장된 로그인은 지원하지 않습니다. 설정에서 증거 전송을 허용한 뒤에만 요약을 OpenAI로 보냅니다. 기본 제공자로는 MiMo를 권장합니다."
+                    ))
+                        .foregroundStyle(.secondary)
                 } else {
                     TextField(language.localized("Base URL", "기본 URL"), text: $providerDraft.baseURL)
                         .textContentType(.URL)
                     SecureField(language.localized("API key (if required)", "API 키 (필요한 경우)"), text: $providerDraft.apiKey)
+                }
+                if providerDraft.kind != .openAICompatible {
+                    Text(language.localized(
+                        "Using an existing CLI login is at your own risk. Check each provider's terms and usage limits.",
+                        "기존 CLI 로그인 사용은 사용자 책임입니다. 각 제공자의 약관과 사용량 한도를 확인하세요."
+                    ))
+                        .foregroundStyle(.secondary)
                 }
                 TextField(
                     providerDraft.kind == .claudeCodeCLI

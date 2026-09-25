@@ -244,6 +244,45 @@ final class OnboardingRPCTests: XCTestCase {
         XCTAssertEqual(settings.providers.first?.models, ["claude-sonnet-4-6"])
     }
 
+    func testCodexProviderPatchOmitsBaseURLAndKey() async throws {
+        let server = try OneShotRPCServer(result: [
+            "enabled": false, "screen_ocr": true, "ui_language": "ko", "providers": [],
+        ])
+        defer { server.close() }
+        let providers = [OnboardingProvider(
+            id: "OpenAI (Codex login)", baseURL: nil, models: ["gpt-6-luna"],
+            supportsToolChoice: false, allowEvidence: false, kind: .codexCLI
+        )]
+
+        _ = try await UDSOnboardingService(socketPath: server.path).saveProviders(providers)
+
+        let request = try server.receivedRequest()
+        let patch = try XCTUnwrap(request["params"] as? [String: Any])
+        let saved = try XCTUnwrap(patch["providers"] as? [[String: Any]])
+        XCTAssertEqual(saved.first?["kind"] as? String, "codex-cli")
+        XCTAssertEqual(saved.first?["models"] as? [String], ["gpt-6-luna"])
+        XCTAssertNil(saved.first?["baseUrl"])
+        XCTAssertNil(saved.first?["apiKey"])
+    }
+
+    func testSettingsGetDecodesCodexProviderWithoutBaseURL() async throws {
+        let server = try OneShotRPCServer(result: [
+            "enabled": false, "screen_ocr": true, "ui_language": "ko",
+            "providers": [[
+                "id": "OpenAI (Codex login)", "kind": "codex-cli", "base_url": NSNull(),
+                "models": ["gpt-6-luna"], "supports_tool_choice": false,
+                "allow_evidence": false,
+            ]],
+        ])
+        defer { server.close() }
+
+        let settings = try await UDSOnboardingService(socketPath: server.path).getSettings()
+
+        XCTAssertEqual(settings.providers.first?.kind, .codexCLI)
+        XCTAssertNil(settings.providers.first?.baseURL)
+        XCTAssertEqual(settings.providers.first?.models, ["gpt-6-luna"])
+    }
+
     func testScreenRecordingSkipSendsCamelCasePatchOverUDS() async throws {
         // Given a synthetic local RPC endpoint that accepts a settings patch.
         let server = try OneShotRPCServer(result: ["enabled": false, "screen_ocr": false, "providers": []])

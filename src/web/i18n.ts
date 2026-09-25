@@ -70,6 +70,8 @@ const korean = {
   "Enter a valid Base URL.": "올바른 Base URL을 입력하세요.",
   "Enter explicit Claude Code model IDs beginning with claude-.":
     "claude-로 시작하는 Claude Code Model ID를 직접 입력하세요.",
+  "Enter an explicit Codex model ID, such as gpt-6-luna.":
+    "gpt-6-luna와 같은 Codex Model ID를 직접 입력하세요.",
   "Enter a provider name.": "제공자 이름을 입력하세요.",
   "A provider with this name already exists.": "같은 이름의 제공자가 이미 있습니다.",
   "This provider is no longer configured.": "이 제공자는 더 이상 설정되어 있지 않습니다.",
@@ -169,10 +171,15 @@ const korean = {
   "Edit provider": "제공자 편집",
   "MiMo 2.6 Pro (Singapore)": "MiMo 2.6 Pro (싱가포르)",
   "Claude Code login": "Claude Code 로그인",
+  "OpenAI (Codex login)": "OpenAI (Codex 로그인)",
   Name: "이름",
   "Model IDs": "Model ID",
   "Uses your existing Claude Code login. Enter an explicit model ID. Summaries are sent to the Claude Code service only after you allow evidence below.":
     "기존 Claude Code 로그인을 사용합니다. Model ID를 직접 입력하세요. 아래에서 증거 전송을 허용한 뒤에만 요약을 Claude Code 서비스로 보냅니다.",
+  "Uses your existing Codex CLI ChatGPT login. No API key is needed. A login stored only in Keychain is not supported. Summaries are sent to OpenAI only after you allow evidence below. MiMo remains the recommended primary provider.":
+    "기존 Codex CLI ChatGPT 로그인을 사용합니다. API 키는 필요하지 않습니다. Keychain에만 저장된 로그인은 지원하지 않습니다. 아래에서 증거 전송을 허용한 뒤에만 요약을 OpenAI로 보냅니다. 기본 제공자로는 MiMo를 권장합니다.",
+  "Using an existing CLI login is at your own risk. Check each provider's terms and usage limits.":
+    "기존 CLI 로그인 사용은 사용자 책임입니다. 각 제공자의 약관과 사용량 한도를 확인하세요.",
   "Optional. Discover models after saving, or enter Model IDs separated by commas.":
     "선택 사항입니다. 저장 후 모델을 조회하거나 Model ID를 쉼표로 구분해 입력하세요.",
   "API key": "API 키",
@@ -236,7 +243,10 @@ const korean = {
   "View Apple guide": "Apple 안내 보기",
   "Browser Automation": "브라우저 자동화",
   "No browser Automation status reported yet.": "아직 보고된 브라우저 자동화 상태가 없습니다.",
+  "No browser target is available for an Automation request.":
+    "자동화 권한을 요청할 브라우저 대상이 없습니다.",
   "Request Automation": "자동화 권한 요청",
+  "Already allowed": "이미 허용됨",
   "Automation access is shown only for browsers the helper has reported.":
     "Helper가 보고한 브라우저의 자동화 권한만 표시합니다.",
   "Key not configured": "키 미설정",

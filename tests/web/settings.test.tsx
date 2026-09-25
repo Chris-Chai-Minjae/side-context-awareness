@@ -22,6 +22,12 @@ const ProviderPatchSchema = z.array(
       models: z.array(z.string()),
       allowEvidence: z.boolean(),
     }),
+    z.object({
+      id: z.string(),
+      kind: z.literal("codex-cli"),
+      models: z.array(z.string()),
+      allowEvidence: z.boolean(),
+    }),
   ]),
 )
 let browser: Window
@@ -275,7 +281,7 @@ test("renders S2 approved section and explanatory copy when RPC is ready", async
     "1 models",
   )
   expect(element.textContent).toContain(
-    "claude mcp add side -- '/Applications/Side.app/Contents/Resources/side' mcp",
+    "claude mcp add --scope user side -- '/Applications/Side.app/Contents/Resources/side' mcp",
   )
   expect(element.innerHTML).not.toContain("synthetic-token")
 })
@@ -683,6 +689,7 @@ test("Claude Code login can be selected without entering an API URL or key", asy
   await settle()
   click(element, '[data-action="preset-claude-code"]')
   await settle()
+  expect(element.textContent).toContain("Using an existing CLI login is at your own risk.")
   expect(element.querySelector("#provider-url")).toBeNull()
   expect(element.querySelector("#provider-key")).toBeNull()
   change(element, "#provider-models", "claude-sonnet-4-5")
@@ -701,6 +708,49 @@ test("Claude Code login can be selected without entering an API URL or key", asy
     ],
   })
   expect(calls.some((call) => call.method === "providers.setKey")).toBe(false)
+})
+
+test("OpenAI Codex login can be saved without an API URL or key while manual OpenAI API remains", async () => {
+  const element = root()
+  mountApp(element, window, fakeFetch)
+  await settle()
+  click(element, '[data-action="add-provider"]')
+  await settle()
+  expect(element.querySelector('[data-action="preset-openai"]')).not.toBeNull()
+  click(element, '[data-action="preset-codex"]')
+  await settle()
+  expect(element.textContent).toContain("Using an existing CLI login is at your own risk.")
+  expect(element.querySelector("#provider-url")).toBeNull()
+  expect(element.querySelector("#provider-key")).toBeNull()
+  change(element, "#provider-models", "gpt-6-luna")
+  await settle()
+  click(element, '.provider-dialog button[type="submit"]')
+  await settle()
+  expect(calls.find((call) => call.method === "settings.patch")?.params).toMatchObject({
+    providers: [
+      { id: "local" },
+      {
+        id: "OpenAI (Codex login)",
+        kind: "codex-cli",
+        models: ["gpt-6-luna"],
+        allowEvidence: false,
+      },
+    ],
+  })
+  expect(calls.some((call) => call.method === "providers.setKey")).toBe(false)
+})
+
+test("Korean provider form explains CLI login terms and usage limits", async () => {
+  settings["ui_language"] = "ko"
+  const element = root()
+  mountApp(element, window, fakeFetch)
+  await settle()
+  click(element, '[data-action="add-provider"]')
+  await settle()
+  click(element, '[data-action="preset-codex"]')
+  await settle()
+  expect(element.textContent).toContain("기존 CLI 로그인 사용은 사용자 책임입니다.")
+  expect(element.textContent).toContain("각 제공자의 약관과 사용량 한도를 확인하세요.")
 })
 
 test("Claude Code provider rejects a model name outside the explicit claude ID format", async () => {
@@ -789,8 +839,25 @@ test("connection commands use the served executable path and shell-quote it", as
     (connection) => connection.querySelector("h3")?.textContent === "Claude Code",
   )
   expect(claude?.querySelector("code")?.textContent).toBe(
-    "claude mcp add side -- '/Applications/Side'\\''s Test.app/Contents/Resources/side' mcp",
+    "claude mcp add --scope user side -- '/Applications/Side'\\''s Test.app/Contents/Resources/side' mcp",
   )
+  const codex = Array.from(element.querySelectorAll<HTMLElement>(".agent-connection")).find(
+    (connection) => connection.querySelector("h3")?.textContent === "Codex",
+  )
+  expect(codex?.querySelector("code")?.textContent).toBe(
+    "codex mcp add side -- '/Applications/Side'\\''s Test.app/Contents/Resources/side' mcp",
+  )
+  const cursor = Array.from(element.querySelectorAll<HTMLElement>(".agent-connection")).find(
+    (connection) => connection.querySelector("h3")?.textContent === "Cursor",
+  )
+  expect(JSON.parse(cursor?.querySelector("code")?.textContent ?? "")).toEqual({
+    mcpServers: {
+      side: {
+        command: "/Applications/Side's Test.app/Contents/Resources/side",
+        args: ["mcp"],
+      },
+    },
+  })
 })
 
 test("history summary link resolves to its day route with source anchor", async () => {

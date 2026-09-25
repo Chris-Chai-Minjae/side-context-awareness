@@ -218,12 +218,28 @@ final class OnboardingFlow: ObservableObject {
                 )
                 return
             }
+        case .codexCLI:
+            guard endpoint.isEmpty, apiKey.isEmpty else {
+                errorMessage = language.localized(
+                    "Codex login does not use a Base URL or API key.",
+                    "Codex 로그인에는 기본 URL이나 API 키를 사용하지 않습니다."
+                )
+                return
+            }
+            guard !providerID.isEmpty,
+                  model.range(of: #"^[A-Za-z0-9][A-Za-z0-9._-]*$"#, options: .regularExpression) != nil else {
+                errorMessage = language.localized(
+                    "Enter an explicit Codex model ID, such as gpt-6-luna.",
+                    "gpt-6-luna와 같은 Codex Model ID를 직접 입력하세요."
+                )
+                return
+            }
         }
         isWorking = true
         defer { isWorking = false }
         let provider = OnboardingProvider(
-            id: providerID, baseURL: kind == .claudeCodeCLI ? nil : endpoint, models: [model],
-            supportsToolChoice: kind == .claudeCodeCLI ? false : supportsToolChoice,
+            id: providerID, baseURL: kind == .openAICompatible ? endpoint : nil, models: [model],
+            supportsToolChoice: kind == .openAICompatible ? supportsToolChoice : false,
             allowEvidence: false, kind: kind
         )
         let providers = settings.providers.filter { $0.id != providerID } + [provider]

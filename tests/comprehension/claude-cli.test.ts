@@ -33,19 +33,43 @@ const valid = {
   citations: [{ ref }],
   sourceIds: [ref],
 }
+const authOverrideNames = [
+  "ANTHROPIC_API_KEY",
+  "ANTHROPIC_AUTH_TOKEN",
+  "CLAUDE_CODE_OAUTH_TOKEN",
+  "CLAUDE_CODE_OAUTH_REFRESH_TOKEN",
+  "CLAUDE_CODE_OAUTH_SCOPES",
+  "ANTHROPIC_BASE_URL",
+  "ANTHROPIC_CUSTOM_HEADERS",
+  "CLAUDE_CODE_API_KEY_HELPER_TTL_MS",
+  "CLAUDE_CODE_USE_BEDROCK",
+  "CLAUDE_CODE_USE_VERTEX",
+  "CLAUDE_CODE_USE_FOUNDRY",
+  "CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST",
+  "CLAUDE_CONFIG_DIR",
+  "ANTHROPIC_AWS_API_KEY",
+  "ANTHROPIC_AWS_BASE_URL",
+  "ANTHROPIC_AWS_WORKSPACE_ID",
+  "ANTHROPIC_BEDROCK_BASE_URL",
+  "ANTHROPIC_VERTEX_BASE_URL",
+  "ANTHROPIC_FOUNDRY_API_KEY",
+  "ANTHROPIC_FOUNDRY_BASE_URL",
+  "ANTHROPIC_FOUNDRY_RESOURCE",
+] as const
 
 const stub = `#!/usr/bin/env bun
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs"
 const args = process.argv.slice(2)
 const mode = process.env.SIDE_CLAUDE_STUB_MODE
 const trace = process.env.SIDE_CLAUDE_STUB_TRACE
-if (args[0] === "auth") {
-  appendFileSync(trace, JSON.stringify({ kind: "auth", args, apiKeyPresent: Boolean(process.env.ANTHROPIC_API_KEY), user: process.env.USER, logname: process.env.LOGNAME }) + "\\n")
-  process.stdout.write(JSON.stringify({ loggedIn: mode !== "unauth", email: "private@example.invalid" }))
+const overridesPresent = ${JSON.stringify(authOverrideNames)}.filter((name) => process.env[name] !== undefined)
+if (args.includes("auth")) {
+  appendFileSync(trace, JSON.stringify({ kind: "auth", args, overridesPresent, apiKeyPresent: Boolean(process.env.ANTHROPIC_API_KEY), user: process.env.USER, logname: process.env.LOGNAME }) + "\\n")
+  process.stdout.write(JSON.stringify({ loggedIn: mode !== "unauth", authMethod: mode === "api-key" ? "api_key" : mode === "missing-method" ? undefined : "claude.ai", email: "private@example.invalid" }))
   process.exit(mode === "unauth" ? 1 : 0)
 }
 const input = readFileSync(0, "utf8")
-appendFileSync(trace, JSON.stringify({ kind: "summary", args, input, pid: process.pid, apiKeyPresent: Boolean(process.env.ANTHROPIC_API_KEY), user: process.env.USER, logname: process.env.LOGNAME }) + "\\n")
+appendFileSync(trace, JSON.stringify({ kind: "summary", args, input, pid: process.pid, overridesPresent, apiKeyPresent: Boolean(process.env.ANTHROPIC_API_KEY), user: process.env.USER, logname: process.env.LOGNAME }) + "\\n")
 if (mode === "hang") {
   process.stdout.write(JSON.stringify({ type: "result", is_error: false, structured_output: JSON.parse(process.env.SIDE_CLAUDE_STUB_RESULT) }))
   writeFileSync(process.env.SIDE_CLAUDE_STUB_STARTED, "started")
@@ -88,10 +112,10 @@ async function withStub<T>(
     result: process.env["SIDE_CLAUDE_STUB_RESULT"],
     count: process.env["SIDE_CLAUDE_STUB_COUNT"],
     started: process.env["SIDE_CLAUDE_STUB_STARTED"],
-    apiKey: process.env["ANTHROPIC_API_KEY"],
     user: process.env["USER"],
     logname: process.env["LOGNAME"],
   }
+  const originalOverrides = new Map(authOverrideNames.map((name) => [name, process.env[name]]))
   process.env["PATH"] = packagedParent
     ? "/usr/bin:/bin:/usr/sbin:/sbin"
     : `${directory}:${original.path ?? ""}`
@@ -105,7 +129,7 @@ async function withStub<T>(
   process.env["SIDE_CLAUDE_STUB_RESULT"] = JSON.stringify(valid)
   process.env["SIDE_CLAUDE_STUB_COUNT"] = join(directory, "count")
   process.env["SIDE_CLAUDE_STUB_STARTED"] = started
-  process.env["ANTHROPIC_API_KEY"] = "synthetic-key-must-not-be-used"
+  for (const name of authOverrideNames) process.env[name] = "synthetic-override-must-not-be-used"
   try {
     return await run({ trace, started })
   } finally {
@@ -117,10 +141,13 @@ async function withStub<T>(
       SIDE_CLAUDE_STUB_RESULT: original.result,
       SIDE_CLAUDE_STUB_COUNT: original.count,
       SIDE_CLAUDE_STUB_STARTED: original.started,
-      ANTHROPIC_API_KEY: original.apiKey,
       USER: original.user,
       LOGNAME: original.logname,
     })) {
+      if (value === undefined) delete process.env[name]
+      else process.env[name] = value
+    }
+    for (const [name, value] of originalOverrides) {
       if (value === undefined) delete process.env[name]
       else process.env[name] = value
     }
@@ -173,6 +200,7 @@ function traceRows(path: string): {
   args: string[]
   input?: string
   apiKeyPresent?: boolean
+  overridesPresent?: string[]
   user?: string
   logname?: string
 }[] {
@@ -197,6 +225,7 @@ test("Given consent and a synthetic CLI, when summarizing, then fixed safe flags
     expect([result.inputTokens, result.outputTokens]).toEqual([7, 3])
     const rows = traceRows(trace)
     expect(rows.map((row) => row.kind)).toEqual(["auth", "summary"])
+    expect(rows[0]?.args).toEqual(["--restricted", "auth", "status", "--json"])
     const args = rows[1]?.args ?? []
     expect(args).toContain("-p")
     for (const flag of [
@@ -204,6 +233,7 @@ test("Given consent and a synthetic CLI, when summarizing, then fixed safe flags
       "--safe-mode",
       "--tools",
       "--strict-mcp-config",
+      "--disallowedTools",
       "--no-session-persistence",
       "--output-format",
       "--json-schema",
@@ -211,6 +241,7 @@ test("Given consent and a synthetic CLI, when summarizing, then fixed safe flags
     ])
       expect(args).toContain(flag)
     expect(args[args.indexOf("--tools") + 1]).toBe("")
+    expect(args[args.indexOf("--disallowedTools") + 1]).toBe("mcp__*")
     expect(args[args.indexOf("--model") + 1]).toBe("claude-sonnet-4-6")
     expect(args[args.indexOf("--system-prompt") + 1]).toContain("No tools are available")
     expect(args[args.indexOf("--system-prompt") + 1]).not.toContain("Call the tool record_summary")
@@ -218,11 +249,30 @@ test("Given consent and a synthetic CLI, when summarizing, then fixed safe flags
     expect(args.join(" ")).not.toContain(briefing.text)
     expect(rows[1]?.input).toContain(briefing.text)
     expect(rows.every((row) => row.apiKeyPresent === false)).toBe(true)
+    expect(rows.every((row) => row.overridesPresent?.length === 0)).toBe(true)
     expect(JSON.stringify(logs)).not.toContain(briefing.text)
     expect(JSON.stringify(logs)).not.toContain("private@example.invalid")
     const schema = JSON.parse(args[args.indexOf("--json-schema") + 1] ?? "null")
     expect(schema.required).toContain("sourceIds")
     expect(schema.properties.title.maxLength).toBeUndefined()
+  })
+})
+
+test("Given an API-key login, when summarizing, then evidence never reaches the CLI", async () => {
+  await withStub("api-key", async ({ trace }) => {
+    await expect(summarizeBriefing({ settings: settings(true), briefing })).rejects.toThrow(
+      "all permitted summary providers failed",
+    )
+    expect(traceRows(trace).map((row) => row.kind)).toEqual(["auth"])
+  })
+})
+
+test("Given a login without an auth method, when summarizing, then evidence never reaches the CLI", async () => {
+  await withStub("missing-method", async ({ trace }) => {
+    await expect(summarizeBriefing({ settings: settings(true), briefing })).rejects.toThrow(
+      "all permitted summary providers failed",
+    )
+    expect(traceRows(trace).map((row) => row.kind)).toEqual(["auth"])
   })
 })
 
