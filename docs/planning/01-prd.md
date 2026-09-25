@@ -3,7 +3,6 @@
 ## 1. 한 줄 정의
 
 > **Let Side remember your day** — Side captures what you do in your browser and apps so agents can recall it later.
-> (원본 문구 `[verified]`에서 제품명만 교체)
 
 Mac에서 사용자가 하는 일(브라우저 탭, 앱 창, 입력한 문장, 선택한 텍스트, 클릭, 화면 OCR)을 수동으로 관찰한다. redaction과 암호화를 거쳐 로컬 ledger에 저장하고, 백그라운드 LLM이 10분 창 요약과 6시간 롤업을 쓴다. 결과는 일일 마크다운 페이지로 렌더되고, MCP를 통해 **모든 로컬 에이전트**(Claude Code·Codex·Cursor·Aside)가 "그때 뭐 하고 있었지 / 그 페이지 어디였지"를 인용과 함께 되찾는다.
 
@@ -33,16 +32,16 @@ Mac에서 사용자가 하는 일(브라우저 탭, 앱 창, 입력한 문장, �
 | 요약 모델 | 창마다 `record_summary` 1회 호출 |
 | 에이전트 | `side mcp`로 `history_search`·`history_read`·`memory_search` 사용 |
 
-## 4. 원본 대비 편차표
+## 4. 설계 선택
 
-| 영역 | 원본 Aside CA | Side | 근거 |
-|---|---|---|---|
-| 플랫폼 | darwin, win32 | darwin만 | ADR-002 |
-| 게이트 | Max 플랜, `@aside.com` 이메일 | 없음 | ADR-002 |
-| 소스 | `aside_dom`, `mac_ax`, `win_uia` | `aside_dom`(어댑터), `mac_ax` | ADR-001/011 |
-| 프로세스 | daemon → helper | App → daemon | ADR-007 |
-| 에이전트 도구 | Aside 내부 tool | MCP stdio(`side mcp`) + `memory_search` 추가 | ADR-003 |
-| 모델 | Aside 모델 카탈로그 | OpenAI 호환 provider 체인 | ADR-004 |
+| 영역 | 선택 | 근거 |
+|---|---|---|
+| 플랫폼 | macOS(darwin)만 | ADR-002 |
+| 계정·플랜 게이트 | 없음(로컬 단독 실행) | ADR-002 |
+| 캡처 소스 | `mac_ax`, 브라우저 URL, OCR, 선택적 `aside_dom` 어댑터 | ADR-001/011 |
+| 프로세스 | App → daemon | ADR-007 |
+| 에이전트 도구 | MCP stdio(`side mcp`) 세 도구 | ADR-003 |
+| 모델 | OpenAI 호환 provider 체인 | ADR-004 |
 | 시맨틱 인덱스 | MOSS (독점) | sqlite-vec + multilingual MiniLM | ADR-005 |
 | OCR | 온디바이스(구현 불명) | Apple Vision | ADR-009 |
 | 저장 암호화 | evidence content만 | + window_title·url·target·payload, term index 해시 | ADR-008 |
@@ -54,12 +53,12 @@ Mac에서 사용자가 하는 일(브라우저 탭, 앱 창, 입력한 문장, �
 |---|---|---|---|
 | FR-1 | 캡처 스케줄링 | `03-capture.md` §3 | §11 상수 일치, 트리거 승격, 동시 2, 스윕 8 |
 | FR-2 | 저장 전 redaction | `03-capture.md` §6 | 카나리아 비밀이 ledger 바이트에 0회 등장 |
-| FR-3 | 로컬 증거 저장소 | `04-data-model.md` | Aside DDL 1:1, 봉인 컬럼, frame 압축 |
+| FR-3 | 로컬 증거 저장소 | `04-data-model.md` | 정본 DDL, 봉인 컬럼, frame 압축 |
 | FR-4 | 요약 파이프라인 | `05-comprehension.md` | 10분/6h, lease·재시도·repair, 인젝션 무력화 |
 | FR-5 | 일일 페이지 + 인덱스 | `07-recall-index.md` §1–3 | 렌더 v3 포맷, write fence, 하이브리드 검색 |
 | FR-6 | 에이전트 회수 도구 | `07-recall-index.md` §4–5 | MCP 3종, lexical 랭킹 공식 일치 |
-| FR-7 | 설정 화면 | `06-screens.md` | 섹션·문구 1:1 |
-| FR-8 | 권한·헬스 | `03-capture.md` §8, `06-screens.md` §2 | health 필드 1:1(Windows 필드 제외) |
+| FR-7 | 설정 화면 | `06-screens.md` | 섹션·문구는 `06-screens.md` 정본 |
+| FR-8 | 권한·헬스 | `03-capture.md` §8, `06-screens.md` §2 | health 필드 정본(Windows 필드 제외) |
 | FR-9 | 보존·삭제·저장량 | `04-data-model.md` §5–6 | GC 6h, vacuum 16MB, delete-wins |
 | FR-10 | Denylist | `03-capture.md` §7 | 규칙 유니온, legacy 마이그레이션 |
 

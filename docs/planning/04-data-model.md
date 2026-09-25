@@ -9,7 +9,7 @@
 - **Summary**: `10min` 창 요약 또는 `6h` 롤업. 작업 큐를 겸한다
 - **Day page**: `memory/episodic/context-awareness-YYYY-MM-DD.md`
 
-## 2. DDL — Aside ledger 원본 그대로 `[measured: 2026-09-24 sqlite_master 덤프]`
+## 2. DDL — 정본 `[decided]`
 
 ```sql
 CREATE TABLE context_awareness_blobs (
@@ -33,7 +33,7 @@ CREATE TABLE context_awareness_summaries (
   attempt_count INTEGER NOT NULL DEFAULT 0, available_at INTEGER NOT NULL DEFAULT 0, lease_expires_at INTEGER,
   model TEXT NOT NULL DEFAULT '', input_tokens INTEGER NOT NULL DEFAULT 0, output_tokens INTEGER NOT NULL DEFAULT 0,
   duration_ms INTEGER NOT NULL DEFAULT 0, digested_at INTEGER);
--- 인덱스 13개도 원본 그대로 (blobs_frame, blobs_hash UNIQUE, blobs_last_seen, events_app(bundle_id,occurred_at),
+-- 인덱스 13개도 정본 그대로 (blobs_frame, blobs_hash UNIQUE, blobs_last_seen, events_app(bundle_id,occurred_at),
 -- events_blob, events_domain(domain,occurred_at), events_occurred, events_session(session_id,occurred_at),
 -- summaries_lease(status,lease_expires_at), summaries_ready(status,available_at), summaries_status(status,window_from),
 -- summaries_unique_window(kind,window_from,window_to) UNIQUE, summaries_window(kind,window_to))
@@ -71,7 +71,7 @@ CREATE TABLE side_day_counters (day TEXT PRIMARY KEY, events INTEGER, blobs INTE
 
 - 마스터 키: Keychain generic password `service=local-context-awareness-ledger`(기존 `key.swift`의 이름을 유지해 마이그레이션 불필요), `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`.
 - HKDF-SHA256(salt = `"side/v1"`)로 파생한다:
-  - `context-awareness.evidence`(원본 `DK_SUBKEY_PURPOSE` `[verified]`): seal에 쓴다
+  - `context-awareness.evidence`: seal에 쓴다
   - `context-awareness.terms`: term index 해시
   - `context-awareness.content-hash`: blob 중복 제거
 - `seal` 형식: 기존 `crypto.ts`를 유지한다(iv 12B + tag 16B + ct, base64url). AAD로 `table:column:id`를 넣어 **컬럼 간 바꿔치기를 막는다** `[design]`.
@@ -113,7 +113,7 @@ observation → policy(denylist/pause/secure) → redact → normalize
   2. 구간 events와 그에 딸린 terms를 삭제하고, 고아가 된 blobs·frames 정리
   3. `window_from`과 `window_to`가 구간과 겹치는 summaries(10min·6h 모두)를 삭제
   4. 영향받은 day를 `dirty`로 표시
-- 커밋이 끝나면 dirty day를 다시 렌더한다. 요약이 하나도 남지 않은 day의 페이지는 삭제한다(원본 동작).
+- 커밋이 끝나면 dirty day를 다시 렌더한다. 요약이 하나도 남지 않은 day의 페이지는 삭제한다.
 - **write fence** `[verified 개념]`: 모든 렌더·요약 커밋·인덱스 쓰기는 작업을 시작할 때 `(account_generation, deletion_epoch)`를 기록한다. 커밋 직전에 이 값이 바뀌었으면 결과를 **버린다**. 그래서 삭제가 항상 이긴다.
 - `history_search`는 질의 시작과 끝의 epoch를 비교한다. 다르면 결과를 무효화하고 한 번 재시도한다 `[verified]`.
 - 비활성화 확인 문구 `[verified]`: "Existing history stays on this device until it expires or you delete it." 즉 비활성화는 삭제하지 않는다.

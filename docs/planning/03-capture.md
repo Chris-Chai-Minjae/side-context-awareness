@@ -15,7 +15,7 @@
 | `screen.ocr` | mac_ax | Vision OCR | OCR 텍스트 → blob |
 
 - **캡처 모양** `[verified]`: `TEXT_KINDS = {keyboard.text_input, selection.changed, screen.ocr}`는 `text`, `mac_ax` 스냅샷은 `ax`, `aside_dom` 스냅샷은 `aria`다.
-- **Input Monitoring 최소화**: event tap은 **트리거 신호**로만 쓴다. 문자 내용은 key 이벤트에서 절대 복원하지 않는다. 입력 문장은 오직 AX 값 diff로 얻는다. 원본 문구 "Aside never stores keystrokes"를 지키기 위함이다.
+- **Input Monitoring 최소화**: event tap은 **트리거 신호**로만 쓴다. 문자 내용은 key 이벤트에서 절대 복원하지 않는다. 입력 문장은 오직 AX 값 diff로 얻는다. UI 문구가 약속하는 "never stores keystrokes" 원칙을 지키기 위함이다.
 
 ## 2. Target 모델
 
@@ -26,7 +26,7 @@
 ## 3. 스케줄러 (FR-1)
 
 상수 `[verified]`: `MIN_CAPTURE_INTERVAL_MS=2000`, `ACTIVATION_INTERVAL_MS=15000`, `UNCHANGED_URL_INTERVAL_MS=60000`, `MAX_CONCURRENT_CAPTURES=2`, `SWEEP_INTERVAL_MS=120000`, `MAX_SWEEP_TARGETS=8`, `TAB_STALE_AFTER_MS=600000`, `TRIGGER_STRENGTH={interaction:4, activation:3, navigation:2, sweep:1, discovery:0}`.
-`CAPTURE_DEBOUNCE_MS`는 원본에서 값이 확인되지 않았다(`[unknown]`). Side는 이 값을 디바운스 하한 **500으로 정의**한다 `[design]`.
+`CAPTURE_DEBOUNCE_MS`는 외부에서 확인된 값이 없다(`[unknown]`). Side는 이 값을 디바운스 하한 **500으로 정의**한다 `[design]`.
 
 ```ts
 function interval(t: Target, trigger: Trigger, url: string | null): number {
@@ -77,7 +77,7 @@ function schedule(t: Target, trigger: Trigger, now: number) {
 
 ## 5. 입력 문장 캡처 (`captureTypedText`)
 
-- UI 문구 `[verified]`: "Save the sentences you type. Aside never stores keystrokes or password fields." (Side로 교체)
+- UI 문구: "Save the sentences you type. Side never stores keystrokes or password fields."
 - 기존 `src/typed.ts`의 `TypedSentenceTracker`를 유지한다. 앞부분이 같은 상태로 늘어난 값만 누적하고, 문장 종결자 `. ! ? 。 ！ ？ \n`에서 방출한다.
 - **flush 조건 추가**: `keyboard.submit`, 포커스 이탈(blur), `DRAFT_IDLE_MS` 경과. 누적 한도는 `TYPED_RUN_BYTES`(4096B)다.
 - **제외 필드**: subrole `AXSecureTextField`, §6.1의 label 정규식에 걸리는 필드, denylist 앱, `secureInput` 활성 상태.
@@ -101,7 +101,7 @@ function schedule(t: Target, trigger: Trigger, now: number) {
 | `aws-access-key` | `\b(AKIA|ASIA)[A-Z0-9]{16}\b` |
 | `jwt` | `\beyJ[\w-]{8,}\.[\w-]{8,}\.[\w-]{8,}\b` |
 | `slack-token` | `\bxox[abprs]-[\w-]{10,}\b` |
-| `api-key` | `\b(sk|pk|rk)[-_](live|test|proj)?[-_]?[A-Za-z0-9]{20,}\b`, `\bgh[pousr]_[A-Za-z0-9]{36,}\b`, `\bAIza[0-9A-Za-z_-]{35}\b` `[design: 원본은 규칙 이름만 확인]` |
+| `api-key` | `\b(sk|pk|rk)[-_](live|test|proj)?[-_]?[A-Za-z0-9]{20,}\b`, `\bgh[pousr]_[A-Za-z0-9]{36,}\b`, `\bAIza[0-9A-Za-z_-]{35}\b` `[design]` |
 | `labeled-secret` | `(api[_ -]?key|access[_ -]?token|secret|password|passwd|토큰|비밀번호)\s*[:=]\s*\S+` |
 | `otp-numeric` | OTP·인증 문맥(`otp|code|인증`) 뒤 40자 이내의 `\b\d{4,8}\b` |
 | `card-number` | `\b(?:\d[ -]?){12,18}\d\b` + Luhn 통과 시(13–19자리) |
@@ -115,7 +115,7 @@ function schedule(t: Target, trigger: Trigger, now: number) {
 
 ## 7. Denylist (FR-10)
 
-- 규칙 유니온은 `02-architecture.md` §6에 있다. 평가 순서: 명시적 `observe` 규칙은 이 버전에서 **denylist 예외(allow)를 뜻하지 않고** 무시한다. 원본에서도 UI가 `do_not_observe`만 만든다 `[verified UI]`.
+- 규칙 유니온은 `02-architecture.md` §6에 있다. 평가 순서: 명시적 `observe` 규칙은 이 버전에서 **denylist 예외(allow)를 뜻하지 않고** 무시한다. UI는 `do_not_observe`만 만든다.
 - **app 규칙**: `observer.configure`로 Side.app에 전달한다. 앱은 해당 bundle의 AX 관찰자 등록, event tap 메타 수집, OCR을 **아예 하지 않는다**(1차 차단).
 - **url 규칙**: 데몬이 URL을 해석한 뒤 host가 `domain`과 같거나 `.domain`으로 끝나면 폐기한다(기존 `isDeniedHost` 유지, 2차 차단).
 - 차단할 때마다 `suppressions[hourBucket][scope:key] += 1`을 올린다(`SUPPRESSION_BUCKET_MS = 3600000`).
@@ -125,7 +125,7 @@ function schedule(t: Target, trigger: Trigger, now: number) {
 
 ## 8. 권한·헬스 (FR-8)
 
-### 8.1 HelperHealth (원본 필드 1:1, Windows 전용 제외)
+### 8.1 HelperHealth (필드 정본, Windows 전용 제외)
 ```ts
 type HelperHealth = {
   platform: "darwin"; protocolVersion: 1
@@ -137,7 +137,7 @@ type HelperHealth = {
   pid: number; observerPid: number; responsibleSelf: true
   state: "starting" | "running" | "paused" | "stopped"
   asideAdapter: "off" | "available" | "unavailable" | "error"      // 추가
-  perApp: Record<string, { chromeOnly: boolean; maxTreeBytes: number }> // 원본 capture-health
+  perApp: Record<string, { chromeOnly: boolean; maxTreeBytes: number }> // helper capture-health
 }
 ```
 
@@ -146,7 +146,7 @@ type HelperHealth = {
 |---|---|---|---|
 | Accessibility | 항상 | `AXIsProcessTrustedWithOptions` | observer 재등록 |
 | Input Monitoring | 항상(event tap) | `CGPreflightListenEventAccess` / `CGRequestListenEventAccess` | tap 재생성 |
-| Screen Recording | `screenOcr=true`일 때만 `[verified]` | `CGPreflightScreenCaptureAccess` / `CGRequestScreenCaptureAccess` | 원본처럼 helper를 재시작하고 중단된 권한 시트를 재개한다 |
+| Screen Recording | `screenOcr=true`일 때만 `[verified]` | `CGPreflightScreenCaptureAccess` / `CGRequestScreenCaptureAccess` | helper를 재시작하고 중단된 권한 시트를 재개한다 |
 | Automation(브라우저별) | 해당 브라우저가 처음 전경에 올 때 | `AEDeterminePermissionToAutomateTarget` | URL 해석 활성화 |
 
 ### 8.3 배너 상태 (UI 문구 `[verified]`)

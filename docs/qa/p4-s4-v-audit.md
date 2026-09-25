@@ -59,7 +59,7 @@ Swift flow/RPC/menu 테스트는 unit 또는 local synthetic UDS test다. Bun AP
 
 `specs/screens/onboarding.yaml:20-28,47-56`에 적힌 실제 System Settings 이동, Accessibility 부여 후 2초 내 자동 진행, Screen Recording 부여로 인한 앱 재시작 뒤 provider 단계 resume, provider skip 후 capture 시작/summary pending 동작은 native macOS 환경에서 확인해야 한다. 계획상 `P4-S4-T2`는 새 macOS 계정 또는 `tccutil reset` 후 수동 실행 및 화면 녹화 증거가 요구되고 아직 `[ ]`다 (`docs/planning/06-tasks.md:530-532`); handoff도 TCC 권한 부여를 실기기 수동 단계로 지정한다 (`docs/HANDOFF-codex.md:27-31`). 이번 작업에서는 TCC 권한이나 시스템 설정을 변경하지 않았고, 화면 녹화도 만들지 않았다.
 
-`P4-S4-V`의 원본 체크박스는 `docs/planning/06-tasks.md:534-538`에서 계속 `[ ]` 상태로 두었다. 실제 앱에서 권한 단계, restart/resume, provider skip, Enable 뒤 메뉴바 running 표시를 수동으로 관찰하고 증거를 첨부하기 전에는 해당 runtime 수용 기준 완료로 판정하지 않는다.
+`P4-S4-V`의 체크박스는 `docs/planning/06-tasks.md:534-538`에서 계속 `[ ]` 상태로 두었다. 실제 앱에서 권한 단계, restart/resume, provider skip, Enable 뒤 메뉴바 running 표시를 수동으로 관찰하고 증거를 첨부하기 전에는 해당 runtime 수용 기준 완료로 판정하지 않는다.
 
 ## 통합 후 연결점 추가 확인
 

@@ -4,14 +4,13 @@
 - 이 문서부터 **구현의 소유자는 Codex**다. Claude는 기획까지만 했고 감독하지 않는다. 완료 보고는 사용자에게 직접 한다.
 
 ## 무엇을 만드나
-Aside Context Awareness를 macOS에서 원본 PRD와 1:1로 재현하는 독립 앱 **Side**다(Windows 제외, 플랜 게이트 없음). 네가 만든 프로토타입 `local-context-awareness` v0.1.0(테스트 21개 통과) 위에 증축한다.
+Mac에서 사용자의 작업 맥락을 로컬에 기록하고 요약해 두었다가 에이전트가 다시 찾게 해주는 메뉴바 앱 **Side**다(Windows 미지원). 네가 만든 프로토타입 `local-context-awareness` v0.1.0(테스트 21개 통과) 위에 증축한다.
 
 ## 읽는 순서 (정본)
 1. `docs/planning/00-decisions.md`: ADR 12개와 Spike S-1~S-5. **결정을 바꾸려면 먼저 사용자에게 묻는다**
-2. `docs/planning/01-prd.md`: 범위·편차표·수용 시나리오·마일스톤
+2. `docs/planning/01-prd.md`: 범위·설계 선택·수용 시나리오·마일스톤
 3. `docs/planning/06-tasks.md`: **실행 순서 정본**(75개, 의존성 그래프 포함)
 4. 태스크가 가리키는 상세 문서 `02~05, 07~09`와 `specs/`(화면 4개 + `domain/resources.yaml`)
-5. 원본 PRD(역공학): `~/.aside/u/0/sessions/2026-09-23_IWygSZhom4nLN3Kl/artifacts/context-awareness-prd.md`
 
 ## 하드 룰
 0. **명세가 최종 기준이다.** `docs/planning/`과 `specs/`는 사용자가 검토·승인한 정본이다. 코드를 명세에 맞추고, **명세를 코드에 맞춰 고치지 않는다.** 명세에 정의된 기능은 바꾸지 않는다. 라이브러리 교체나 방식 변경은 **기능이 같고 명확한 개선일 때만** 제안할 수 있고, 반드시 사용자 승인을 받은 뒤 사용자가 명세를 고치게 한다. 승인 전에는 명세대로 구현한다.
@@ -19,7 +18,7 @@ Aside Context Awareness를 macOS에서 원본 PRD와 1:1로 재현하는 독립 
 2. **TDD**: 모든 Phase 1+ 태스크는 테스트를 먼저 쓰고(RED) → 구현(GREEN) → 정리한다.
 3. **완료 판정은 증거로**: 태스크의 G/W/T 수용 기준과 연결 게이트(`08-nfr-test-gates.md` §4)를 명령 출력으로 확인한 뒤에만 `06-tasks.md`의 `[ ]`를 `[x]`로 바꾼다. 매 태스크마다 `bun test`, `npx tsc --noEmit`, `npx biome check .`을 청결하게 유지하고, Swift가 있으면 `swift test --package-path apps/side-mac`도 돌린다.
 4. **API 헌법**: 로컬 API는 `02-architecture.md` §4 표에 있는 메서드만 만든다. 필요한 메서드가 생기면 **문서를 먼저 고치고** 커밋 메시지에 남긴다.
-5. **상수**: 모든 수치는 `src/constants.ts`에서 가져온다(G5). 원본 `[verified]` 값을 임의로 바꾸지 않는다.
+5. **상수**: 모든 수치는 `src/constants.ts`에서 가져온다(G5). `[verified]` 값을 임의로 바꾸지 않는다.
 6. **프라이버시·보안**
    - 캡처 원문, 키, API 키를 로그·테스트 스냅샷·커밋에 남기지 않는다.
    - `~/.aside/` 아래는 **읽기만** 한다. Aside 메모리 디렉터리에 쓰는 것은 금지다.
@@ -32,6 +31,7 @@ Aside Context Awareness를 macOS에서 원본 PRD와 1:1로 재현하는 독립 
 8. **범위**: 태스크에 없는 기능을 추가하지 않는다. 인접 코드를 개선하고 싶으면 보고서에 제안만 적는다.
 9. **git**: P0-T0.1에서 `git init` 후 태스크 단위로 커밋한다(메시지에 태스크 ID). push는 하지 않는다. 원격이 없다.
 10. **병렬화**: 구현 소유자는 너 하나다. 병렬 작업이 필요하면 네 판단으로 하위 워커(서브에이전트나 Orca 워커)를 직접 띄우고, 그 워커에게도 이 하드 룰을 그대로 전달한다.
+11. **표기**: 이 저장소는 Side를 독립 프로젝트로 서술한다. Aside는 연동 대상(Aside Browser 어댑터, MCP 클라이언트)일 때만 언급하고, 개발 동기나 다른 제품을 재현·차용했다는 표현은 쓰지 않는다.
 
 ## 진행 표시와 보고
 - 의미 있는 지점마다 `orca worktree set --worktree active --comment "<P?-T? 상태>" --json`으로 상태를 남긴다.

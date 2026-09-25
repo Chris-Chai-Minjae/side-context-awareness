@@ -43,8 +43,8 @@
 | 경로 | 내용 | 권한 |
 |---|---|---|
 | `settings.json` | §6 스키마 | 0600 |
-| `context-awareness/ledger.db` (+wal/shm) | Aside DDL 1:1 + 보조 테이블 | 0600 |
-| `memory/episodic/context-awareness-YYYY-MM-DD.md` | day page (원본과 같은 이름. 루트가 Side 전용이라 충돌 없음) | 0600 |
+| `context-awareness/ledger.db` (+wal/shm) | 정본 DDL + 보조 테이블 | 0600 |
+| `memory/episodic/context-awareness-YYYY-MM-DD.md` | day page (파일 이름 규칙 고정. 루트가 Side 전용이라 충돌 없음) | 0600 |
 | `memory/memory-index.json` | 인덱스 manifest | 0600 |
 | `index.db` | chunks + FTS5 + vec0 | 0600 |
 | `models/` | transformers.js 캐시(multilingual MiniLM q8, ~144MB) | 0700 |
@@ -56,7 +56,7 @@
 
 ## 3. App ↔ daemon 프로토콜 (stdio JSON-lines)
 
-원본 helper 프로토콜의 메시지 타입을 그대로 쓰고 방향만 바꾼다(ADR-007). 한 줄에 JSON 하나, UTF-8, 한 줄 최대 4MB(`FRAME_MAX_RAW_BYTES`).
+helper 프로토콜의 메시지 타입을 다음으로 고정하고 방향은 App → daemon으로 둔다(ADR-007). 한 줄에 JSON 하나, UTF-8, 한 줄 최대 4MB(`FRAME_MAX_RAW_BYTES`).
 
 ```ts
 // App → daemon
@@ -80,7 +80,7 @@ type ProtocolError = { type: "protocol-error"; message: string }    // 양방향
 
 - **전송**: UDS `run/daemon.sock`(CLI·MCP)와 `127.0.0.1:<ephemeral>`(웹 UI 전용).
 - **TCP 방어**: 모든 요청에 `Authorization: Bearer <token>`을 요구하고, `Host`는 `127.0.0.1:<port>`와 정확히 일치해야 한다(DNS rebinding 차단). `Origin`이 있으면 같은 origin만 허용한다. 토큰은 데몬이 시작할 때 32B 난수로 만들어 `web.session` 명령으로 앱에 전달한다. 앱은 최초 WKWebView 요청의 Bearer 헤더와 `?t=` 부트스트랩에 같은 토큰을 넣고, 웹 셸은 첫 RPC 전에 `history.replaceState`로 URL에서 제거한다. 원문 토큰은 앱 메모리 외에 브라우저 히스토리·로그·디스크에 남기지 않는다.
-- **절차** (원본 `contextAwarenessRouter` 1:1 + 렌더러 소비분):
+- **절차** (라우터 계약 + 렌더러 소비분):
 
 | 메서드 | 입력 | 출력 |
 |---|---|---|
@@ -116,7 +116,7 @@ CLI 호출 전 `claude auth status --json`을 출력 비공개·시간 제한으
 
 CLI 항목의 `settings.get` resource는 `kind=claude-code-cli`, `base_url=null`, `host=null`, `has_key=false`, `supports_tool_choice=false`로 표현한다. `providers.setKey`는 CLI 항목에 적용하지 않는다. `providers.listModels`는 CLI에 원격 목록 API가 없으므로 `endpoint-unavailable`을 반환하고 수동 Model ID를 유지한다. `providers.test`는 증거 없는 합성 프롬프트로 동일한 제한된 CLI 경로와 계약을 시험한다. 웹 UI는 CLI 항목에서 Base URL·API 키 입력을 요구하지 않으며 로컬 로그인과 기기 밖 전송을 명확히 표시한다.
 
-## 5. Reconcile (원본 `reconcileContextAwareness` 대응)
+## 5. Reconcile
 
 ```
 reconcile():
@@ -125,11 +125,11 @@ reconcile():
       if pausedUntil in future or == PAUSE_INDEFINITE: scheduler.pause()
   else:
       stop scheduler; send observer.configure({paused:true})
-      if transitioned enabled→disabled: deletionEpoch unchanged (원본과 같음: 비활성화는 이력을 지우지 않음)
+      if transitioned enabled→disabled: deletionEpoch unchanged (비활성화는 이력을 지우지 않음)
 triggers: 시작 시, settings.patch 후, health 변화 시, pausedUntil 만료 타이머
 ```
 
-- 켤 때 `pausedUntil`을 지우고, 없는 권한은 자동으로 요청한다(원본 FR-9 `[verified]`).
+- 켤 때 `pausedUntil`을 지우고, 없는 권한은 자동으로 요청한다(FR-9).
 
 ## 6. 설정 스키마 (`settings.json`, zod)
 
@@ -151,7 +151,7 @@ const ClaudeCodeProvider = z.object({
 const Provider = z.union([OpenAIProvider, ClaudeCodeProvider])
 export const Settings = z.object({
   version: z.literal(2),
-  contextAwareness: z.object({                          // 원본 키 1:1
+  contextAwareness: z.object({                          // 정본 키
     enabled: z.boolean().default(false),
     pausedUntil: z.number().int().nullable().default(null), // PAUSE_INDEFINITE = Number.MAX_SAFE_INTEGER
     rules: z.array(Rule).max(500).default([]),
@@ -171,5 +171,5 @@ export const Settings = z.object({
 ```
 
 - **`allowEvidence`**: provider 단위로 켜야만 briefing을 보낼 수 있다. 기본값은 false라서, 사용자가 명시적으로 허용하기 전에는 증거가 기기 밖으로 나가지 않는다.
-- **마이그레이션 v1 → v2**: 프로토타입의 `deniedApps`는 app 규칙으로, `deniedWebsites`는 url 규칙(`do_not_observe`)으로 옮긴다(원본의 legacy `excludedDomains` 처리와 같은 방식). `pausedUntil: "indefinite"`는 `PAUSE_INDEFINITE`로 바꾸고, `intervalSeconds`는 버린다(스케줄러 상수로 대체).
+- **마이그레이션 v1 → v2**: 프로토타입의 `deniedApps`는 app 규칙으로, `deniedWebsites`는 url 규칙(`do_not_observe`)으로 옮긴다(legacy `excludedDomains` 처리와 같은 방식). `pausedUntil: "indefinite"`는 `PAUSE_INDEFINITE`로 바꾸고, `intervalSeconds`는 버린다(스케줄러 상수로 대체).
 - 저장은 원자적으로 한다: `tmp`에 쓰고 `rename`한 뒤 `chmod 0600`. 기존 `config.ts` 패턴을 유지한다.

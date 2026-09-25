@@ -13,4 +13,4 @@ types:
   Citation: { ref: "e:<ulid>|s:<ulid>", title: "string?", url: "string?" }
   DayCounters: { events: int, blobs: int, rawBytes: int, suppressions: int, masks: int, sessions: int, lastEventAt: "epoch_ms?" }
   PermissionKind: "accessibility|inputMonitoring|screenRecording|automation"
-  HelperHealth: "docs/planning/03-capture.md §8.1 참조 (필드 1:1)"
+  HelperHealth: "docs/planning/03-capture.md §8.1 참조 (필드 정본)"

@@ -1,6 +1,6 @@
 # 06 — Screens (FR-7 · FR-8 UI)
 
-원본 문구 `[verified]`는 제품명 "Aside"만 "Side"로 바꿔 그대로 쓴다. Side에서 추가한 요소는 `(+)`로 표시한다.
+이 문서의 문구가 정본이다. Side에서 추가한 요소는 `(+)`로 표시한다.
 UI 기술(ADR-006): 메뉴바는 SwiftUI, 설정 화면은 데몬이 서빙하는 웹 페이지(WKWebView). 웹 스택은 정적 SPA(Preact + 번들 CSS, 외부 CDN 없음)로 한다 `[design]`.
 
 ---

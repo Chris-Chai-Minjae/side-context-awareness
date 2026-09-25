@@ -54,7 +54,7 @@ RETURNING *;
 ### 6h 롤업 입력
 자식 10min 요약을 시간순으로 넣는다. 항목마다 `s:<id>`, title, description, body 최대 `CHILD_BODY_BYTES`(3072B)다. 증거 원문은 넣지 않는다.
 
-## 4. 시스템 프롬프트 (원본 보안 자세 `[verified]`를 Side용으로 작성)
+## 4. 시스템 프롬프트
 
 ```
 You write a factual activity summary for ONE time window of the user's own computer use.
@@ -100,7 +100,7 @@ JSON Schema(`\p{…}` 패턴 **금지**, ADR-004). `pattern` 자체를 쓰지 �
   }
 }
 ```
-필드 이름은 원본과 같다 `[verified]`. 길이 제한은 `[design]`이다.
+필드 이름은 이 문서의 표가 정본이다. 길이 제한은 `[design]`이다.
 
 **사후 검증(zod) → 위반 목록**:
 - `citations[].ref`와 `sourceIds`는 `^[es]:[0-9A-HJKMNP-TV-Z]{26}$` 형식이어야 하고 **briefing에 등장한 id 집합의 부분집합**이어야 한다.
@@ -128,7 +128,7 @@ interface SummaryCall { model: ModelRef; system: string; user: string; tool: Too
 - **계측**: `usage.prompt_tokens`/`completion_tokens`를 기록하고, 없으면 0으로 둔다. `duration_ms`와 해석된 `provider/modelId`를 `model` 컬럼에 저장한다.
 - **로그 금지**: 요청·응답 본문은 로그에 남기지 않는다. 길이·상태코드·지연만 기록한다.
 
-## 7. Digest (원본 `digestContextAwareness`)
+## 7. Digest (`digestContextAwareness`)
 
 - 요약이 커밋되고, 삭제 후 dirty day가 생기고, 매 정시가 되면 `digest()`를 실행한다. `enabled`일 때만 돈다 `[verified]`.
 - `digested_at IS NULL OR updated_at > digested_at`인 10min 요약이 있는 day를 **stale**로 보고 다시 렌더한다(`07-recall-index.md` §1). 이어서 인덱스 동기화를 예약하고, 반환값은 `{days, summaries, failed}`다.

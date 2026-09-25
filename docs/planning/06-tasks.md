@@ -32,8 +32,8 @@
 ### [x] P0-T0.2: 상수표 `src/constants.ts`
 - **담당**: backend-specialist
 - **파일**: `tests/constants.test.ts` → `src/constants.ts`
-- **스펙**: 원본 PRD §11 상수 전량(Windows 전용 제외) + Side 정의값(`CAPTURE_DEBOUNCE_MS=500`, `CA_SIBLING_DEMOTION=0.85`, `PAUSE_INDEFINITE`). 각 값에 `[verified]`/`[design]` 주석
-- **수용**: Given 원본 PRD §11 표 / When 대조 테스트 실행 / Then 전 항목 일치, 누락 0
+- **스펙**: PRD 정본 §11 상수 전량(Windows 전용 제외) + Side 정의값(`CAPTURE_DEBOUNCE_MS=500`, `CA_SIBLING_DEMOTION=0.85`, `PAUSE_INDEFINITE`). 각 값에 `[verified]`/`[design]` 주석
+- **수용**: Given PRD 정본 §11 표 / When 대조 테스트 실행 / Then 전 항목 일치, 누락 0
 - **게이트**: G5
 
 ### [x] P0-T0.3: SwiftPM 스켈레톤 `apps/side-mac`
@@ -113,11 +113,11 @@
 - **수용**: Given `mail.example.com` 규칙 / When `a.mail.example.com` 평가 / Then 차단. `notmail.example.com`은 통과
 - **게이트**: G2(단위) · **병렬**: 가능
 
-### [x] P1-T1.5: ledger DDL 1:1 + 보조 테이블
+### [x] P1-T1.5: ledger 정본 DDL + 보조 테이블
 - **담당**: database-specialist · **의존**: P0-T0.9
-- **파일**: `tests/ledger/schema.test.ts`, `tests/fixtures/aside-ledger-ddl.sql`(측정 덤프) → `src/ledger/schema.ts`
+- **파일**: `tests/ledger/schema.test.ts`, `tests/fixtures/aside-ledger-ddl.sql`(DDL 정본) → `src/ledger/schema.ts`
 - **스펙**: `04` §2 — 4테이블·13인덱스 원문, `side_*` 4테이블, PRAGMA, `auto_vacuum=INCREMENTAL`, `schema_version` 마이그레이션 러너
-- **수용**: Given 빈 파일 / When open / Then `sqlite_master` SQL이 Aside 덤프와 공백 정규화 후 동일
+- **수용**: Given 빈 파일 / When open / Then `sqlite_master` SQL이 정본 DDL과 공백 정규화 후 동일
 - **게이트**: G6
 
 ### [x] P1-T1.6: ledger 쓰기 경로
@@ -294,7 +294,7 @@
 ### [x] P3-T3.1: day page 청킹
 - **담당**: backend-specialist · **의존**: P2-T2.7
 - **파일**: `tests/memory/chunk.test.ts` → `src/memory/chunk.ts`
-- **스펙**: `07` §2 — 경로 정규식, 섹션 단위, 1,433자 초과 시 문단 분할 + heading 반복, overview 별도 청크, 버전 salt id, 원본 구분자 형식도 파싱
+- **스펙**: `07` §2 — 경로 정규식, 섹션 단위, 1,433자 초과 시 문단 분할 + heading 반복, overview 별도 청크, 버전 salt id, 이전 구분자 형식도 파싱
 - **수용**: Given 3,000자 섹션 / When 청킹 / Then 청크 3개 이상, 각 청크 ≤ 1,433자, 모두 heading 포함
 - **병렬**: T3.5~T3.7과 병렬
 
@@ -449,7 +449,7 @@
 - **컴포넌트**: header, permission_banner, capture_section, denylist_section, summaries_section, history_section, connect_agents_section, never_observe_dialog, clear_dialog, disable_dialog
 - **데이터 요구**: capture_status, permissions, settings, summary_model_default, providers, applications, history_status, history_summaries, clear_operation, mcp_usage, agent_connection
 - **파일**: `tests/web/settings.test.tsx` → `src/web/pages/settings.tsx`
-- **스펙**: `specs/screens/settings-context-awareness.yaml`, 문구 1:1(`06-screens.md` S2~S5)
+- **스펙**: `specs/screens/settings-context-awareness.yaml`, 문구는 `06-screens.md` S2~S5 정본
 - **수용**: Given fake RPC(각 데모 상태) / When 렌더 / Then 섹션·문구가 `06-screens.md` S2~S5와 문자 단위로 일치(문구 스냅샷 테스트)
 - **Worktree**: `worktree/phase-4-web` · **TDD**: RED → GREEN → REFACTOR
 - **데모**: `/demo/phase-4/s1-settings` · **데모 상태**: loading, error, empty, normal, permissions_needed, paused

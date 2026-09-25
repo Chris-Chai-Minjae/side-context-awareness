@@ -1,5 +1,5 @@
 version: "2.0"
-# 출처: docs/planning/06-screens.md S2 + S3/S4/S5(overlay). 원본 문구 1:1(Aside→Side)
+# 출처: docs/planning/06-screens.md S2 + S3/S4/S5(overlay)
 screen:
   name: 설정 — Context Awareness
   route: /settings/context-awareness     # 데몬 웹 UI, Side.app WKWebView 안에서만 열림

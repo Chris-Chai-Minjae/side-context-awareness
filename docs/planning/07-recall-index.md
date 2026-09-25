@@ -22,7 +22,7 @@ _Captured by Side from on-device activity. Summaries only; raw captures expire a
 
 Sources: [<title>](<url>) — e:<id> | s:<id>, …
 ```
-- 헤딩 구분자·공백은 원본 형식 `### HH:MM   HH:MM     <title>    s:<id>`을 사람이 읽기 좋게 `–`/`—`로 옮긴 것이다. 파서(§2)는 두 형식을 모두 받는다 `[design]`.
+- 헤딩 구분자·공백은 기본 형식 `### HH:MM   HH:MM     <title>    s:<id>`을 사람이 읽기 좋게 `–`/`—`로 옮긴 것이다. 파서(§2)는 두 형식을 모두 받는다 `[design]`.
 - `## Day overview`는 그날 `done` 상태인 6h 롤업이 있을 때만 쓴다 `[verified: optional]`.
 - 요약이 0개인 날은 페이지를 **삭제**한다 `[verified]`.
 - **write fence**(`04-data-model.md` §7): 렌더를 시작할 때 epoch를 기록하고, 원자적 쓰기(`tmp` → `rename`) 직전에 다시 확인한다. 바뀌었으면 쓰지 않는다.
@@ -51,7 +51,7 @@ CREATE VIRTUAL TABLE chunks_vec USING vec0(chunk_rowid INTEGER PRIMARY KEY, embe
   - `hybrid = α·cos + (1-α)·bm25_norm`, α=0.8 `[verified default]`
   - `recency = 1 / (1 + ageDays / H)` (hyperbolic recency). H는 창 청크일 때 `CA_WINDOW_HALFLIFE_DAYS`=7, Day overview일 때 `CA_THREAD_HALFLIFE_DAYS`=21 `[verified 상수, design 공식]`
   - `score = hybrid × (0.5 + 0.5·recency)`
-  - **sibling demotion**: 같은 day page의 인접 창(±10분) 청크가 이미 상위에 있으면 그 청크 점수에 `CA_SIBLING_DEMOTION`(=0.85 `[design: 원본 값 미확인]`)을 곱한다.
+  - **sibling demotion**: 같은 day page의 인접 창(±10분) 청크가 이미 상위에 있으면 그 청크 점수에 `CA_SIBLING_DEMOTION`(=0.85 `[design]`)을 곱한다.
 
 ## 4. `history_search` (lexical, FR-6) `[verified 알고리즘]`
 
@@ -79,7 +79,7 @@ epoch 확인: 시작·끝 deletion_epoch가 다르면 무효화 후 1회 재시�
 ### 4.1 BrowserHistoryProvider `[design]`
 - Chromium 계열(Chrome, Arc, Brave, Edge, **Aside**) 프로필의 `History` SQLite를 임시 복사본으로 읽는다(원본은 브라우저가 잠가 두므로 복사해서 `urls`·`visits`를 조회).
 - Safari `History.db`는 Full Disk Access가 필요하므로 제외한다(설정에서 켜는 옵션도 두지 않음).
-- denylist url 규칙과 보존 기간을 동일하게 적용한다. 원본의 "Browsing history is unavailable because the browser extension is not connected." 문구는 "…because no supported browser profile was found."로 바꾼다.
+- denylist url 규칙과 보존 기간을 동일하게 적용한다. 기본 문구 "Browsing history is unavailable because the browser extension is not connected."는 "…because no supported browser profile was found."로 바꾼다.
 
 ## 5. `history_read` `[verified]`
 

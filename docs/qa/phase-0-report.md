@@ -3,7 +3,7 @@
 ## 완료 태스크
 
 - P0-T0.1: Git 저장소, Side 패키지와 스크립트, 목표 디렉터리 및 의존성을 준비했다. 첫 커밋 `520a61c`.
-- P0-T0.2: 원본 PRD §11의 macOS 상수와 Side 설계 상수를 `src/constants.ts`에 분류해 구현했다. 커밋 `78ff9d3`.
+- P0-T0.2: PRD 정본 §11의 macOS 상수와 Side 설계 상수를 `src/constants.ts`에 분류해 구현했다. 커밋 `78ff9d3`.
 - P0-T0.3: `SideCaptureKit` SwiftPM 라이브러리·테스트와 `MenuBarExtra` 실행 앱을 만들었다. 앱 실행 뒤 Accessibility 트리에서 `AXExtrasMenuBar` 항목 1개와 `Side` 라벨을 확인했다.
 - P0-T0.4~T0.8: [S-1](spike-s1.md), [S-2](spike-s2.md), [S-3](spike-s3.md), [S-4](spike-s4.md), [S-5](spike-s5.md)의 측정과 판정을 `docs/planning/00-decisions.md` Spike 표에 기록했다. S-5 LAN 주소는 사용자 지정 `192.168.1.141:8500`으로 정본 태스크에 반영했다.
 - P0-T0.9: settings v2, helper JSON-lines, 로컬 JSON-RPC 21개 메서드, `record_summary` 스키마와 fake helper/provider/clock을 계약 테스트로 구현했다. `resources.yaml`의 모든 필드가 출력 스키마에 존재하는지 자동 대조한다.
