@@ -161,7 +161,24 @@ Side.app이 실행 중일 때 `"/Applications/Side.app/Contents/Resources/side" 
 
 ## 10. 개발 현황과 남은 검증 항목
 
-- 사전 빌드 앱의 Developer ID 서명·공증, 장시간 실기기 검증은 완료되지 않았습니다.
-- Grok Build에서 Side 도구를 실제로 호출하는 과정과 Grok Build 로그인 기반 요약 생성은 검증되지 않았습니다.
-- 남은 검증 항목과 기능별 근거는 [`docs/qa/`](qa/) 보고서와 [`docs/planning/06-tasks.md`](planning/06-tasks.md) 체크박스에 기록되어 있습니다.
+2026-09-25 기준 상태입니다. 근거는 저장소의 QA 보고서입니다.
+
+**검증된 것**
+
+- 자동 테스트: `bun test` 841개 통과, `swift test` 199개(캡처 키트 175 + 앱 24) 통과, `npx tsc --noEmit`·`npx biome check .` 청결.
+- 캡처 파이프라인(접근성·입력 문장·OCR·브라우저 URL), 마스킹·암호화·보존 기간, 10분·6시간 요약과 재시도, 날짜 페이지와 날짜 화면, MCP 도구 3종과 인젝션 경계, CLI 진단·삭제.
+- 근거: [`docs/qa/permission-recovery-2026-09-25.md`](qa/permission-recovery-2026-09-25.md)
+
+**아직 남은 것**
+
+- 릴리스 게이트 판정은 **BLOCKED**입니다([`docs/qa/gates-2026-09-24.md`](qa/gates-2026-09-24.md)). G0·G3~G11은 통과했지만, G1(카나리아 유출 스캔)과 G2(제외 앱·도메인 10분 관찰)는 실제 캡처 증거가 없어 미완입니다.
+- Developer ID 서명·공증과 Hardened Runtime이 없습니다. 배포용 앱이 아닌 로컬 임시 서명 빌드입니다.
+- NFR 8개 항목(CPU·메모리·지연·디스크)은 대부분 실측되지 않았습니다([`docs/qa/nfr-report.md`](qa/nfr-report.md)).
+- 번들 앱에서 로그인 항목을 켜고 재부팅해 앱과 데몬이 자동 기동하는지, 메뉴바·온보딩이 실제 화면에서 어떻게 그려지는지는 수동 검증이 필요합니다.
+- Grok Build에서 Side 도구를 호출하는 경로와 Grok Build 로그인으로 요약을 만드는 경로는 검증되지 않았습니다.
+
+**남은 항목의 위치**
+
+- 체크박스: [`docs/planning/06-tasks.md`](planning/06-tasks.md)의 P4-S3·P4-S4, P5-T5.1~T5.6.
+- 게이트 기준과 증거 양식: [`docs/planning/08-nfr-test-gates.md`](planning/08-nfr-test-gates.md), [`docs/qa/`](qa/).
 - 공개 저장소는 검증한 소스의 단일 시작 스냅샷입니다. 과거 QA 보고서의 개발 커밋 ID가 공개 이력에서 조회되지 않는 이유는 [공개 이력 설명](qa/publication-history.md)에 있습니다.

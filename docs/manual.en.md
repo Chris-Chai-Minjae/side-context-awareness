@@ -161,7 +161,24 @@ While Side.app is running, `"/Applications/Side.app/Contents/Resources/side" mcp
 
 ## 10. Development status and open gates
 
-- Developer ID signing and notarization for a prebuilt app, plus long-duration device verification, are not complete.
+Status as of 2026-09-25, based on the repository's QA reports.
+
+**Verified**
+
+- Automated tests: `bun test` 841 pass, `swift test` 199 (175 capture-kit + 24 app), with `npx tsc --noEmit` and `npx biome check .` clean.
+- The capture pipeline (accessibility, typed sentences, OCR, browser URLs), masking/encryption/retention, 10-minute and six-hour summaries with retry, day pages and the day view, the three MCP tools with injection boundaries, and CLI diagnostics and deletion.
+- Evidence: [`docs/qa/permission-recovery-2026-09-25.md`](qa/permission-recovery-2026-09-25.md)
+
+**Still open**
+
+- The release gate verdict is **BLOCKED** ([`docs/qa/gates-2026-09-24.md`](qa/gates-2026-09-24.md)). G0 and G3 to G11 pass, but G1 (canary leak scan) and G2 (a ten-minute observation of denied apps and domains) lack physical capture evidence.
+- No Developer ID signing, notarization, or Hardened Runtime. Builds are ad hoc signed for local use.
+- The eight NFR metrics (CPU, memory, latency, disk) are mostly unmeasured ([`docs/qa/nfr-report.md`](qa/nfr-report.md)).
+- Manual checks remain for the login item starting the app and daemon after a reboot in a bundled build, and for the real rendering of the menu bar and onboarding.
 - Calling Side tools from Grok Build, and creating summaries from a Grok Build login, are unverified.
-- Open gates and per-feature evidence live in the [`docs/qa/`](qa/) reports and the checkboxes in [`docs/planning/06-tasks.md`](planning/06-tasks.md).
+
+**Where the remaining work lives**
+
+- Checkboxes: P4-S3, P4-S4, and P5-T5.1 to T5.6 in [`docs/planning/06-tasks.md`](planning/06-tasks.md).
+- Gate definitions and evidence format: [`docs/planning/08-nfr-test-gates.md`](planning/08-nfr-test-gates.md) and [`docs/qa/`](qa/).
 - The public repository is a single starting snapshot of verified source. [Publication history](qa/publication-history.md) explains why development commit IDs cited in older QA reports cannot be found in its public history.
