@@ -4,6 +4,8 @@
 
 This is the technical manual for the details that were moved out of the [README](../README.en.md): storage paths and commands, build options, permission recovery after a rebuild, summary model setup and cost, and full uninstall. If you are new to Side, start with the [beginner's guide](side-for-beginners.en.html).
 
+![Four steps: record active Mac windows on the device, then search their sources through a connected agent](assets/side-flow.png)
+
 - [1. Requirements](#1-requirements)
 - [2. Build and install](#2-build-and-install)
 - [3. First launch and settings](#3-first-launch-and-settings)
