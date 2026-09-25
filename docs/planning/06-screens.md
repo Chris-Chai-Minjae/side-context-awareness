@@ -14,8 +14,11 @@ UI 기술(ADR-006): 메뉴바는 SwiftUI, 설정 화면은 데몬이 서빙하�
 | Resume | 일시정지일 때만 표시 |
 | Today's summary… | S6을 오늘 날짜로 열기 |
 | Settings… | S2 열기 |
+| Unlock Keychain… / Keychain 허용… | supervisor가 `keychainLocked`일 때만 표시. 클릭하면 `retryKeychain()`으로 대화형 마스터 키 읽기를 다시 시도 |
+| Open at Login | macOS 로그인 항목 켜기/끄기. 승인 필요 시 시스템 설정 경로 안내 |
 | Quit Side | 데몬 종료 후 앱 종료 |
 - 아이콘은 상태별로 3종(활성·일시정지·오류)이다. 캡처할 때 깜박이지 않는다(주의 분산 방지).
+- macOS 화면 잠금 해제 알림(`com.apple.screenIsUnlocked`)을 받으면 `keychainLocked` 상태에서 한 번 재시도한다. 주기적 재시도는 하지 않는다.
 
 ## S2. 설정 → Context Awareness (웹)
 
@@ -55,6 +58,8 @@ UI 기술(ADR-006): 메뉴바는 SwiftUI, 설정 화면은 데몬이 서빙하�
   - Codex / Cursor: `mcp.json` 스니펫
   - Aside: "Settings → MCP → Add server" 안내와 command/args 값
 - 최근 24h MCP 호출 수(에이전트별 client name)
+- 로그인형 provider에는 Claude Code·OpenAI (Codex login) 프리셋을 제공한다. API 키 입력은 표시하지 않고 각 공식 CLI 로그인 상태 및 기기 밖 전송 주의를 표시한다.
+- API 키 provider에는 Keychain 저장·접근 가능 여부를 개별 표시하고, 사용자 클릭으로 `providers.authorizeKey`를 호출해 접근을 재요청할 수 있다. 접근이 이미 허용된 경우 추가 macOS 팝업은 나타나지 않을 수 있다.
 
 ## S3. 다이얼로그 `Never observe`
 - Source: segmented `Application` | `Website`
@@ -76,6 +81,12 @@ UI 기술(ADR-006): 메뉴바는 SwiftUI, 설정 화면은 데몬이 서빙하�
 - day page 마크다운 렌더: `## Day overview` 불릿, 그 아래 시간 섹션들
 - 섹션마다 `Sources:` 링크. `e:` 링크를 누르면 오른쪽 패널에 `history_read` 결과(스니펫, `match` 하이라이트)
 - 상단: 날짜 이동 ◀ ▶, 이 날 삭제(`today` 대상일 때만 S4 재사용)
+- 오늘 실패한 요약이 있으면 `Retry failed summaries` 버튼을 표시한다. 클릭하면 `summaries.retryFailedToday`를 호출하고 상태를 다시 읽는다.
+
+## S8. Permissions (웹) (+)
+- `/permissions`에서 helper·캡처 상태, Accessibility, Input Monitoring, Screen Recording, 브라우저 Automation 허용 여부를 각각 표시한다.
+- 권한별 `Request permission` 버튼과 macOS 시스템 설정 딥링크·Apple 안내 링크를 제공한다. 이미 허용된 권한의 재요청 버튼은 비활성화한다. Screen Recording 요청은 OCR이 켜졌을 때만 활성화한다.
+- 모델 provider마다 Keychain 연결 상태와 `providers.authorizeKey`, `providers.listModels` 확인 동작을 표시한다. 로그인형 CLI provider에는 Keychain 버튼을 표시하지 않는다.
 
 ## S7. 온보딩 시트 (SwiftUI, 첫 실행) (+)
 1. 소개 한 화면(헤더 문구 + "Everything stays on this Mac unless you choose a summary provider.")
@@ -91,10 +102,11 @@ UI 기술(ADR-006): 메뉴바는 SwiftUI, 설정 화면은 데몬이 서빙하�
 
 | 화면 | 사용 API (`02-architecture.md` §4) |
 |---|---|
-| S1 | `status`, `pause`, `resume` |
+| S1 | `status`, `pause`, `resume` (Keychain 재시도·로그인 항목은 앱 내부 동작) |
 | S2 | `status`, `permissions`, `requestPermissions`, `settings.get/patch`, `summaryModelDefault`, `historyStatus`, `historyList` |
 | S3 | `listApplications`, `appIcons`, `settings.patch` |
 | S4 | `clear` |
 | S5 | `settings.patch` |
 | S6 | `historyList`, `read` + day page 파일 조회(`day.get {date}`: 렌더된 md 반환) |
 | S7 | `permissions`, `requestPermissions`, `settings.patch` |
+| S8 | `status`, `permissions`, `requestPermissions`, `settings.get`, `providers.authorizeKey`, `providers.listModels` |

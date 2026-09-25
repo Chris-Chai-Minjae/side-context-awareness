@@ -11,7 +11,7 @@ data_requirements:
     needs: [date, markdown, updated_at]
     filters: { date: ":date" }
   - resource: history_status
-    needs: [days_with_summaries]
+    needs: [days_with_summaries, today_summary_states]
   - resource: evidence
     needs: [id, occurred_at, app, title, url, text, expired]
 
@@ -39,6 +39,13 @@ components:
     data_source: { resource: evidence }
     events:
       - { on: submit:match, do: "read({id, match, contextLines:10})" }
+  - id: retry_failed_summaries
+    type: action
+    position: header
+    function: "오늘 실패한 요약이 있을 때만 Retry failed summaries 표시"
+    data_source: { resource: history_status }
+    events:
+      - { on: click:retry, do: "summaries.retryFailedToday → historyStatus 및 day.get 재조회" }
 
 connections:
   navigations:

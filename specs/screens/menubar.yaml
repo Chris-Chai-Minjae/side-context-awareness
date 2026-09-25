@@ -25,10 +25,13 @@ components:
   - id: actions
     type: navigation
     position: main
-    function: "Today's summary… · Settings… · Quit Side"
+    function: "Today's summary… · Settings… · Unlock Keychain…(keychainLocked에만) · Open at Login · Quit Side"
     events:
       - { on: click:today, do: "WKWebView 창에서 /history/<오늘>" }
       - { on: click:settings, do: "settings.open → 토큰 주입 후 /settings/context-awareness" }
+      - { on: click:unlock_keychain, do: "keychainLocked일 때 retryKeychain() → 대화형 Keychain 재시도" }
+      - { on: screen_unlock, do: "keychainLocked일 때 retryKeychain() 1회" }
+      - { on: toggle:open_at_login, do: "macOS SMAppService 로그인 항목 갱신" }
       - { on: click:quit, do: "데몬에 SIGTERM, 5s 후 강제 종료, 앱 종료" }
   - id: status_icon
     type: detail
@@ -51,3 +54,6 @@ tests:
   - name: 설정 열기
     when: Settings… 클릭
     then: [WKWebView 창이 토큰과 함께 설정 화면을 열고, 토큰은 URL 기록에 남지 않음]
+  - name: Keychain 복구
+    when: keychainLocked 상태에서 Unlock Keychain… 클릭
+    then: [마스터 키 읽기 재시도, 성공 시 데몬 실행]

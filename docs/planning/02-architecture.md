@@ -69,7 +69,7 @@ type Command = { type: "command"; id: string; name: HelperCommand; args?: unknow
 type ProtocolError = { type: "protocol-error"; message: string }    // 양방향
 ```
 
-`HelperCommand` = `health` · `permissions` · `requestPermissions {kinds}` · `applications.list` · `applications.icons {bundleIds}` · `capture.request {targetKey, shape, trigger}` · `ocr.window {windowId}` · `browser.url {bundleId}` · `observer.configure {deniedBundleIds, captureTypedText, screenOcr, paused}` · `settings.open` · `web.session {port, token}` · `keychain.set {ref, secret}` · `keychain.get {ref}` · `keychain.rotate` (`keychain.set/get`은 provider API 키 전용. `keychain.get`은 요약 호출 직전에만 쓰고 결과를 캐시하지 않음).
+`HelperCommand` = `health` · `permissions` · `requestPermissions {kinds}` · `applications.list` · `applications.icons {bundleIds}` · `capture.request {targetKey, shape, trigger}` · `ocr.window {windowId}` · `browser.url {bundleId}` · `observer.configure {deniedBundleIds, captureTypedText, screenOcr, paused}` · `settings.open` · `web.session {port, token}` · `keychain.set {ref, secret}` · `keychain.get {ref}` · `keychain.status {ref}` · `keychain.authorize {ref}` · `keychain.rotate` (`keychain.set/get/status/authorize`는 provider API 키 전용. `keychain.status`는 저장·접근 가능 여부만, `keychain.authorize`는 허용 여부만 반환한다. `keychain.get`은 요약 호출 직전에만 쓰고 결과를 캐시하지 않음).
 
 - 명령에는 id를 붙여 응답과 짝짓고, 10s가 지나면 타임아웃으로 처리한다. 타임아웃 3회 연속이면 데몬이 `protocol-error`를 보내고 앱이 helper 계층을 재초기화한다.
 - **키 전달**: 초기 마스터 키는 `hello` 한 번으로만 전달한다. 전체 삭제 후 `keychain.rotate`의 성공 `result.data={key:<base64 32B>}`가 교체 키를 한 번 전달한다. 앱은 원래 Keychain 항목을 교체한 뒤에만 성공을 응답한다. 데몬은 길이를 검증하고 이전 메모리 키를 지운 뒤 교체 키로 바꾼다. 환경변수와 argv는 `ps`로 보일 수 있어 쓰지 않는다. 데몬은 메모리에만 들고 HKDF로 subkey를 파생한다(`04-data-model.md` §4).
@@ -96,12 +96,15 @@ type ProtocolError = { type: "protocol-error"; message: string }    // 양방향
 | `clear` | `{target: 'last10m'|'lastHour'|'today'|'all'}` | 삭제 건수, 새 deletion epoch |
 | `historyList` | `{from,to}` | 해당 기간 summaries(10min) 목록 |
 | `historyStatus` | – | 저장량·평균/일·오늘 요약 상태 |
+| `summaries.retryFailedToday` | – | 오늘 실패한 요약 작업의 재대기 건수 `{requeued}`. Day view에서 호출 |
 | `listApplications` / `appIcons` | – / `{bundleIds}` | 앱 피커용 |
 | `summaryModelDefault` | – | 해석된 기본 모델 ref |
 | `settings.get` / `settings.patch` | – / 부분 객체 | zod 검증 후 저장·reconcile |
 | `digest` | `{day?}` | `{days, summaries, failed}` |
 | `day.get` | `{date}` | 렌더된 day page 마크다운(없으면 `null`) |
 | `providers.setKey` | `{providerId, apiKey}` | 앱에 `keychain.set` 위임 → `{apiKeyRef}`. 키는 데몬 메모리·로그·settings.json에 남기지 않음 |
+| `providers.keyStatus` | `{providerId}` | 앱의 `keychain.status` 위임 → `{stored:boolean|null, accessible:boolean|null}`. 설정·권한 화면에서 조회 |
+| `providers.authorizeKey` | `{providerId}` | 앱의 `keychain.authorize` 위임 → `{authorized:boolean}`. 설정·권한 화면에서만 사용자 동작으로 호출 |
 | `providers.listModels` | `{providerId}` | 저장된 Side provider의 Base URL에 Keychain 키로 `GET /models` → `{status:'available', models:string[]}` 또는 `{status:'unavailable', models:[], reason, httpStatus?}`. 모델 ID만 정규화해 반환하며 키·원시 응답은 반환하지 않음 |
 | `providers.test` | `{providerId, modelId}` | 증거 없는 고정 프롬프트로 `record_summary` 1회 호출 → `{ok, latencyMs, toolChoiceSupported, error?}` (Spike S-5를 UI에서 재현) |
 | `mcp.usage` | `{sinceMs}` | client name별 도구 호출 수·평균 지연 |
@@ -114,7 +117,7 @@ Provider 추가 화면에는 `Xiaomi MiMo Token Plan Singapore`(`https://token-p
 
 CLI 호출 전 `claude auth status --json`을 출력 비공개·시간 제한으로 확인한다. 요약 호출은 고정 실행 파일 이름 `claude`를 shell 없이 실행하고, `-p`와 stdin, `--restricted --safe-mode --tools '' --strict-mcp-config --no-session-persistence --output-format json --json-schema <record_summary schema> --model <명시적 modelId>`를 사용한다. `--bare`는 기존 로그인을 우회하므로 사용하지 않는다. CLI 자식의 환경에서 `ANTHROPIC_API_KEY` 등 API 키 우선 경로를 제거하되 기존 로그인에 필요한 `USER`·`LOGNAME`·Claude 설정 경로는 유지한다. 프롬프트·응답·인증 결과 원문은 기록하지 않는다. 인증과 요약을 합쳐 `SUMMARY_PROVIDER_TIMEOUT_MS=60_000` 안에 끝내고, stdout+stderr는 `SUMMARY_CLAUDE_MAX_OUTPUT_BYTES=1_048_576`으로 제한한다. 실행 중에는 `SUMMARY_CLAUDE_CONSENT_POLL_MS=100`마다 동의를 확인하며 timeout·동의 철회 때 프로세스를 종료한다. 실행 직전과 결과 수용 직전에 `allowEvidence` 및 설정 동일성을 재확인한다. `--json-schema`에는 `record_summary`의 구조를 전달하고 구조화 출력에서 지원하지 않는 길이·배열 개수 제약은 기존 Zod 검증에서 적용한다. JSON의 `structured_output`만 `record_summary`·citation 검증과 1회 repair 경로에 넣는다. 인증 실패, CLI 부재, 비정상 종료, 형식 오류는 기존 provider 폴백으로 처리한다. 요약 승인 없이 CLI에 실제 캡처를 보내지 않는다. [Claude Code CLI 문서](https://code.claude.com/docs/en/headless)
 
-CLI 항목의 `settings.get` resource는 `kind=claude-code-cli`, `base_url=null`, `host=null`, `has_key=false`, `supports_tool_choice=false`로 표현한다. `providers.setKey`는 CLI 항목에 적용하지 않는다. `providers.listModels`는 CLI에 원격 목록 API가 없으므로 `endpoint-unavailable`을 반환하고 수동 Model ID를 유지한다. `providers.test`는 증거 없는 합성 프롬프트로 동일한 제한된 CLI 경로와 계약을 시험한다. 웹 UI는 CLI 항목에서 Base URL·API 키 입력을 요구하지 않으며 로컬 로그인과 기기 밖 전송을 명확히 표시한다.
+CLI 항목의 `settings.get` resource는 `kind=claude-code-cli|codex-cli`, `base_url=null`, `has_key=false`, `supports_tool_choice=false`로 표현한다. `host` 표시값은 Claude Code에 `Claude Code service`, Codex에 `OpenAI (Codex login)`이다. `providers.setKey`는 CLI 항목에 적용하지 않는다. `providers.listModels`는 CLI에 원격 목록 API가 없으므로 `endpoint-unavailable`을 반환하고 수동 Model ID를 유지한다. `providers.test`는 증거 없는 합성 프롬프트로 동일한 제한된 CLI 경로와 계약을 시험한다. 웹 UI는 CLI 항목에서 Base URL·API 키 입력을 요구하지 않으며 로컬 로그인과 기기 밖 전송을 명확히 표시한다.
 
 ## 5. Reconcile
 
@@ -148,9 +151,14 @@ const ClaudeCodeProvider = z.object({
   id: z.string(), kind: z.literal("claude-code-cli"), models: z.array(z.string().regex(/^claude-[A-Za-z0-9-]+$/)),
   allowEvidence: z.boolean().default(false),
 })
-const Provider = z.union([OpenAIProvider, ClaudeCodeProvider])
+const CodexCliProvider = z.object({
+  id: z.string(), kind: z.literal("codex-cli"), models: z.array(z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)),
+  allowEvidence: z.boolean().default(false),
+})
+const Provider = z.union([OpenAIProvider, ClaudeCodeProvider, CodexCliProvider])
 export const Settings = z.object({
   version: z.literal(2),
+  uiLanguage: z.enum(["ko", "en"]).default("ko"),
   contextAwareness: z.object({                          // 정본 키
     enabled: z.boolean().default(false),
     pausedUntil: z.number().int().nullable().default(null), // PAUSE_INDEFINITE = Number.MAX_SAFE_INTEGER
@@ -171,5 +179,6 @@ export const Settings = z.object({
 ```
 
 - **`allowEvidence`**: provider 단위로 켜야만 briefing을 보낼 수 있다. 기본값은 false라서, 사용자가 명시적으로 허용하기 전에는 증거가 기기 밖으로 나가지 않는다.
+- **로그인형 CLI provider**: `claude-code-cli`와 `codex-cli`는 Side API 키·Base URL을 저장하지 않는다. 사용자가 설치·로그인한 각 공식 CLI를 제한된 프로세스로 호출한다. Codex 경로는 파일 기반 ChatGPT 로그인만 허용하고, 원본 인증 파일은 내용을 읽거나 복사하지 않으며 격리된 임시 `CODEX_HOME`에서 공식 CLI가 참조한다. CLI 실행 중 shell·web·앱 도구를 끄고 읽기 전용 작업 디렉터리와 합성 증거만으로 연결을 시험한다. 형식 오류·도구 호출·인증 오류·시간 초과는 실패로 처리하며 provider 폴백을 따른다. 실제 활동 전송에는 `allowEvidence=true`가 필요하다.
 - **마이그레이션 v1 → v2**: 프로토타입의 `deniedApps`는 app 규칙으로, `deniedWebsites`는 url 규칙(`do_not_observe`)으로 옮긴다(legacy `excludedDomains` 처리와 같은 방식). `pausedUntil: "indefinite"`는 `PAUSE_INDEFINITE`로 바꾸고, `intervalSeconds`는 버린다(스케줄러 상수로 대체).
 - 저장은 원자적으로 한다: `tmp`에 쓰고 `rename`한 뒤 `chmod 0600`. 기존 `config.ts` 패턴을 유지한다.

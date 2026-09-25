@@ -101,14 +101,16 @@ function schedule(t: Target, trigger: Trigger, now: number) {
 | `aws-access-key` | `\b(AKIA|ASIA)[A-Z0-9]{16}\b` |
 | `jwt` | `\beyJ[\w-]{8,}\.[\w-]{8,}\.[\w-]{8,}\b` |
 | `slack-token` | `\bxox[abprs]-[\w-]{10,}\b` |
-| `api-key` | `\b(sk|pk|rk)[-_](live|test|proj)?[-_]?[A-Za-z0-9]{20,}\b`, `\bgh[pousr]_[A-Za-z0-9]{36,}\b`, `\bAIza[0-9A-Za-z_-]{35}\b` `[design]` |
-| `labeled-secret` | `(api[_ -]?key|access[_ -]?token|secret|password|passwd|토큰|비밀번호)\s*[:=]\s*\S+` |
+| `api-key` | `\bsk-ant-(?:api|admin)\d{2}-[A-Za-z0-9_-]{20,}`, `\b(?:sk|pk|rk)[-_](?:live|test|proj)?[-_]?[A-Za-z0-9_-]{20,}`, `\bgithub_pat_[A-Za-z0-9_]{22,}`, `\bgh[pousr]_[A-Za-z0-9]{36,}\b`, `\bglpat-[A-Za-z0-9_-]{20,}`, `\bya29\.[A-Za-z0-9_-]{20,}`, `\bAIza[0-9A-Za-z_-]{35}\b`, `\bxai-[A-Za-z0-9]{20,}`, `\bhf_[A-Za-z0-9]{30,}` |
+| `bearer-token` | `\b(?:Authorization\s*:\s*)?Bearer\s+[A-Za-z0-9._~+/=-]{16,}` (대소문자 무시) |
+| `kr-rrn` | `\b\d{6}-?[1-4]\d{6}\b`; YYMMDD의 월 01–12, 일 01–31 검증 |
+| `labeled-secret` | 영문 `(api[_ -]?key|access[_ -]?token|secret|password|passwd)\s*(?:[:=]|\s+is|\s+=)\s*\S+`, 한국어 `(?:토큰|비밀번호|암호|인증번호)\s*(?:[:=]|은|는)\s*\S+` |
 | `otp-numeric` | OTP·인증 문맥(`otp|code|인증`) 뒤 40자 이내의 `\b\d{4,8}\b` |
 | `card-number` | `\b(?:\d[ -]?){12,18}\d\b` + Luhn 통과 시(13–19자리) |
 
 - 적용 대상: 이벤트의 모든 텍스트 필드(title, url 쿼리 제거 후 경로, target label, blob 본문, typed, selection, OCR).
 - URL 정규화: 기존 `normalizePageUrl`을 유지한다(`http(s)`만 허용, userinfo·query·hash 제거). 쿼리를 통째로 버리므로 토큰이 담긴 URL도 안전하다.
-- 마스킹 결과는 payload `masks`에 규칙별 개수로 남기고, 오늘 카운터 `suppressions`에 반영한다.
+- 마스킹 결과는 payload `masks`에 규칙별 개수로 남기고, 오늘 카운터 `masks`에 반영한다. 저장하지 않은 캡처만 `suppressions`에 반영한다.
 
 ### 6.3 프롬프트 인젝션 무력화 (저장 시점 표시, 요약 시점 적용)
 - 저장 원문은 redaction만 거친다. 무력화(`neutralizePromptInjectionSyntax`)는 briefing을 조립할 때 적용한다(`05-comprehension.md` §3).
@@ -119,7 +121,7 @@ function schedule(t: Target, trigger: Trigger, now: number) {
 - **app 규칙**: `observer.configure`로 Side.app에 전달한다. 앱은 해당 bundle의 AX 관찰자 등록, event tap 메타 수집, OCR을 **아예 하지 않는다**(1차 차단).
 - **url 규칙**: 데몬이 URL을 해석한 뒤 host가 `domain`과 같거나 `.domain`으로 끝나면 폐기한다(기존 `isDeniedHost` 유지, 2차 차단).
 - 차단할 때마다 `suppressions[hourBucket][scope:key] += 1`을 올린다(`SUPPRESSION_BUCKET_MS = 3600000`).
-- **기본 denylist** `[design]`: 비어 있음. 단 Side.app 자신, 1Password·Keychain Access·System Settings(암호 패널)는 코드에 하드 차단 목록으로 둔다.
+- **기본 denylist** `[design]`: 비어 있음. Side.app 자신과 비밀번호 관리자·Keychain Access·System Settings는 항상 차단한다. 하드 차단 bundle ID의 단일 정본은 `specs/shared/hard-blocked-bundle-ids.json`이며 Swift 번들 복사본과 동일성 테스트로 맞춘다. 확인된 추가 대상은 Apple Passwords, Bitwarden, KeePassXC다. 확인되지 않은 앱 ID는 추측해 넣지 않는다.
 - **시크릿 창**: Chrome 계열은 AppleScript로 `mode of front window = "incognito"`이면 캡처하지 않는다. Spike S-4에서 Chrome·Aside의 일반/시크릿 전환은 확인했다. Safari는 AX 창 제목 마커만 관찰되었고 안정적인 비공개 신호는 확인하지 못했다. 따라서 Safari 비공개 창의 캡처 차단을 보장할 수 없다(`docs/qa/spike-s4.md`).
 - **앱 피커**: `do_not_observe`로 지정된 bundleId는 추가 다이얼로그의 후보 목록에서 뺀다 `[verified]`.
 

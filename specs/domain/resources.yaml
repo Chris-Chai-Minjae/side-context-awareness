@@ -39,6 +39,7 @@ resources:
       - { method: RPC, path: settings.patch, input: "Partial<Settings>", note: "zod 검증 → 원자적 저장 → reconcile" }
     fields:
       enabled: { type: boolean, default: false }
+      ui_language: { type: enum, values: [ko, en], default: ko }
       capture_typed_text: { type: boolean, default: true }
       screen_ocr: { type: boolean, default: true }
       aside_adapter: { type: boolean, default: false }
@@ -69,22 +70,25 @@ resources:
     endpoints:
       - { method: RPC, path: settings.patch, note: "목록 편집은 settings.providers" }
       - { method: RPC, path: providers.setKey, input: "{providerId, apiKey}", note: "OpenAI 호환 항목 전용" }
+      - { method: RPC, path: providers.keyStatus, input: "{providerId}", output: "{stored:boolean|null, accessible:boolean|null}", note: "Keychain 상태만 반환" }
+      - { method: RPC, path: providers.authorizeKey, input: "{providerId}", output: "{authorized:boolean}", note: "사용자 동작으로 Keychain 접근 재요청" }
       - { method: RPC, path: providers.listModels, input: "{providerId}", output: "{status:'available', models:string[]} | {status:'unavailable', models:[], reason, httpStatus?}", note: "OpenAI 호환 Base URL은 GET /models; Claude Code는 endpoint-unavailable로 수동 ID 유지" }
       - { method: RPC, path: providers.test, input: "{providerId, modelId}", note: "Claude Code는 합성 증거만으로 제한된 CLI 경로 시험" }
     fields:
       id: { type: string }
-      kind: { type: enum, values: [openai-compatible, claude-code-cli], default: openai-compatible }
-      base_url: { type: url, nullable: true, note: "Claude Code는 null" }
-      host: { type: string, nullable: true, derived: "OpenAI 호환 URL의 host; Claude Code는 null" }
+      kind: { type: enum, values: [openai-compatible, claude-code-cli, codex-cli], default: openai-compatible }
+      base_url: { type: url, nullable: true, note: "로그인형 CLI는 null" }
+      host: { type: string, derived: "OpenAI 호환 URL의 host; Claude Code service 또는 OpenAI (Codex login)" }
       models: { type: "string[]" }
-      supports_tool_choice: { type: boolean, default: true, note: "Claude Code는 false; JSON schema 구조화 출력 사용" }
+      supports_tool_choice: { type: boolean, default: true, note: "로그인형 CLI는 false; JSON schema 구조화 출력 사용" }
       allow_evidence: { type: boolean, default: false }
-      has_key: { type: boolean, derived: "OpenAI 호환 apiKeyRef 존재 여부. Claude Code는 false. 키 원문은 절대 반환하지 않음" }
+      has_key: { type: boolean, derived: "OpenAI 호환 apiKeyRef 존재 여부. 로그인형 CLI는 false. 키 원문은 절대 반환하지 않음" }
       test_result: { type: "{ok, latencyMs, toolChoiceSupported, error?}", nullable: true }
 
   history_status:
     endpoints:
       - { method: RPC, path: historyStatus }
+      - { method: RPC, path: summaries.retryFailedToday, output: "{requeued:integer}", note: "오늘 실패한 요약 재대기; Day view" }
     fields:
       store_bytes: { type: integer }
       average_bytes_per_day: { type: integer }

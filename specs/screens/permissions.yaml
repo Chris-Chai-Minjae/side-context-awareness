@@ -1,0 +1,48 @@
+version: "2.0"
+# 출처: docs/planning/06-screens.md S8
+screen:
+  name: 권한과 연결
+  route: /permissions
+  layout: full-width
+  auth: true
+
+data_requirements:
+  - resource: capture_status
+    needs: [enabled, state, banner, health]
+  - resource: permissions
+    needs: [accessibility, input_monitoring, screen_recording, automation]
+  - resource: settings
+    needs: [screen_ocr, providers]
+
+components:
+  - id: capture_health
+    type: detail
+    position: header
+    function: "helper 연결과 캡처 상태, 일부 캡처 기능 불가 사유 표시"
+    data_source: { resource: capture_status }
+  - id: macos_permissions
+    type: action
+    position: main
+    function: "Accessibility·Input Monitoring·Screen Recording 각각 허용 상태, 요청, 시스템 설정 링크"
+    data_source: { resource: permissions }
+    events:
+      - { on: click:request, do: "미허용 권한만 requestPermissions({kinds:[kind]})" }
+  - id: browser_automation
+    type: action
+    position: main
+    function: "관찰한 브라우저별 Automation 허용 상태와 요청"
+    data_source: { resource: permissions }
+    events:
+      - { on: click:request, do: "requestPermissions({kinds:['automation']})" }
+  - id: provider_connections
+    type: action
+    position: main
+    function: "API 키 provider의 Keychain 접근 요청과 모델 목록 연결 확인; 로그인형 CLI는 Keychain 버튼 없음"
+    data_source: { resource: settings }
+    events:
+      - { on: click:authorize, do: "providers.authorizeKey({providerId})" }
+      - { on: click:verify, do: "providers.listModels({providerId})" }
+
+connections:
+  navigations: []
+  shared_components: []
