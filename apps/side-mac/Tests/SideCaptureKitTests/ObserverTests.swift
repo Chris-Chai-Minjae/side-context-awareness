@@ -474,4 +474,34 @@ final class ObserverTests: XCTestCase {
         // Then each trimmed sentence is sent as one event.
         XCTAssertEqual(events.map(\.text), ["First.", "Second."])
     }
+
+    func testReentrantBrowserURLReadPreservesCompletedSentences() {
+        // Given a browser URL lookup that delivers a nested AX callback while the first sentence is emitted.
+        var events: [CaptureEvent] = []
+        var didReenter = false
+        weak var reentrantHub: AXObserverHub?
+        let stream = CaptureStream(
+            output: { events.append($0) }, secureInputEnabled: { false },
+            browserURL: { _ in
+                if !didReenter {
+                    didReenter = true
+                    reentrantHub?.flushTypedText()
+                }
+                return "https://example.test/"
+            }
+        )
+        stream.configure(deniedBundleIds: [], captureTypedText: true, paused: false)
+        stream.activate(bundleID: "com.google.Chrome", appName: "Chrome")
+        let hub = AXObserverHub(stream: stream)
+        reentrantHub = hub
+        let field = FieldMetadata(role: "AXTextField")
+        hub.recordValueChange("", bundleID: "com.google.Chrome", field: field)
+
+        // When one AX update completes two sentences and the URL lookup reenters the observer.
+        hub.recordValueChange("First. Second.", bundleID: "com.google.Chrome", field: field)
+
+        // Then both sentences are emitted once, in order, without reading stale String indices.
+        XCTAssertTrue(didReenter)
+        XCTAssertEqual(events.map(\.text), ["First.", "Second."])
+    }
 }

@@ -275,18 +275,24 @@ final class AXObserverHub {
             return
         }
         lastInputAt = now()
-        var start = pendingText.startIndex
-        for index in pendingText.indices where ".!?。！？\n".contains(pendingText[index]) {
-            let end = pendingText.index(after: index)
-            let sentence = String(pendingText[start..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let bufferedText = pendingText
+        var start = bufferedText.startIndex
+        var completedSentences: [String] = []
+        for index in bufferedText.indices where ".!?。！？\n".contains(bufferedText[index]) {
+            let end = bufferedText.index(after: index)
+            let sentence = String(bufferedText[start..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
             if sentence.utf16.count >= 3 {
-                stream.emit(.keyboardTextInput, bundleID: bundleID, label: fieldLabel, text: sentence)
+                completedSentences.append(sentence)
             }
             start = end
         }
-        pendingText = String(pendingText[start...])
+        pendingText = String(bufferedText[start...])
         if pendingText.isEmpty { lastInputAt = nil }
         scheduleDraftFlush()
+        let label = fieldLabel
+        for sentence in completedSentences {
+            stream.emit(.keyboardTextInput, bundleID: bundleID, label: label, text: sentence)
+        }
     }
 
     func flushTypedText() {
